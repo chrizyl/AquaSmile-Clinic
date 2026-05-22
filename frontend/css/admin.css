@@ -1,0 +1,587 @@
+.admin-body {
+  padding-top: 68px;
+}
+
+.admin-shell {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 28px;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 28px 32px 70px;
+}
+
+.admin-sidebar {
+  position: sticky;
+  top: 96px;
+  height: fit-content;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(12px);
+}
+
+.admin-side-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 14px;
+}
+
+.admin-side-link {
+  display: block;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text-mid);
+  text-decoration: none;
+  font-size: 0.86rem;
+  font-family: 'DM Sans', sans-serif;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-side-link:hover,
+.admin-side-link.active {
+  background: rgba(120,154,153,0.12);
+  color: var(--aqua-dark);
+}
+
+.admin-content {
+  min-width: 0;
+}
+
+.admin-view {
+  display: none;
+}
+
+.admin-view.active {
+  display: block;
+}
+
+.admin-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  background: linear-gradient(135deg, rgba(255,210,194,0.48), rgba(120,154,153,0.16));
+  border: 1px solid rgba(120,154,153,0.14);
+  border-radius: var(--radius-lg);
+  padding: 34px 38px;
+  box-shadow: var(--shadow-card);
+}
+
+.admin-hero h1,
+.admin-panel h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 500;
+  color: var(--text-dark);
+}
+
+.admin-hero h1 {
+  font-size: clamp(2.2rem, 4vw, 3.4rem);
+  line-height: 1;
+  margin: 2px 0 12px;
+}
+
+.admin-hero p {
+  max-width: 720px;
+  color: var(--text-mid);
+  font-size: 0.96rem;
+  line-height: 1.7;
+  font-weight: 300;
+}
+
+.admin-hero-actions,
+.calendar-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.admin-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin: 22px 0;
+}
+
+.admin-stat-card,
+.admin-panel,
+.schema-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(12px);
+}
+
+.admin-stat-card {
+  border-radius: var(--radius-md);
+  padding: 22px;
+}
+
+.stat-kicker {
+  display: block;
+  color: var(--aqua);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.admin-stat-card strong {
+  display: block;
+  font-family: 'Cormorant Garamond', serif;
+  color: var(--text-dark);
+  font-size: 2.1rem;
+  line-height: 1;
+  font-weight: 600;
+}
+
+.admin-stat-card small {
+  display: block;
+  color: var(--text-light);
+  font-size: 0.78rem;
+  margin-top: 8px;
+}
+
+.admin-grid-two {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 22px;
+  margin-bottom: 22px;
+}
+
+.admin-panel {
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  overflow: hidden;
+  margin-bottom: 22px;
+}
+
+.admin-grid-two .admin-panel {
+  margin-bottom: 0;
+}
+
+.panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.admin-panel h2 {
+  font-size: 1.65rem;
+  line-height: 1.15;
+}
+
+.admin-badge,
+.mini-btn {
+  border-radius: 99px;
+  border: 1.5px solid rgba(120,154,153,0.24);
+  background: rgba(255,255,255,0.6);
+  color: var(--aqua-dark);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.admin-badge {
+  padding: 7px 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.mini-btn {
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mini-btn:hover {
+  background: var(--aqua);
+  border-color: var(--aqua);
+  color: #fff;
+}
+
+.admin-inline-form {
+  display: grid;
+  grid-template-columns: 1.3fr 0.7fr 0.8fr 1fr auto;
+  gap: 10px;
+  align-items: center;
+  margin: 0 0 16px;
+  padding: 14px;
+  background: rgba(255,255,255,0.5);
+  border: 1px solid rgba(120,154,153,0.13);
+  border-radius: var(--radius-md);
+}
+
+.admin-inline-form .btn-primary {
+  padding: 12px 18px;
+  white-space: nowrap;
+}
+
+.action-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  border: 1.5px solid rgba(120,154,153,0.25);
+  background: rgba(255,255,255,0.7);
+  color: var(--aqua-dark);
+  border-radius: 99px;
+  padding: 7px 11px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+  background: var(--aqua);
+  border-color: var(--aqua);
+  color: #fff;
+}
+
+.action-btn.danger {
+  color: #c0392b;
+}
+
+.action-btn.danger:hover {
+  background: #c0392b;
+  border-color: #c0392b;
+  color: #fff;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(120,154,153,0.12);
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 680px;
+  background: rgba(255,255,255,0.5);
+}
+
+.admin-table.compact {
+  min-width: 520px;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 13px 14px;
+  text-align: left;
+  border-bottom: 1px solid rgba(120,154,153,0.11);
+  font-size: 0.84rem;
+}
+
+.admin-table th {
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.68rem;
+  font-weight: 700;
+  background: rgba(120,154,153,0.06);
+}
+
+.admin-table td {
+  color: var(--text-mid);
+}
+
+.admin-table tr:last-child td {
+  border-bottom: none;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 99px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.status-pending { background: rgba(255,210,194,0.55); color: #9a5a3a; }
+.status-confirmed { background: rgba(120,154,153,0.15); color: var(--aqua-dark); }
+.status-completed { background: rgba(100,180,100,0.12); color: #2e7d32; }
+.status-cancelled { background: rgba(200,100,100,0.12); color: #c0392b; }
+.status-user_cancelled { background: rgba(200,100,100,0.12); color: #c0392b; }
+
+.dentist-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.dentist-calendar {
+  background: rgba(255,255,255,0.52);
+  border: 1px solid rgba(120,154,153,0.14);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.dentist-calendar-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid rgba(120,154,153,0.12);
+}
+
+.dentist-calendar-head img,
+.dentist-row img {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 2px solid var(--peach);
+}
+
+.dentist-calendar-name {
+  font-weight: 600;
+  color: var(--text-dark);
+  font-size: 0.94rem;
+}
+
+.dentist-calendar-spec {
+  color: var(--text-light);
+  font-size: 0.76rem;
+}
+
+.calendar-mini {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  padding: 14px;
+}
+
+.cal-mini-name,
+.cal-mini-day {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 0.76rem;
+}
+
+.cal-mini-name {
+  color: var(--text-light);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.64rem;
+}
+
+.cal-mini-day {
+  background: rgba(255,255,255,0.5);
+  color: var(--text-mid);
+  position: relative;
+}
+
+.cal-mini-day.has-booking {
+  background: rgba(120,154,153,0.16);
+  color: var(--aqua-dark);
+  font-weight: 700;
+}
+
+.cal-mini-day.has-booking::after {
+  content: attr(data-count);
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  min-width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--peach-dark);
+  color: var(--text-dark);
+  font-size: 0.56rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.catalog-grid,
+.dentist-list {
+  display: grid;
+  gap: 12px;
+}
+
+.catalog-item,
+.dentist-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(255,255,255,0.5);
+  border: 1px solid rgba(120,154,153,0.13);
+  border-radius: var(--radius-md);
+}
+
+.catalog-item {
+  justify-content: space-between;
+}
+
+.catalog-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.stock-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.stock-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(120,154,153,0.25);
+  background: rgba(255,255,255,0.65);
+  color: var(--aqua-dark);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.stock-value {
+  min-width: 34px;
+  text-align: center;
+  color: var(--text-dark);
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+
+.catalog-item img {
+  width: 54px;
+  height: 54px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  background: var(--peach-light);
+  flex-shrink: 0;
+}
+
+.catalog-item strong,
+.dentist-row strong {
+  display: block;
+  color: var(--text-dark);
+  font-size: 0.92rem;
+  margin-bottom: 3px;
+}
+
+.catalog-item span,
+.dentist-row span {
+  color: var(--text-light);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.schema-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.schema-card {
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+.schema-card strong {
+  display: block;
+  color: var(--aqua-dark);
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+}
+
+.schema-card span {
+  display: block;
+  color: var(--text-mid);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.empty-admin {
+  color: var(--text-light);
+  font-size: 0.84rem;
+  padding: 18px;
+  text-align: center;
+}
+
+@media (max-width: 1180px) {
+  .admin-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-sidebar {
+    position: static;
+    display: flex;
+    overflow-x: auto;
+    gap: 8px;
+  }
+
+  .admin-side-title {
+    display: none;
+  }
+
+  .admin-side-link {
+    white-space: nowrap;
+  }
+
+  .admin-stats,
+  .schema-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .dentist-calendar-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 820px) {
+  .admin-shell {
+    padding: 20px 18px 60px;
+  }
+
+  .admin-hero,
+  .panel-head,
+  .admin-inline-form,
+  .admin-grid-two {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-hero,
+  .panel-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-stats,
+  .schema-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-panel {
+    padding: 18px;
+  }
+}

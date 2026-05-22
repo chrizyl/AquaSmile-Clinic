@@ -7,6 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/services.css">
+  <link rel="stylesheet" href="css/notifications.css">
 </head>
 <body>
 
@@ -127,6 +128,7 @@
 
   <script src="js/main.js"></script>
   <script src="js/services.js"></script>
+  <script src="js/notifications.js"></script>
   <script src="js/footer.js"></script>
 </body>
 </html>

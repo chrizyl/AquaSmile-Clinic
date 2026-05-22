@@ -130,6 +130,7 @@ function updateNav() {
   else if (currentUser && userInfo) userInfo.textContent = currentUser.name;
 
   updateCartBadge();
+  renderNotificationCenter();
 }
 
 // ── LOGOUT ──
@@ -163,6 +164,149 @@ function updateCartBadge() {
   const total = cartItems.reduce((s, c) => s + c.qty, 0);
   const badge = document.getElementById('cart-badge');
   if (badge) badge.textContent = total;
+}
+
+function isForCurrentUser(item) {
+  if (!currentUser || !item) return false;
+  return item.userId === currentUser.id ||
+    item.userEmail === currentUser.email ||
+    item.userName === currentUser.name;
+}
+
+function getUserNotifications() {
+  return (DB.get('notifications') || []).filter(isForCurrentUser);
+}
+
+function getUserAppointments() {
+  return (DB.get('appointments') || []).filter(isForCurrentUser);
+}
+
+function formatStatusLabel(status) {
+  return (status || 'pending').replace('_', ' ');
+}
+
+function renderNotificationCenter() {
+  const navLinks = document.getElementById('nav-links');
+  if (document.body.classList.contains('admin-body')) return;
+  if (!navLinks || !currentUser || currentAdmin) return;
+
+  let wrap = document.getElementById('notify-wrap');
+  if (!wrap) {
+    wrap = document.createElement('div');
+    wrap.className = 'notify-wrap';
+    wrap.id = 'notify-wrap';
+    wrap.innerHTML = `
+      <button class="notify-btn" type="button" onclick="toggleNotifications()" aria-label="Notifications">
+        <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 10-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        <span class="notify-count" id="notify-count">0</span>
+      </button>
+      <div class="notify-panel" id="notify-panel"></div>`;
+
+    const userInfo = document.getElementById('nav-user-info');
+    navLinks.insertBefore(wrap, userInfo || navLinks.firstChild);
+  }
+
+  renderNotificationPanel();
+}
+
+function toggleNotifications() {
+  const panel = document.getElementById('notify-panel');
+  if (!panel) return;
+  panel.classList.toggle('open');
+  renderNotificationPanel();
+}
+
+function renderNotificationPanel() {
+  const panel = document.getElementById('notify-panel');
+  const badge = document.getElementById('notify-count');
+  if (!panel || !badge || !currentUser) return;
+
+  const notifications = getUserNotifications();
+  const appointments = getUserAppointments();
+  const unread = notifications.filter(n => !n.read).length;
+
+  badge.textContent = unread;
+  badge.classList.toggle('show', unread > 0);
+
+  const notificationHtml = notifications.length
+    ? notifications.map(n => `
+      <div class="notify-item ${n.read ? '' : 'unread'}">
+        <div class="notify-message">${n.message}</div>
+        <div class="notify-meta">${n.createdAt || ''}</div>
+      </div>`).join('')
+    : '<div class="notify-empty">No appointment updates yet.</div>';
+
+  const appointmentHtml = appointments.length
+    ? appointments.map(a => `
+      <div class="notify-item">
+        <div class="notify-booking-title">${a.serviceName || 'Dental Service'} - ${formatStatusLabel(a.status)}</div>
+        <div class="notify-booking-body">${a.date || '-'} at ${a.time || '-'}<br>${a.dentistName || 'Dentist pending'}</div>
+        ${a.status === 'pending'
+          ? `<button class="notify-cancel-btn" type="button" onclick="cancelUserAppointment('${a.id}')">Cancel Booking</button>`
+          : ''}
+      </div>`).join('')
+    : '<div class="notify-empty">No bookings yet.</div>';
+
+  panel.innerHTML = `
+    <div class="notify-panel-head">
+      <div class="notify-panel-title">Notifications</div>
+      <button class="notify-mark-btn" type="button" onclick="markNotificationsRead()">Mark read</button>
+    </div>
+    <div class="notify-section-label">Updates</div>
+    ${notificationHtml}
+    <div class="notify-section-label">My Bookings</div>
+    ${appointmentHtml}`;
+}
+
+function markNotificationsRead() {
+  const all = DB.get('notifications') || [];
+  all.forEach(n => {
+    if (isForCurrentUser(n)) n.read = true;
+  });
+  DB.set('notifications', all);
+  renderNotificationPanel();
+}
+
+function cancelUserAppointment(id) {
+  const appts = DB.get('appointments') || [];
+  const appt = appts.find(a => a.id === id && isForCurrentUser(a));
+  if (!appt) return;
+
+  if (appt.status !== 'pending') {
+    showToast('Only pending appointments can be cancelled.');
+    return;
+  }
+
+  if (!confirm('Cancel this pending appointment?')) return;
+
+  appt.status = 'user_cancelled';
+  appt.cancelledBy = 'user';
+  appt.cancellationReason = 'Cancelled by patient before admin approval.';
+  DB.set('appointments', appts);
+
+  const notifications = DB.get('notifications') || [];
+  notifications.unshift({
+    id: 'N' + Date.now(),
+    userId: appt.userId || '',
+    userEmail: appt.userEmail || '',
+    userName: appt.userName || 'Patient',
+    appointmentId: appt.id,
+    message: `You cancelled your appointment for ${appt.serviceName || 'your dental service'} on ${appt.date} at ${appt.time}.`,
+    createdAt: new Date().toLocaleString('en-PH'),
+    read: false,
+  });
+  DB.set('notifications', notifications.slice(0, 30));
+
+  renderNotificationPanel();
+  showToast('Your pending appointment has been cancelled.');
+}
+
+function notifyCurrentUser() {
+  if (!currentUser) return;
+
+  const note = getUserNotifications().find(n => !n.read);
+  if (note) showToast(note.message);
+  renderNotificationPanel();
 }
 
 // ══════════════════════════════════════
@@ -526,6 +670,7 @@ function init() {
   }
   
   updateNav();
+  notifyCurrentUser();
   renderHomeDentists();
   renderHomeServices();
   renderDeals();

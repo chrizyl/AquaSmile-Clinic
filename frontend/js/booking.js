@@ -22,6 +22,10 @@ const DENTIST_AVATARS = {
   D3: 'images/dentistid_g2.jpg',
 };
 
+function isActiveAppointmentStatus(status) {
+  return !['cancelled', 'user_cancelled'].includes(status);
+}
+
 // ── STATE ──
 let booking = {
   service:  null,
@@ -44,7 +48,7 @@ function guardAuth() {
   }
   if (admin) {
     showToast('Admins cannot book appointments.');
-    setTimeout(() => { window.location.href = 'admin-dashboard.php'; }, 1200);
+    setTimeout(() => { window.location.href = 'admin.php'; }, 1200);
     return false;
   }
   return true;
@@ -210,7 +214,7 @@ function renderTimeSlots() {
 
   grid.innerHTML = TIME_SLOTS.map(t => {
     const bookedDentistIds = appts
-      .filter(a => a.date === booking.date && a.time === t && a.status !== 'cancelled')
+      .filter(a => a.date === booking.date && a.time === t && isActiveAppointmentStatus(a.status))
       .map(a => a.dentistId);
 
     const allBooked  = DENTISTS.every(d => bookedDentistIds.includes(d.id));
@@ -246,7 +250,7 @@ function renderDentistAvailability() {
     .filter(a =>
       a.date === booking.date &&
       a.time === booking.time &&
-      a.status !== 'cancelled'
+      isActiveAppointmentStatus(a.status)
     )
     .map(a => a.dentistId);
 

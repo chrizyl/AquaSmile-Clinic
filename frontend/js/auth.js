@@ -71,7 +71,7 @@ function login() {
     DB.set('currentUser', null);
     sessionStorage.removeItem('aqsmile_cart'); 
     showToast('Welcome, ' + admin.name + '.');
-    setTimeout(() => { window.location.href = 'admin-dashboard.php'; }, 600);
+    setTimeout(() => { window.location.href = 'admin.php'; }, 600);
     return;
   }
 
