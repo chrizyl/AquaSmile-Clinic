@@ -1,0 +1,138 @@
+/* ── AUTH LAYOUT WRAPPER ── */
+.auth-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 100px 40px 40px;
+}
+
+/* ── AUTH CARD ── */
+.auth-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: var(--radius-lg);
+  padding: 48px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: var(--shadow-soft);
+}
+
+/* ── LOGO AREA ── */
+.auth-logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.auth-logo-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--peach);
+  box-shadow: 0 4px 16px rgba(120,154,153,0.2);
+}
+
+.auth-logo-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ── AUTH HEADINGS ── */
+.auth-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2rem;
+  font-weight: 500;
+  color: var(--text-dark);
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+.auth-sub {
+  font-size: 0.88rem;
+  color: var(--text-mid);
+  margin-bottom: 32px;
+  font-weight: 300;
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* ── FULL-WIDTH BUTTON ── */
+.btn-full {
+  width: 100%;
+  padding: 14px;
+  background: var(--aqua);
+  color: #fff;
+  border: none;
+  border-radius: 99px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.25s, transform 0.2s;
+  margin-top: 4px;
+}
+
+.btn-full:hover {
+  background: var(--aqua-dark);
+  transform: translateY(-1px);
+}
+
+/* ── TOGGLE LINK ── */
+.auth-toggle {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 0.85rem;
+  color: var(--text-mid);
+}
+
+.auth-toggle span {
+  color: var(--aqua);
+  cursor: pointer;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.2s;
+}
+
+.auth-toggle span:hover {
+  color: var(--aqua-dark);
+}
+
+/* ── DIVIDER (optional visual separator) ── */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  color: var(--text-light);
+  font-size: 0.78rem;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(120,154,153,0.2);
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .auth-wrap {
+    padding: 88px 20px 40px;
+  }
+
+  .auth-card {
+    padding: 32px 24px;
+  }
+
+  .auth-title {
+    font-size: 1.7rem;
+  }
+}

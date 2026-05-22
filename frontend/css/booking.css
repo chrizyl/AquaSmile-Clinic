@@ -1,0 +1,512 @@
+/* ══════════════════════════════════════
+   AquaSmile — booking.css
+   Styles for booking.html only
+   ══════════════════════════════════════ */
+
+/* ── BOOKING WRAPPER ── */
+.booking-wrap {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 40px 40px 80px;
+}
+
+/* ── STEP INDICATORS ── */
+.booking-steps {
+  display: flex;
+  gap: 0;
+  margin-bottom: 40px;
+}
+
+.step-item {
+  flex: 1;
+  text-align: center;
+  position: relative;
+}
+
+.step-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 22px;
+  left: 60%;
+  right: -10%;
+  height: 2px;
+  background: rgba(120,154,153,0.2);
+  transition: background 0.3s;
+}
+
+.step-item.done:not(:last-child)::after {
+  background: var(--aqua);
+}
+
+.step-num {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid rgba(120,154,153,0.25);
+  background: rgba(255,255,255,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 8px;
+  transition: all 0.25s;
+  overflow: hidden;
+}
+
+.step-num img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  opacity: 0.45;
+  transition: opacity 0.25s;
+}
+
+.step-item.active .step-num {
+  background: var(--aqua);
+  border-color: var(--aqua);
+  box-shadow: 0 4px 14px rgba(120,154,153,0.35);
+}
+
+.step-item.active .step-num img {
+  opacity: 1;
+  filter: brightness(0) invert(1);
+}
+
+.step-item.done .step-num {
+  background: var(--peach-dark);
+  border-color: var(--peach-dark);
+}
+
+.step-item.done .step-num img {
+  opacity: 1;
+  filter: brightness(0);
+}
+
+.step-label {
+  font-size: 0.75rem;
+  color: var(--text-light);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.step-item.active .step-label {
+  color: var(--aqua-dark);
+  font-weight: 600;
+}
+
+.step-item.done .step-label {
+  color: var(--text-mid);
+}
+
+/* ── BOOKING CARD ── */
+.booking-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: var(--radius-lg);
+  padding: 40px;
+  box-shadow: var(--shadow-card);
+}
+
+.booking-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.7rem;
+  font-weight: 500;
+  color: var(--text-dark);
+  margin-bottom: 6px;
+}
+
+.booking-subtitle {
+  font-size: 0.88rem;
+  color: var(--text-mid);
+  font-weight: 300;
+  margin-bottom: 28px;
+  line-height: 1.6;
+}
+
+/* ── SERVICE SELECTION CARD ── */
+.booking-service-card {
+  background: var(--glass-bg);
+  border: 1.5px solid rgba(120,154,153,0.2);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-align: center;
+  overflow: hidden;
+}
+
+.booking-service-card:hover {
+  border-color: var(--aqua);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(120,154,153,0.18);
+}
+
+.booking-service-card.selected {
+  border-color: var(--aqua);
+  box-shadow: 0 0 0 3px rgba(120,154,153,0.2);
+}
+
+.booking-service-img-wrap {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--peach-light) 0%, #E8F3F2 100%);
+}
+
+.booking-service-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.35s ease;
+}
+
+.booking-service-card:hover .booking-service-img {
+  transform: scale(1.05);
+}
+
+.booking-service-card-body {
+  padding: 14px 16px 18px;
+}
+
+.booking-service-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 4px;
+}
+
+.booking-service-price {
+  font-size: 0.85rem;
+  color: var(--aqua-dark);
+  font-weight: 500;
+}
+
+/* ── DATE & TIME ROW ── */
+.date-time-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  align-items: start;
+  margin-bottom: 28px;
+}
+
+/* ── CALENDAR ── */
+.calendar-wrap {
+  background: rgba(255,255,255,0.5);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--glass-border);
+  overflow: hidden;
+}
+
+.calendar {
+  padding: 20px;
+}
+
+.cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.cal-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--text-dark);
+}
+
+.cal-nav {
+  background: none;
+  border: 1.5px solid rgba(120,154,153,0.3);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  color: var(--aqua);
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.cal-nav:hover {
+  background: var(--aqua);
+  color: #fff;
+  border-color: var(--aqua);
+}
+
+.cal-days-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.cal-day-name {
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 4px 0;
+}
+
+.cal-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.cal-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  font-size: 0.83rem;
+  cursor: pointer;
+  transition: all 0.18s;
+  color: var(--text-dark);
+  font-weight: 400;
+}
+
+.cal-day:hover:not(.disabled):not(.empty) {
+  background: var(--peach-light);
+}
+
+.cal-day.selected {
+  background: var(--aqua) !important;
+  color: #fff !important;
+  font-weight: 600;
+}
+
+.cal-day.today {
+  border: 1.5px solid var(--aqua-light);
+  color: var(--aqua-dark);
+  font-weight: 600;
+}
+
+.cal-day.disabled {
+  color: rgba(120,154,153,0.3);
+  cursor: default;
+}
+
+.cal-day.empty {
+  cursor: default;
+}
+
+/* ── TIME SLOTS ── */
+.timeslot-wrap {
+  padding-top: 4px;
+}
+
+.timeslot-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-light);
+  font-weight: 500;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.label-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  opacity: 0.6;
+}
+
+.time-slots {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
+}
+
+.time-slot {
+  padding: 10px 8px;
+  text-align: center;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid rgba(120,154,153,0.25);
+  background: rgba(255,255,255,0.6);
+  font-size: 0.83rem;
+  font-weight: 500;
+  color: var(--text-mid);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.time-slot:hover:not(.booked-slot) {
+  border-color: var(--aqua);
+  color: var(--aqua-dark);
+  background: rgba(120,154,153,0.08);
+}
+
+.time-slot.selected-slot {
+  background: var(--aqua);
+  color: #fff;
+  border-color: var(--aqua);
+}
+
+.time-slot.booked-slot {
+  opacity: 0.35;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+/* ── DENTIST AVAILABILITY ── */
+.avail-dentist {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: rgba(255,255,255,0.5);
+  border: 1.5px solid rgba(120,154,153,0.2);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.22s;
+  margin-bottom: 12px;
+}
+
+.avail-dentist:hover:not(.unavail) {
+  border-color: var(--aqua);
+  background: rgba(120,154,153,0.07);
+}
+
+.avail-dentist.selected-d {
+  border-color: var(--aqua);
+  background: rgba(120,154,153,0.12);
+}
+
+.avail-dentist.unavail {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.avail-ava {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--peach);
+  flex-shrink: 0;
+}
+
+.avail-ava img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.avail-info {
+  flex: 1;
+}
+
+.avail-name {
+  font-weight: 500;
+  font-size: 0.94rem;
+  color: var(--text-dark);
+  margin-bottom: 2px;
+}
+
+.avail-cred {
+  font-size: 0.78rem;
+  color: var(--text-light);
+}
+
+.avail-badge {
+  font-size: 0.72rem;
+  padding: 5px 14px;
+  border-radius: 99px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.avail-badge.free {
+  background: rgba(120,154,153,0.15);
+  color: var(--aqua-dark);
+}
+
+.avail-badge.busy {
+  background: rgba(255,100,100,0.1);
+  color: #c0392b;
+}
+
+/* ── CONFIRM SUMMARY ── */
+.confirm-summary {
+  background: rgba(120,154,153,0.06);
+  border: 1px solid rgba(120,154,153,0.18);
+  border-radius: var(--radius-md);
+  padding: 20px 24px;
+  margin-bottom: 24px;
+}
+
+.confirm-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(120,154,153,0.1);
+  font-size: 0.88rem;
+}
+
+.confirm-row:last-child {
+  border-bottom: none;
+}
+
+.confirm-row .confirm-label {
+  color: var(--text-light);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.confirm-row .confirm-label img {
+  width: 15px;
+  height: 15px;
+  object-fit: contain;
+  opacity: 0.55;
+}
+
+.confirm-row .confirm-value {
+  font-weight: 500;
+  color: var(--text-dark);
+}
+
+/* ── STEP NAVIGATION ── */
+.step-nav {
+  display: flex;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .booking-wrap {
+    padding: 24px 20px 60px;
+  }
+
+  .booking-card {
+    padding: 24px 20px;
+  }
+
+  .date-time-row {
+    grid-template-columns: 1fr;
+  }
+
+  .booking-steps {
+    gap: 0;
+  }
+
+  .step-label {
+    font-size: 0.65rem;
+  }
+}
