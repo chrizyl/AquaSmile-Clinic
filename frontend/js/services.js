@@ -11,7 +11,7 @@ const SERVICE_IMAGES_PG = {
   S9: 'images/pediatric check up.jpg',
 };
 
-// ── SERVICE CATEGORIES (renamed to avoid conflict with main.js) ──
+// ── SERVICE CATEGORIES  ──
 const SVC_PAGE_CATEGORIES = {
   S1: 'Preventive',
   S2: 'Diagnostic',
@@ -29,10 +29,6 @@ const CATEGORY_ORDER = ['All', 'Preventive', 'Diagnostic', 'Restorative', 'Cosme
 
 // ── ACTIVE FILTER STATE ──
 let activeFilter = 'All';
-
-// ══════════════════════════════════════
-//  RENDER FILTER TABS
-// ══════════════════════════════════════
 
 function renderFilterTabs() {
   const container = document.getElementById('service-filters');
@@ -61,10 +57,6 @@ function applyFilter(category) {
     card.classList.toggle('hidden', !show);
   });
 }
-
-// ══════════════════════════════════════
-//  RENDER SERVICE CARDS
-// ══════════════════════════════════════
 
 function renderServiceCards() {
   const grid = document.getElementById('services-grid');
@@ -104,10 +96,6 @@ function renderServiceCards() {
       </div>`;
   }).join('');
 }
-
-// ══════════════════════════════════════
-//  SERVICE DETAIL MODAL
-// ══════════════════════════════════════
 
 function openServiceModal(sid) {
   const service  = SERVICES.find(s => s.id === sid);
@@ -149,9 +137,6 @@ document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape') closeServiceModal();
 });
 
-// ══════════════════════════════════════
-//  BOOK A SERVICE
-// ══════════════════════════════════════
 
 function bookService(sid) {
   const user  = Cookie.get('currentUser');
@@ -269,10 +254,6 @@ function requireBooking() {
   }
   window.location.href = 'booking.php';
 }
-
-// ══════════════════════════════════════
-//  INIT
-// ══════════════════════════════════════
 
 function initServicesPage() {
   updateNav();

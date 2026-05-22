@@ -1,12 +1,3 @@
-/* ══════════════════════════════════════
-   AquaSmile — dentist.js
-   Handles dentist card rendering,
-   profile modal, and booking redirect.
-   Depends on: main.js (DB, DENTISTS,
-   updateNav, showToast)
-   ══════════════════════════════════════ */
-
-// ── DENTIST IMAGE PATHS ──
 // Replace with actual photo filenames when available.
 const DENTIST_IMAGES = {
   D1: 'images/dentist_doctorg12.jpg',
@@ -48,9 +39,6 @@ const DENTIST_DETAILS = {
   },
 };
 
-// ══════════════════════════════════════
-//  RENDER DENTIST CARDS
-// ══════════════════════════════════════
 
 function renderDentistCards() {
   const grid = document.getElementById('dentist-grid');
@@ -84,9 +72,6 @@ function renderDentistCards() {
   }).join('');
 }
 
-// ══════════════════════════════════════
-//  DENTIST PROFILE MODAL
-// ══════════════════════════════════════
 
 function openDentistModal(did) {
   const dentist  = DENTISTS.find(d => d.id === did);
@@ -153,10 +138,6 @@ document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape') closeModal();
 });
 
-// ══════════════════════════════════════
-//  BOOK WITH SPECIFIC DENTIST
-// ══════════════════════════════════════
-
 function bookWithDentist(did) {
   // Re-read cookies fresh every time (hindi lang sa page load)
   const user  = Cookie.get('currentUser');
@@ -191,10 +172,6 @@ function requireBooking() {
   }
   window.location.href = 'booking.php';
 }
-
-// ══════════════════════════════════════
-//  INIT
-// ══════════════════════════════════════
 
 function initDentistsPage() {
   updateNav();

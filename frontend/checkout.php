@@ -1140,9 +1140,6 @@
       }, 2800);
     }
 
-    /* ══════════════════════════════════════════
-       GCASH RECEIPT UPLOAD HANDLERS
-    ══════════════════════════════════════════ */
     function handleReceiptUpload(input) {
       const file = input.files[0];
       if (!file) return;

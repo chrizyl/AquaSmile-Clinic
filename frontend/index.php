@@ -128,7 +128,7 @@
     </div>
   </div>
 
-  <!-- DATA TYPES INFO STRIP (Lesson 2 — rendered via JS, styled as a trust bar) -->
+  
   <div class="clinic-stats-strip" id="clinic-stats-strip"></div>
 
   <script src="js/auth.js"></script>

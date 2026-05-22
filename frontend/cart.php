@@ -316,9 +316,6 @@
 
   render();
 
-  /* ── CART RESET after order placed ──
-     Listens for localStorage changes from the checkout page.
-     When 'aqCart' is removed (order placed), re-render to empty state. */
   window.addEventListener('storage', function(e) {
     if (e.key === 'aqCart' && (e.newValue === null || e.newValue === '[]')) {
       cart = [];
@@ -327,8 +324,7 @@
     }
   });
 
-  /* Also handle the case where the user lands back on cart.html
-     after checkout (e.g. browser back button) — re-read from localStorage. */
+
   window.addEventListener('pageshow', function(e) {
     cart = JSON.parse(localStorage.getItem('aqCart') || '[]');
     promoApplied = false;

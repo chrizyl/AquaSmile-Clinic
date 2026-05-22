@@ -9,9 +9,7 @@
   <link rel="stylesheet" href="css/booking.css">
 
   <style>
-    /* ══════════════════════════════════════
-       STEP ICON SVGs (replaces img icons)
-    ══════════════════════════════════════ */
+
     .step-num {
       display: flex;
       align-items: center;
@@ -369,7 +367,6 @@
     <!-- STEP INDICATORS -->
     <div class="booking-steps">
 
-      <!-- Step 1: Service — tooth/sparkle SVG -->
       <div class="step-item active" id="step-1">
         <div class="step-num">
           <svg class="step-svg" viewBox="0 0 24 24">
@@ -380,7 +377,6 @@
         <div class="step-label">Service</div>
       </div>
 
-      <!-- Step 2: Date & Time — calendar SVG -->
       <div class="step-item" id="step-2">
         <div class="step-num">
           <svg class="step-svg" viewBox="0 0 24 24">
@@ -392,7 +388,6 @@
         <div class="step-label">Date &amp; Time</div>
       </div>
 
-      <!-- Step 3: Dentist — stethoscope SVG -->
       <div class="step-item" id="step-3">
         <div class="step-num">
           <svg class="step-svg" viewBox="0 0 24 24">
@@ -405,7 +400,7 @@
         <div class="step-label">Dentist</div>
       </div>
 
-      <!-- Step 4: Confirm — clipboard check SVG -->
+
       <div class="step-item" id="step-4">
         <div class="step-num">
           <svg class="step-svg" viewBox="0 0 24 24">
@@ -417,16 +412,16 @@
         <div class="step-label">Confirm</div>
       </div>
 
-    </div><!-- /booking-steps -->
+    </div>
 
-    <!-- STEP 1: SELECT SERVICE -->
+
     <div id="booking-step-1" class="booking-card">
       <div class="booking-title">Choose a Service</div>
       <p class="booking-subtitle">Select the dental service you would like to book.</p>
       <div class="grid-3" id="booking-services"></div>
     </div>
 
-    <!-- STEP 2: SELECT DATE & TIME -->
+
     <div id="booking-step-2" class="booking-card" style="display:none">
       <div class="booking-title">Select Date &amp; Time</div>
       <p class="booking-subtitle">Choose your preferred date and available time slot.</p>
@@ -457,7 +452,6 @@
       </div>
     </div>
 
-    <!-- STEP 3: SELECT DENTIST -->
     <div id="booking-step-3" class="booking-card" style="display:none">
       <div class="booking-title">Available Dentists</div>
       <p class="booking-subtitle">The following dentists are available for your selected date and time. Choose your preferred dentist.</p>
@@ -469,7 +463,6 @@
       </div>
     </div>
 
-    <!-- STEP 4: CONFIRM -->
     <div id="booking-step-4" class="booking-card" style="display:none">
       <div class="booking-title">Confirm Your Appointment</div>
       <p class="booking-subtitle">Please review your booking details before confirming.</p>
@@ -497,7 +490,7 @@
       </div>
     </div>
 
-  </div><!-- end booking-wrap -->
+  </div>
 
   <script src="js/main.js"></script>
   <script src="js/booking.js"></script>

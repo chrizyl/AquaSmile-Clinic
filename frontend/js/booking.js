@@ -50,10 +50,6 @@ function guardAuth() {
   return true;
 }
 
-// ══════════════════════════════════════
-//  STEP NAVIGATION
-// ══════════════════════════════════════
-
 function gotoStep(n) {
   currentStep = n;
 
@@ -82,9 +78,6 @@ function updateStepIndicators() {
   });
 }
 
-// ══════════════════════════════════════
-//  STEP 1 — SELECT SERVICE
-// ══════════════════════════════════════
 
 function renderBookingServices() {
   const grid = document.getElementById('booking-services');
@@ -129,9 +122,6 @@ function selectService(sid) {
   setTimeout(() => gotoStep(2), 380);
 }
 
-// ══════════════════════════════════════
-//  STEP 2 — CALENDAR & TIME SLOTS
-// ══════════════════════════════════════
 
 function renderCalendar() {
   const cal = document.getElementById('booking-calendar');
@@ -246,9 +236,6 @@ function selectTime(t) {
   renderTimeSlots();
 }
 
-// ══════════════════════════════════════
-//  STEP 3 — SELECT DENTIST
-// ══════════════════════════════════════
 
 function renderDentistAvailability() {
   const list = document.getElementById('dentist-availability-list');
@@ -294,9 +281,6 @@ function selectDentist(did) {
   renderDentistAvailability();
 }
 
-// ══════════════════════════════════════
-//  STEP 4 — CONFIRM SUMMARY
-// ══════════════════════════════════════
 
 function renderConfirmSummary() {
   const summaryEl = document.getElementById('booking-summary');
@@ -343,9 +327,6 @@ function renderConfirmSummary() {
     </div>`;
 }
 
-// ══════════════════════════════════════
-//  CONFIRM BOOKING
-// ══════════════════════════════════════
 
 function confirmBooking() {
   if (!booking.service || !booking.date || !booking.time || !booking.dentist) {
@@ -395,10 +376,6 @@ function confirmBooking() {
     setTimeout(() => { window.location.href = 'index.php'; }, 1400);
   }
 }
-
-// ══════════════════════════════════════
-//  INIT
-// ══════════════════════════════════════
 
 function initBooking() {
   if (!guardAuth()) return;

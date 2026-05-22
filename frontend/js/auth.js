@@ -1,6 +1,3 @@
-/* ══════════════════════════════════════
-   AquaSmile — auth.js
-   ══════════════════════════════════════ */
 
 function register() {
   const fname    = document.getElementById('reg-fname').value.trim();

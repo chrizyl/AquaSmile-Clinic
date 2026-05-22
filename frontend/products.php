@@ -158,12 +158,6 @@
     }
   }
 
-  /*
-   * class CartItem extends Product
-   * Adds quantity tracking and line-total
-   * computation on top of the base product.
-   * Inherits all Product getters.
-   */
   class CartItem extends Product {
     #qty;
 
