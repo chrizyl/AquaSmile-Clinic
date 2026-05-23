@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>UDental Clinic - Database Setup</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; max-width: 800px; }
+        .step { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        #status { margin-top: 20px; padding: 15px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🦷 UDental Clinic - Database Setup</h1>
+
+    <div class="step">
+        <h2>Step 1: Check XAMPP Status</h2>
+        <p>Make sure XAMPP MySQL service is running.</p>
+        <button onclick="checkMySQLStatus()">Check MySQL Status</button>
+    </div>
+
+    <div class="step">
+        <h2>Step 2: Initialize Database</h2>
+        <p>This will create the database and all tables automatically.</p>
+        <button onclick="initDatabase()">Initialize Database Now</button>
+    </div>
+
+    <div class="step">
+        <h2>Step 3: Verify Connection</h2>
+        <p>Test if the API is connected to the database.</p>
+        <button onclick="testConnection()">Test API Connection</button>
+    </div>
+
+    <div id="status"></div>
+
+    <script>
+        async function checkMySQLStatus() {
+            const status = document.getElementById('status');
+            status.textContent = 'Checking MySQL...';
+            status.style.background = '#fff3cd';
+
+            try {
+                const response = await fetch('init-db.php?test=1');
+                status.innerHTML = '<span class="success">✓ XAMPP MySQL is running!</span><br>You can now initialize the database.';
+                status.style.background = '#d4edda';
+            } catch (e) {
+                status.innerHTML = '<span class="error">✗ MySQL is not running</span><br>Please start XAMPP MySQL service.';
+                status.style.background = '#f8d7da';
+            }
+        }
+
+        async function initDatabase() {
+            const status = document.getElementById('status');
+            status.textContent = 'Setting up database...';
+            status.style.background = '#fff3cd';
+
+            try {
+                const response = await fetch('init-db.php');
+                const html = await response.text();
+                status.innerHTML = html;
+                if (response.ok) {
+                    status.style.background = '#d4edda';
+                } else {
+                    status.style.background = '#f8d7da';
+                }
+            } catch (e) {
+                status.innerHTML = '<span class="error">✗ Error: ' + e.message + '</span>';
+                status.style.background = '#f8d7da';
+            }
+        }
+
+        async function testConnection() {
+            const status = document.getElementById('status');
+            status.textContent = 'Testing API connection...';
+            status.style.background = '#fff3cd';
+
+            try {
+                const response = await fetch('api/index.php?action=health');
+                const data = await response.json();
+                if (data.ok) {
+                    status.innerHTML = '<span class="success">✓ Connected to database: ' + data.database + '</span><br>Your database is working correctly!';
+                    status.style.background = '#d4edda';
+                } else {
+                    status.innerHTML = '<span class="error">✗ Error: ' + data.message + '</span>';
+                    status.style.background = '#f8d7da';
+                }
+            } catch (e) {
+                status.innerHTML = '<span class="error">✗ API Error: ' + e.message + '</span>';
+                status.style.background = '#f8d7da';
+            }
+        }
+    </script>
+</body>
+</html>

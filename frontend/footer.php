@@ -6,7 +6,7 @@
   <title>AquaSmile — Footer Test</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/footer.css" />
+  <link rel="stylesheet" href="css/footer.css?v=20260523" />
 </head>
 <body>
 

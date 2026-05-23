@@ -5,6 +5,15 @@ const TIME_SLOTS = [
 ];
 
 const SERVICE_IMAGES = {
+  1: 'images/dental cleaning.jpeg',
+  2: 'images/xray.webp',
+  3: 'images/tooth extraction.jpg',
+  4: 'images/teeth whitening.jpg',
+  5: 'images/dental braces.webp',
+  6: 'images/root canal.jpeg',
+  7: 'images/dental crown.png',
+  8: 'images/veneers.jpg',
+  9: 'images/pediatric check up.jpg',
   S1: 'images/dental cleaning.jpeg',
   S2: 'images/xray.webp',
   S3: 'images/tooth extraction.jpg',
@@ -17,6 +26,9 @@ const SERVICE_IMAGES = {
 };
 
 const DENTIST_AVATARS = {
+  1: 'images/dentistid_g1.jpg',
+  2: 'images/dentistid_m1.jpg',
+  3: 'images/dentistid_g2.jpg',
   D1: 'images/dentistid_g1.jpg',
   D2: 'images/dentistid_m1.jpg',
   D3: 'images/dentistid_g2.jpg',
@@ -332,7 +344,7 @@ function renderConfirmSummary() {
 }
 
 
-function confirmBooking() {
+async function confirmBooking() {
   if (!booking.service || !booking.date || !booking.time || !booking.dentist) {
     showToast('Please complete all selections before confirming.');
     return;
@@ -348,7 +360,7 @@ function confirmBooking() {
   const dent = DENTISTS.find(d => d.id === booking.dentist);
   const notes = document.getElementById('booking-notes')?.value || '';
 
-  const newAppt = {
+  let newAppt = {
     id:           'A' + Date.now(),
     userId:       user.id,
     userName:     user.name,
@@ -367,9 +379,18 @@ function confirmBooking() {
     createdAt:    new Date().toISOString(),
   };
 
+  try {
+    const result = await apiRequest('create_appointment', newAppt);
+    newAppt = result.appointment;
+  } catch (err) {
+    console.warn('Saving appointment locally because API failed:', err.message);
+  }
+
   const appts = DB.get('appointments') || [];
-  appts.push(newAppt);
-  DB.set('appointments', appts);
+  if (!appts.find(a => a.id === newAppt.id)) {
+    appts.push(newAppt);
+    DB.set('appointments', appts);
+  }
 
   /* Show the success popup — redirect handled by booking.html popup flow */
   const popup = document.getElementById('success-popup');
@@ -381,8 +402,15 @@ function confirmBooking() {
   }
 }
 
-function initBooking() {
+async function initBooking() {
   if (!guardAuth()) return;
+  await syncCatalogFromDatabase();
+  try {
+    const data = await apiGet('appointments');
+    DB.set('appointments', data.appointments || []);
+  } catch (err) {
+    console.warn('Using local appointments fallback:', err.message);
+  }
   updateNav();
   renderBookingServices();
   gotoStep(1);

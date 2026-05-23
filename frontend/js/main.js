@@ -35,6 +35,60 @@ const Cookie = {
   },
 };
 
+const API_BASE = new URL('../backend/api/index.php', window.location.href).pathname;
+
+async function apiRequest(action, data = null, method = 'POST') {
+  const options = {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+  };
+
+  if (data !== null) {
+    options.body = JSON.stringify(data);
+  }
+
+  const url = API_BASE + '?action=' + encodeURIComponent(action);
+  const response = await fetch(url, { ...options, cache: 'no-store' });
+  const payload = await response.json();
+
+  if (!response.ok || !payload.ok) {
+    throw new Error(payload.message || 'Database request failed.');
+  }
+
+  return payload;
+}
+
+async function apiGet(action, params = {}) {
+  const query = new URLSearchParams({ action, ...params });
+  const response = await fetch(API_BASE + '?' + query.toString(), { cache: 'no-store' });
+  const payload = await response.json();
+
+  if (!response.ok || !payload.ok) {
+    throw new Error(payload.message || 'Database request failed.');
+  }
+
+  return payload;
+}
+
+async function syncCatalogFromDatabase() {
+  try {
+    const data = await apiGet('catalog');
+    if (data.services?.length) {
+      SERVICES.splice(0, SERVICES.length, ...data.services);
+    }
+    if (data.products?.length) {
+      PRODUCTS.splice(0, PRODUCTS.length, ...data.products);
+    }
+    if (data.dentists?.length) {
+      DENTISTS.splice(0, DENTISTS.length, ...data.dentists);
+    }
+    return true;
+  } catch (err) {
+    console.warn('Using local catalog fallback:', err.message);
+    return false;
+  }
+}
+
 // ── SHARED DATA ──
 const DENTISTS = [
   {
@@ -664,11 +718,12 @@ function refreshTip() {
 }
 
 // ── INIT ──
-function init() {
+async function init() {
   if (localStorage.getItem('aqsmile_cart') !== null) {
     localStorage.removeItem('aqsmile_cart');
   }
   
+  await syncCatalogFromDatabase();
   updateNav();
   notifyCurrentUser();
   renderHomeDentists();

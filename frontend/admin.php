@@ -8,8 +8,8 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="css/style.css?v=20260523">
+  <link rel="stylesheet" href="css/admin.css?v=20260523">
 </head>
 
 <body class="admin-body">
@@ -358,8 +358,8 @@
     </section>
   </main>
 
-  <script src="js/main.js"></script>
-  <script src="js/admin.js"></script>
+  <script src="js/main.js?v=20260523"></script>
+  <script src="js/admin.js?v=20260523"></script>
 </body>
 
 </html>

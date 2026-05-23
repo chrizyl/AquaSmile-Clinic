@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AquaSmile — Book an Appointment</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/booking.css">
-  <link rel="stylesheet" href="css/notifications.css">
+  <link rel="stylesheet" href="css/style.css?v=20260523">
+  <link rel="stylesheet" href="css/booking.css?v=20260523">
+  <link rel="stylesheet" href="css/notifications.css?v=20260523">
 
   <style>
 
@@ -493,12 +493,12 @@
 
   </div>
 
-  <script src="js/main.js"></script>
-  <script src="js/booking.js"></script>
-  <script src="js/notifications.js"></script>
+  <script src="js/main.js?v=20260523"></script>
+  <script src="js/booking.js?v=20260523"></script>
+  <script src="js/notifications.js?v=20260523"></script>
 
   <div id="site-footer-root"></div>
-  <script src="js/footer.js"></script>
+  <script src="js/footer.js?v=20260523"></script>
 </body>
 
 </html>

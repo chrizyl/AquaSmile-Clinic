@@ -1,5 +1,5 @@
 
-function register() {
+async function register() {
   const fname    = document.getElementById('reg-fname').value.trim();
   const lname    = document.getElementById('reg-lname').value.trim();
   const email    = document.getElementById('reg-email').value.trim();
@@ -24,25 +24,38 @@ function register() {
     return;
   }
 
-  // Duplicate Check[cite: 2]
-  const users = DB.get('users') || [];
-  if (users.find(u => u.email === email)) {
-    errEl.textContent = 'An account with this email already exists.';
-    errEl.style.display = 'block';
-    return;
+  try {
+    const result = await apiRequest('register', {
+      fname,
+      lname,
+      name: fname + ' ' + lname,
+      email,
+      contact,
+      password,
+    });
+
+    const users = DB.get('users') || [];
+    if (!users.find(u => u.email === result.user.email)) {
+      users.push({ ...result.user, password });
+      DB.set('users', users);
+    }
+  } catch (err) {
+    const users = DB.get('users') || [];
+    if (users.find(u => u.email === email)) {
+      errEl.textContent = 'An account with this email already exists.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    users.push({
+      id:       'U' + Date.now(),
+      name:     fname + ' ' + lname,
+      email:    email,
+      contact:  contact,
+      password: password,
+    });
+    DB.set('users', users);
   }
-
-  // Save User[cite: 2, 3]
-  const newUser = {
-    id:       'U' + Date.now(),
-    name:     fname + ' ' + lname,
-    email:    email,
-    contact:  contact,
-    password: password,
-  };
-
-  users.push(newUser);
-  DB.set('users', users);
 
   sucEl.textContent = 'Account created successfully. Redirecting...';
   sucEl.style.display = 'block';
@@ -51,7 +64,7 @@ function register() {
 }
 
 // ── LOGIN ──
-function login() {
+async function login() {
   const email    = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
   const errEl    = document.getElementById('login-error');
@@ -75,12 +88,19 @@ function login() {
     return;
   }
 
-  const users = DB.get('users') || [];
-  const user  = users.find(u => u.email === email && u.password === password);
+  let user = null;
+
+  try {
+    const result = await apiRequest('login', { email, password });
+    user = result.user;
+  } catch (err) {
+    const users = DB.get('users') || [];
+    user  = users.find(u => u.email === email && u.password === password);
+  }
 
   if (user) {
     DB.set('currentUser', null);
-    Cookie.set('currentUser', user, 1/1440); // naka-set sa minute
+    Cookie.set('currentUser', user, 60/1440); // naka-set sa minute
     DB.set('currentAdmin', null);
     sessionStorage.removeItem('aqsmile_cart'); // Clear previous user's cart
     showToast('Welcome back, ' + user.name.split(' ')[0] + '.');

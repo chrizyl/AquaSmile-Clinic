@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AquaSmile — Shop</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/products.css">
-  <link rel="stylesheet" href="css/notifications.css">
+  <link rel="stylesheet" href="css/products.css?v=20260523">
+  <link rel="stylesheet" href="css/notifications.css?v=20260523">
 </head>
 <body>
 
@@ -188,7 +188,7 @@
   }
 
   /* ── Products ── */
-  const PRODUCTS = [
+  let PRODUCTS = [
     new Product({ id:'P1',  name:'Sonic Pro Toothbrush',     price:1299, category:'electric',    desc:'Rechargeable electric toothbrush with 3 modes and UV sanitizer.',                 img:'images/toothbrush.avif' }),
     new Product({ id:'P2',  name:'WhiteGlo Toothpaste',     price:299,  category:'paste',       desc:'Enamel-strengthening whitening paste with fluoride and mint.',                    img:'images/toothpaste.jpg' }),
     new Product({ id:'P3',  name:'Silk Dental Floss',        price:189,  category:'floss',       desc:'Natural silk floss with wax coating for smooth, effortless cleaning.',           img:'images/floss.jpg' }),
@@ -387,9 +387,51 @@
     setTimeout(() => { window.location.href = 'index.php'; }, 500);
   }
 
-  applyFiltersAndSort();
-  updateBadges();
-  updateNav();
+  function productCategoryFromName(name) {
+    const text = name.toLowerCase();
+    if (text.includes('toothbrush') || text.includes('flosser')) return 'electric';
+    if (text.includes('paste') || text.includes('gel')) return 'paste';
+    if (text.includes('floss') || text.includes('mouthwash')) return 'floss';
+    if (text.includes('white') || text.includes('charcoal')) return 'whitening';
+    return 'accessories';
+  }
+
+  async function syncProductsFromDatabase() {
+    try {
+      const apiBase = new URL('../backend/api/index.php', window.location.href).pathname;
+      const response = await fetch(apiBase + '?action=catalog', { cache: 'no-store' });
+      const data = await response.json();
+      if (!response.ok || !data.ok || !data.products?.length) return;
+
+      PRODUCTS = data.products.map(p => new Product({
+        id: String(p.id),
+        name: p.name,
+        price: Number(p.price),
+        category: productCategoryFromName(p.name),
+        desc: p.desc || '',
+        img: p.img || p.photo || '',
+      }));
+
+      cart = cart
+        .map(raw => {
+          const product = PRODUCTS.find(p => p.id === String(raw.id) || p.name === raw.name);
+          return product ? new CartItem(product, raw.qty) : null;
+        })
+        .filter(Boolean);
+      saveCart();
+    } catch (err) {
+      console.warn('Using local products fallback:', err.message);
+    }
+  }
+
+  async function initProductsPage() {
+    await syncProductsFromDatabase();
+    applyFiltersAndSort();
+    updateBadges();
+    updateNav();
+  }
+
+  initProductsPage();
 
 
   function openProductDetail(pid) {
@@ -449,6 +491,6 @@
 
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeProductDetail(); });
 </script>
-<script src="js/notifications.js"></script>
+<script src="js/notifications.js?v=20260523"></script>
 </body>
 </html>

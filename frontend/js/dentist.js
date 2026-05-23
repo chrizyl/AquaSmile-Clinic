@@ -1,5 +1,8 @@
 // Replace with actual photo filenames when available.
 const DENTIST_IMAGES = {
+  1: 'images/dentist_doctorg12.jpg',
+  2: 'images/dentist_doctorm.jpg',
+  3: 'images/dentist_doctorg2.jpg',
   D1: 'images/dentist_doctorg12.jpg',
   D2: 'images/dentist_doctorm.jpg',
   D3: 'images/dentist_doctorg2.jpg',
@@ -75,7 +78,7 @@ function renderDentistCards() {
 
 function openDentistModal(did) {
   const dentist  = DENTISTS.find(d => d.id === did);
-  const details  = DENTIST_DETAILS[did];
+  const details  = DENTIST_DETAILS[did] || DENTIST_DETAILS['D' + did] || DENTIST_DETAILS.D1;
   const imgSrc   = DENTIST_IMAGES[did] || 'images/dentists/placeholder.jpg';
 
   if (!dentist) return;
@@ -173,7 +176,8 @@ function requireBooking() {
   window.location.href = 'booking.php';
 }
 
-function initDentistsPage() {
+async function initDentistsPage() {
+  await syncCatalogFromDatabase();
   updateNav();
   renderDentistCards();
 }

@@ -78,11 +78,11 @@ function adminReadCustomServices() {
 }
 
 function adminAllProducts() {
-  return PRODUCTS;
+  return DB.get('dbProducts') || PRODUCTS;
 }
 
 function adminAllServices() {
-  return SERVICES;
+  return DB.get('dbServices') || SERVICES;
 }
 
 function adminSeedAppointments(appts) {
@@ -139,7 +139,7 @@ function adminSeedAppointments(appts) {
 }
 
 function adminGetAppointments() {
-  return adminSeedAppointments(DB.get('appointments') || []);
+  return DB.get('appointments') || [];
 }
 
 function showAdminView(view) {
@@ -211,7 +211,7 @@ function renderManageAppointments(appts) {
     : adminTableEmpty(7, 'No appointments to manage.');
 }
 
-function updateAppointmentStatus(id, status) {
+async function updateAppointmentStatus(id, status) {
   const appts = adminGetAppointments();
   const target = appts.find(a => a.id === id);
   if (!target) return;
@@ -227,11 +227,17 @@ function updateAppointmentStatus(id, status) {
     }
   }
 
-  target.status = status;
-  target.cancelledBy = status === 'cancelled' ? 'admin' : target.cancelledBy || '';
-  target.cancellationReason = reason || target.cancellationReason || '';
+  try {
+    const result = await apiRequest('update_appointment', { id, status, reason });
+    Object.assign(target, result.appointment);
+  } catch (err) {
+    target.status = status;
+    target.cancelledBy = status === 'cancelled' ? 'admin' : target.cancelledBy || '';
+    target.cancellationReason = reason || target.cancellationReason || '';
+    addAdminNotification(target, status, reason);
+  }
+
   DB.set('appointments', appts);
-  addAdminNotification(target, status, reason);
   adminRefresh(false);
   showToast(`Appointment ${id} marked as ${status}.`);
 }
@@ -373,7 +379,7 @@ function renderCatalog() {
         </div>
         <div class="stock-control" aria-label="Product quantity">
           <button class="stock-btn" type="button" onclick="changeCatalogStock('${p.id}', -1)">-</button>
-          <span class="stock-value">${stock[p.id] ?? 0}</span>
+          <span class="stock-value">${p.stock ?? stock[p.id] ?? 0}</span>
           <button class="stock-btn" type="button" onclick="changeCatalogStock('${p.id}', 1)">+</button>
         </div>
       </div>`).join('');
@@ -391,17 +397,35 @@ function renderCatalog() {
         </div>
         <div class="stock-control" aria-label="Service quantity">
           <button class="stock-btn" type="button" onclick="changeCatalogStock('${s.id}', -1)">-</button>
-          <span class="stock-value">${stock[s.id] ?? 0}</span>
+          <span class="stock-value">${s.dailySlots ?? stock[s.id] ?? 0}</span>
           <button class="stock-btn" type="button" onclick="changeCatalogStock('${s.id}', 1)">+</button>
         </div>
       </div>`).join('');
   }
 }
 
-function changeCatalogStock(id, delta) {
+async function changeCatalogStock(id, delta) {
   const stock = adminReadStock();
-  stock[id] = Math.max(0, Number(stock[id] || 0) + delta);
+  const item = adminAllProducts().find(p => p.id === id) || adminAllServices().find(s => s.id === id);
+  const current = Number(item?.stock ?? item?.dailySlots ?? stock[id] ?? 0);
+  const quantity = Math.max(0, current + delta);
+  stock[id] = quantity;
   adminWriteStock(stock);
+
+  try {
+    await apiRequest('update_stock', {
+      id,
+      quantity,
+      type: adminAllServices().find(s => s.id === id) ? 'service' : 'product',
+    });
+    if (item) {
+      if (item.stock !== undefined) item.stock = quantity;
+      if (item.dailySlots !== undefined) item.dailySlots = quantity;
+    }
+  } catch (err) {
+    console.warn('Stock saved locally because API failed:', err.message);
+  }
+
   renderCatalog();
 }
 
@@ -469,7 +493,47 @@ function renderDentistCalendars(appts) {
   }).join('');
 }
 
-function adminRefresh(showMessage = true) {
+async function loadAdminDatabase() {
+  try {
+    const data = await apiGet('dashboard');
+    const orders = data.orders || [];
+    const orderItems = data.orderItems || [];
+    orders.forEach(order => {
+      order.items = orderItems
+        .filter(item => item.order_id === order.id)
+        .map(item => ({
+          name: item.product_name,
+          qty: item.quantity,
+          unit_price: item.unit_price,
+        }));
+    });
+
+    DB.set('appointments', data.appointments || []);
+    DB.set('users', data.users || []);
+    DB.set('orders', orders);
+    DB.set('dbProducts', data.products || []);
+    DB.set('dbServices', data.services || []);
+    DB.set('notifications', (data.notifications || []).map(n => ({
+      id: n.id,
+      userId: n.user_id,
+      userName: n.user_name,
+      appointmentId: n.appointment_id,
+      message: n.message,
+      createdAt: n.created_at,
+      read: Number(n.is_read) === 1,
+    })));
+    return true;
+  } catch (err) {
+    console.warn('Using admin local fallback:', err.message);
+    if (!(DB.get('appointments') || []).length) {
+      DB.set('appointments', adminSeedAppointments([]));
+    }
+    return false;
+  }
+}
+
+async function adminRefresh(showMessage = true) {
+  await loadAdminDatabase();
   const appointments = adminGetAppointments();
   const users = DB.get('users') || [];
   const cart = adminReadCart();

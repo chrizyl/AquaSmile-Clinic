@@ -1,5 +1,14 @@
 // ── SERVICE IMAGE PATHS ──
 const SERVICE_IMAGES_PG = {
+  1: 'images/dental cleaning.jpeg',
+  2: 'images/xray.webp',
+  3: 'images/tooth extraction.jpg',
+  4: 'images/teeth whitening.jpg',
+  5: 'images/dental braces.webp',
+  6: 'images/root canal.jpeg',
+  7: 'images/dental crown.png',
+  8: 'images/veneers.jpg',
+  9: 'images/pediatric check up.jpg',
   S1: 'images/dental cleaning.jpeg',
   S2: 'images/xray.webp',
   S3: 'images/tooth extraction.jpg',
@@ -13,6 +22,15 @@ const SERVICE_IMAGES_PG = {
 
 // ── SERVICE CATEGORIES  ──
 const SVC_PAGE_CATEGORIES = {
+  1: 'Preventive',
+  2: 'Diagnostic',
+  3: 'Restorative',
+  4: 'Cosmetic',
+  5: 'Orthodontic',
+  6: 'Restorative',
+  7: 'Restorative',
+  8: 'Cosmetic',
+  9: 'Preventive',
   S1: 'Preventive',
   S2: 'Diagnostic',
   S3: 'Restorative',
@@ -255,7 +273,8 @@ function requireBooking() {
   window.location.href = 'booking.php';
 }
 
-function initServicesPage() {
+async function initServicesPage() {
+  await syncCatalogFromDatabase();
   updateNav();
   renderFilterTabs();
   renderServiceCards();

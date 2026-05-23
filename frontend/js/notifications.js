@@ -44,6 +44,60 @@
     return readCookie('currentUser');
   }
 
+  const API_BASE = new URL('../backend/api/index.php', window.location.href).pathname;
+
+  async function apiGet(action, params = {}) {
+    const query = new URLSearchParams({ action, ...params });
+    const response = await fetch(API_BASE + '?' + query.toString(), { cache: 'no-store' });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) throw new Error(payload.message || 'API failed');
+    return payload;
+  }
+
+  async function apiPost(action, data = {}) {
+    const response = await fetch(API_BASE + '?action=' + encodeURIComponent(action), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store',
+      body: JSON.stringify(data),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) throw new Error(payload.message || 'API failed');
+    return payload;
+  }
+
+  async function syncFromApi() {
+    const user = getCurrentUser();
+    if (!user) return;
+
+    try {
+      const [notes, appts] = await Promise.all([
+        apiGet('notifications', { user_id: user.id }),
+        apiGet('appointments', { user_id: user.id }),
+      ]);
+
+      const allNotifications = readStorage('notifications') || [];
+      const others = allNotifications.filter(item => !userMatches(user, item));
+      const mappedNotes = (notes.notifications || []).map(item => ({
+        id: item.id,
+        userId: item.user_id,
+        userName: user.name,
+        userEmail: user.email,
+        appointmentId: item.appointment_id,
+        message: item.message,
+        createdAt: item.created_at,
+        read: Number(item.is_read) === 1,
+      }));
+      writeStorage('notifications', [...mappedNotes, ...others]);
+
+      const allAppointments = readStorage('appointments') || [];
+      const otherAppointments = allAppointments.filter(item => !userMatches(user, item));
+      writeStorage('appointments', [...(appts.appointments || []), ...otherAppointments]);
+    } catch (err) {
+      console.warn('Using local notifications fallback:', err.message);
+    }
+  }
+
   function getNotifications() {
     const user = getCurrentUser();
     return (readStorage('notifications') || []).filter(item => userMatches(user, item));
@@ -130,6 +184,7 @@
       if (userMatches(user, item)) item.read = true;
     });
     writeStorage('notifications', all);
+    apiPost('mark_notifications_read', { userId: user?.id }).catch(() => {});
     render();
   }
 
@@ -145,6 +200,10 @@
     }
 
     if (!confirm('Cancel this pending appointment?')) return;
+
+    apiPost('cancel_appointment', { id, userId: user.id }).catch(err => {
+      console.warn('Appointment cancellation saved locally because API failed:', err.message);
+    });
 
     appointment.status = 'user_cancelled';
     appointment.cancelledBy = 'user';
@@ -177,6 +236,12 @@
 
   window.AquaNotify = { render, toggle, markRead, cancelBooking };
 
-  document.addEventListener('DOMContentLoaded', render);
-  window.addEventListener('pageshow', render);
+  document.addEventListener('DOMContentLoaded', async () => {
+    await syncFromApi();
+    render();
+  });
+  window.addEventListener('pageshow', async () => {
+    await syncFromApi();
+    render();
+  });
 })();

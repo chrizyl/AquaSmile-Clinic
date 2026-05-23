@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AquaSmile — Checkout</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css" />
-  <link rel="stylesheet" href="css/notifications.css" />
+  <link rel="stylesheet" href="css/style.css?v=20260523" />
+  <link rel="stylesheet" href="css/notifications.css?v=20260523" />
 
   <style>
     :root {
@@ -937,7 +937,7 @@
     </div>
   </div>
 
-  <script src="js/main.js"></script>
+  <script src="js/main.js?v=20260523"></script>
 
   <script>
     function selectPayment(el) {
@@ -1117,9 +1117,33 @@
       };
     }
 
-    function placeOrder() {
+    async function placeOrder() {
       const formData = collectFormData();
       if (!formData) return;
+      try {
+        const currentUser = Cookie.get('currentUser');
+        await apiRequest('create_order', {
+          userId: currentUser ? currentUser.id : null,
+          customerName: formData.first_name + ' ' + formData.last_name,
+          email: formData.email,
+          phone: formData.phone,
+          address: formData.address,
+          city: formData.city,
+          zip: formData.zip,
+          notes: formData.notes,
+          paymentMethod: formData.payment_method,
+          gcash_number: formData.gcash_number,
+          items: checkoutCart.map(i => ({
+            id: i.id,
+            name: i.name,
+            qty: i.qty,
+            price: i.price
+          })),
+          total: formData.total,
+        });
+      } catch (err) {
+        console.warn('Order saved locally only because API failed:', err.message);
+      }
       showSuccessPopup();
     }
 
@@ -1206,6 +1230,6 @@
     }
   </script>
 
-<script src="js/notifications.js"></script>
+<script src="js/notifications.js?v=20260523"></script>
 </body>
 </html>
