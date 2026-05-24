@@ -138,10 +138,90 @@
 
   const CAT_LABELS = {electric:'Electric Tools',paste:'Toothpaste',floss:'Floss & Rinse',whitening:'Whitening',accessories:'Accessories'};
 
-  let cart = JSON.parse(localStorage.getItem('aqCart') || '[]');
+  let cart = normalizeCartItems(JSON.parse(localStorage.getItem('aqCart') || '[]'));
   let promoApplied = false;
+  const pendingCartUpdates = new Set();
+
+  function normalizeProductId(pid) {
+    const text = String(pid || '');
+    const match = text.match(/^P?(\d+)$/i);
+    return match ? match[1] : text;
+  }
+
+  function normalizeCartItems(items) {
+    const merged = new Map();
+    (items || []).forEach(item => {
+      const id = String(normalizeProductId(item.id));
+      const qty = Math.max(1, Number(item.qty || 1));
+      const existing = merged.get(id);
+      if (existing) {
+        existing.qty += qty;
+        return;
+      }
+      merged.set(id, { ...item, id, qty });
+    });
+    return [...merged.values()];
+  }
 
   function saveCart() { localStorage.setItem('aqCart', JSON.stringify(cart)); }
+
+  function getCurrentUser() {
+    return Cookie.get('currentUser');
+  }
+
+  async function apiPost(action, data) {
+    const response = await fetch(new URL('../backend/api/index.php', window.location.href).pathname + '?action=' + encodeURIComponent(action), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store',
+      body: JSON.stringify(data),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) throw new Error(payload.message || 'Cart sync failed.');
+    return payload;
+  }
+
+  async function syncCartItem(pid, quantity) {
+    const user = getCurrentUser();
+    if (!user) return;
+    await apiPost('save_cart_item', {
+      userId: user.id,
+      productId: normalizeProductId(pid),
+      quantity
+    });
+  }
+
+  async function removeCartItem(pid) {
+    const user = getCurrentUser();
+    if (!user) return;
+    await apiPost('remove_cart_item', {
+      userId: user.id,
+      productId: normalizeProductId(pid)
+    });
+  }
+
+  async function loadCartFromDatabase() {
+    const user = getCurrentUser();
+    if (!user) return;
+
+    const response = await fetch(new URL('../backend/api/index.php', window.location.href).pathname + '?action=cart_items&user_id=' + encodeURIComponent(user.id), {
+      cache: 'no-store'
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) throw new Error(payload.message || 'Cart load failed.');
+
+    cart = normalizeCartItems((payload.cartItems || []).map(item => {
+      const product = ALL_PRODUCTS.find(p => p.id === 'P' + item.product_id) || ALL_PRODUCTS.find(p => p.name === item.name);
+      return {
+        id: String(item.product_id),
+        name: item.name || product?.name || 'Product',
+        price: Number(item.price || product?.price || 0),
+        img: product?.img || '',
+        qty: Number(item.quantity || 1),
+      };
+    }));
+    saveCart();
+  }
 
   /* ── RENDER ── */
   function render() {
@@ -239,28 +319,84 @@
   }
 
   /* ── ACTIONS ── */
-  function changeQty(pid, d) {
+  async function changeQty(pid, d) {
+    if (pendingCartUpdates.has(pid)) return;
     const item = cart.find(i=>i.id===pid); if(!item) return;
+    pendingCartUpdates.add(pid);
+    const previousQty = item.qty;
     item.qty += d;
-    if (item.qty <= 0) { removeItem(pid); return; }
+    if (item.qty <= 0) {
+      pendingCartUpdates.delete(pid);
+      await removeItem(pid);
+      return;
+    }
     saveCart(); render();
+    try {
+      await syncCartItem(pid, item.qty);
+    } catch (err) {
+      console.warn('Cart quantity sync failed:', err.message);
+      item.qty = previousQty;
+      saveCart(); render();
+      showToast(err.message || 'Cart quantity update failed.');
+    } finally {
+      pendingCartUpdates.delete(pid);
+    }
   }
 
-  function removeItem(pid) {
+  async function removeItem(pid) {
+    if (pendingCartUpdates.has(pid)) return;
+    pendingCartUpdates.add(pid);
+    const previous = [...cart];
     cart = cart.filter(i=>i.id!==pid);
-    saveCart(); render(); showToast('Item removed');
+    saveCart(); render();
+    try {
+      await removeCartItem(pid);
+      showToast('Item removed');
+    } catch (err) {
+      console.warn('Cart remove failed:', err.message);
+      cart = previous;
+      saveCart(); render();
+      showToast(err.message || 'Cart remove failed.');
+    } finally {
+      pendingCartUpdates.delete(pid);
+    }
   }
 
-  function clearAll() {
+  async function clearAll() {
     if (!confirm('Remove all items from your cart?')) return;
-    cart = []; saveCart(); render(); showToast('Cart cleared');
+    const previous = [...cart];
+    cart = []; saveCart(); render();
+    try {
+      await Promise.all(previous.map(item => removeCartItem(item.id)));
+      showToast('Cart cleared');
+    } catch (err) {
+      console.warn('Cart clear failed:', err.message);
+      cart = previous;
+      saveCart(); render();
+      showToast(err.message || 'Cart clear failed.');
+    }
   }
 
-  function addRec(pid) {
+  async function addRec(pid) {
+    if (pendingCartUpdates.has(pid)) return;
     const p = ALL_PRODUCTS.find(x=>x.id===pid); if(!p) return;
-    const ex = cart.find(i=>i.id===pid);
-    if (ex) ex.qty++; else cart.push({id:pid,name:p.name,price:p.price,img:p.img||'',qty:1});
-    saveCart(); render(); showToast(p.name+' added to cart');
+    const normalizedId = normalizeProductId(pid);
+    pendingCartUpdates.add(normalizedId);
+    const ex = cart.find(i=>i.id===normalizedId);
+    const previousQty = ex ? ex.qty : 0;
+    if (ex) ex.qty++; else cart.push({id:normalizedId,name:p.name,price:p.price,img:p.img||'',qty:1});
+    saveCart(); render();
+    try {
+      await syncCartItem(normalizedId, previousQty + 1);
+      showToast(p.name+' added to cart');
+    } catch (err) {
+      console.warn('Cart add failed:', err.message);
+      cart = normalizeCartItems(JSON.parse(localStorage.getItem('aqCart') || '[]'));
+      render();
+      showToast(err.message || 'Cart add failed.');
+    } finally {
+      pendingCartUpdates.delete(normalizedId);
+    }
   }
 
   function applyPromo() {
@@ -315,7 +451,11 @@
     }
   })();
 
-  render();
+  loadCartFromDatabase().catch(err => {
+    console.warn('Using local cart fallback:', err.message);
+  }).finally(() => {
+    render();
+  });
 
   window.addEventListener('storage', function(e) {
     if (e.key === 'aqCart' && (e.newValue === null || e.newValue === '[]')) {
@@ -327,7 +467,7 @@
 
 
   window.addEventListener('pageshow', function(e) {
-    cart = JSON.parse(localStorage.getItem('aqCart') || '[]');
+    cart = normalizeCartItems(JSON.parse(localStorage.getItem('aqCart') || '[]'));
     promoApplied = false;
     render();
   });

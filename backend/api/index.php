@@ -24,6 +24,7 @@ try {
         'update_stock' => update_stock(),
         'cart_items' => cart_items(),
         'save_cart_item' => save_cart_item(),
+        'remove_cart_item' => remove_cart_item(),
         'create_order' => create_order(),
         default => json_response(['ok' => false, 'message' => 'Unknown API action.'], 404),
     };
@@ -467,8 +468,17 @@ function update_stock(): never
 function cart_items(): never
 {
     $userId = (int) ($_GET['user_id'] ?? 0);
+    if ($userId <= 0) {
+        json_response(['ok' => false, 'message' => 'User is required.'], 422);
+    }
+
     $rows = fetch_all(
-        'SELECT ci.*, p.name, p.price FROM cart_items ci JOIN products p ON p.id = ci.product_id WHERE ci.user_id = ?',
+        'SELECT ci.product_id, SUM(ci.quantity) AS quantity, MAX(ci.added_at) AS added_at, p.name, p.price
+         FROM cart_items ci
+         JOIN products p ON p.id = ci.product_id
+         WHERE ci.user_id = ?
+         GROUP BY ci.product_id, p.name, p.price
+         ORDER BY added_at DESC',
         [$userId]
     );
     json_response(['ok' => true, 'cartItems' => $rows]);
@@ -477,10 +487,45 @@ function cart_items(): never
 function save_cart_item(): never
 {
     $data = request_json();
-    execute_sql(
-        'INSERT INTO cart_items (user_id, product_id, quantity) VALUES (?, ?, ?)',
-        [(int) ($data['userId'] ?? 0), (int) ($data['productId'] ?? 0), max(1, (int) ($data['quantity'] ?? 1))]
-    );
+    $userId = (int) ($data['userId'] ?? 0);
+    $productId = (int) ($data['productId'] ?? 0);
+    $quantity = max(0, (int) ($data['quantity'] ?? 1));
+
+    if ($userId <= 0 || $productId <= 0) {
+        json_response(['ok' => false, 'message' => 'Invalid cart item details.'], 422);
+    }
+
+    if (!fetch_one('SELECT id FROM users WHERE id = ?', [$userId])) {
+        json_response(['ok' => false, 'message' => 'User not found. Please log in again.'], 422);
+    }
+
+    if (!fetch_one('SELECT id FROM products WHERE id = ?', [$productId])) {
+        json_response(['ok' => false, 'message' => 'Product not found. Please refresh and try again.'], 422);
+    }
+
+    execute_sql('DELETE FROM cart_items WHERE user_id = ? AND product_id = ?', [$userId, $productId]);
+
+    if ($quantity > 0) {
+        execute_sql(
+            'INSERT INTO cart_items (user_id, product_id, quantity) VALUES (?, ?, ?)',
+            [$userId, $productId, $quantity]
+        );
+    }
+
+    json_response(['ok' => true]);
+}
+
+function remove_cart_item(): never
+{
+    $data = request_json();
+    $userId = (int) ($data['userId'] ?? 0);
+    $productId = (int) ($data['productId'] ?? 0);
+
+    if ($userId <= 0 || $productId <= 0) {
+        json_response(['ok' => false, 'message' => 'Invalid cart item details.'], 422);
+    }
+
+    execute_sql('DELETE FROM cart_items WHERE user_id = ? AND product_id = ?', [$userId, $productId]);
     json_response(['ok' => true]);
 }
 
@@ -516,6 +561,10 @@ function create_order(): never
             'INSERT INTO order_items (order_id, product_id, quantity, unit_price) VALUES (?, ?, ?, ?)',
             [(int) $orderId, (int) $productId, (int) ($item['qty'] ?? $item['quantity'] ?? 1), (float) ($item['price'] ?? $item['unit_price'] ?? 0)]
         );
+    }
+
+    if ($userId > 0) {
+        execute_sql('DELETE FROM cart_items WHERE user_id = ?', [$userId]);
     }
 
     json_response(['ok' => true, 'orderId' => $orderId]);

@@ -204,10 +204,73 @@
   ];
 
   /* Rehydrate cart from localStorage as CartItem instances */
-  let cart = JSON.parse(localStorage.getItem('aqCart') || '[]').map(raw => new CartItem(raw, raw.qty));
+  let cart = normalizeCartItems(JSON.parse(localStorage.getItem('aqCart') || '[]'));
   let activeCategory = 'all', activeSort = 'default';
+  const pendingCartAdds = new Set();
+
+  function normalizeProductId(pid) {
+    const text = String(pid || '');
+    const match = text.match(/^P?(\d+)$/i);
+    return match ? match[1] : text;
+  }
+
+  function normalizeCartItems(items) {
+    const merged = new Map();
+    (items || []).forEach(raw => {
+      const normalizedId = normalizeProductId(raw.id);
+      const key = String(normalizedId);
+      const base = raw.toObject ? raw.toObject() : raw;
+      const qty = Math.max(1, Number(base.qty || 1));
+      const existing = merged.get(key);
+      if (existing) {
+        existing.qty += qty;
+        return;
+      }
+      merged.set(key, new CartItem({ ...base, id: key }, qty));
+    });
+    return [...merged.values()];
+  }
 
   function saveCart() { localStorage.setItem('aqCart', JSON.stringify(cart.map(i => i.toObject()))); updateBadges(); }
+
+  async function syncCartItemToDatabase(pid, quantity) {
+    const user = Cookie.get('currentUser');
+    if (!user) return;
+
+    await fetch(new URL('../backend/api/index.php', window.location.href).pathname + '?action=save_cart_item', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store',
+      body: JSON.stringify({
+        userId: user.id,
+        productId: normalizeProductId(pid),
+        quantity
+      }),
+    }).then(async response => {
+      const payload = await response.json();
+      if (!response.ok || !payload.ok) throw new Error(payload.message || 'Cart sync failed.');
+      return payload;
+    });
+  }
+
+  async function removeCartItemFromDatabase(pid) {
+    const user = Cookie.get('currentUser');
+    if (!user) return;
+
+    await fetch(new URL('../backend/api/index.php', window.location.href).pathname + '?action=remove_cart_item', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store',
+      body: JSON.stringify({
+        userId: user.id,
+        productId: normalizeProductId(pid)
+      }),
+    }).then(async response => {
+      const payload = await response.json();
+      if (!response.ok || !payload.ok) throw new Error(payload.message || 'Cart remove failed.');
+      return payload;
+    });
+  }
 
   function updateBadges() {
     const n = cart.reduce((s,i) => s+i.qty, 0);
@@ -275,26 +338,61 @@
     window.location.href = url;
   }
 
-  function addToCart(pid) {
+  async function addToCart(pid) {
+    if (pendingCartAdds.has(pid)) return;
     const p = PRODUCTS.find(x=>x.id===pid); if (!p) return;
+    pendingCartAdds.add(pid);
     const ex = cart.find(i=>i.id===pid);
-    if (ex) { ex.increment(); } else { cart.push(new CartItem(p)); }
-    saveCart(); renderCartDrawer();
-    const btn = document.getElementById('btn-'+pid);
-    if (btn) {
-      btn.innerHTML = SVG.check+' Added'; btn.classList.add('added');
-      setTimeout(()=>{ btn.innerHTML=SVG.cart+' Add to Cart'; btn.classList.remove('added'); }, 1300);
+    const previousQty = ex ? ex.qty : 0;
+
+    try {
+      if (ex) { ex.increment(); } else { cart.push(new CartItem({ ...p.toObject(), id: normalizeProductId(p.id) })); }
+      saveCart(); renderCartDrawer();
+      await syncCartItemToDatabase(pid, previousQty + 1);
+      const btn = document.getElementById('btn-'+pid);
+      if (btn) {
+        btn.innerHTML = SVG.check+' Added'; btn.classList.add('added');
+        setTimeout(()=>{ btn.innerHTML=SVG.cart+' Add to Cart'; btn.classList.remove('added'); }, 1300);
+      }
+      showToast(p.name+' added to cart');
+    } catch (err) {
+      console.warn('Cart save failed:', err.message);
+      cart = normalizeCartItems(JSON.parse(localStorage.getItem('aqCart') || '[]'));
+      renderCartDrawer();
+      showToast(err.message || 'Cart was not saved to the database.');
+    } finally {
+      pendingCartAdds.delete(pid);
     }
-    showToast(p.name+' added to cart');
   }
 
-  function removeFromCart(pid) { cart=cart.filter(i=>i.id!==pid); saveCart(); renderCartDrawer(); }
-
-  function changeQty(pid, d) {
-    const item=cart.find(i=>i.id===pid); if (!item) return;
-    if (d > 0) { item.increment(); } else { item.decrement(); }
-    if (item.qty<=0) { removeFromCart(pid); return; }
+  async function removeFromCart(pid) {
+    const previous = [...cart];
+    cart = cart.filter(i=>i.id!==pid);
     saveCart(); renderCartDrawer();
+    try {
+      await removeCartItemFromDatabase(pid);
+    } catch (err) {
+      console.warn('Cart remove failed:', err.message);
+      cart = previous;
+      saveCart(); renderCartDrawer();
+      showToast(err.message || 'Cart remove failed.');
+    }
+  }
+
+  async function changeQty(pid, d) {
+    const item=cart.find(i=>i.id===pid); if (!item) return;
+    const previousQty = item.qty;
+    if (d > 0) { item.increment(); } else { item.decrement(); }
+    if (item.qty<=0) { await removeFromCart(pid); return; }
+    saveCart(); renderCartDrawer();
+    try {
+      await syncCartItemToDatabase(pid, item.qty);
+    } catch (err) {
+      console.warn('Cart quantity sync failed:', err.message);
+      item.qty = previousQty;
+      saveCart(); renderCartDrawer();
+      showToast(err.message || 'Cart quantity update failed.');
+    }
   }
 
   function renderCartDrawer() {
@@ -412,20 +510,48 @@
         img: p.img || p.photo || '',
       }));
 
-      cart = cart
+      cart = normalizeCartItems(cart
         .map(raw => {
-          const product = PRODUCTS.find(p => p.id === String(raw.id) || p.name === raw.name);
+          const product = PRODUCTS.find(p => p.id === normalizeProductId(raw.id) || p.name === raw.name);
           return product ? new CartItem(product, raw.qty) : null;
         })
-        .filter(Boolean);
+        .filter(Boolean));
       saveCart();
     } catch (err) {
       console.warn('Using local products fallback:', err.message);
     }
   }
 
+  async function syncCartFromDatabase() {
+    const user = Cookie.get('currentUser');
+    if (!user) return;
+
+    try {
+      const apiBase = new URL('../backend/api/index.php', window.location.href).pathname;
+      const response = await fetch(apiBase + '?action=cart_items&user_id=' + encodeURIComponent(user.id), { cache: 'no-store' });
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.message || 'Cart load failed.');
+
+      cart = normalizeCartItems((data.cartItems || []).map(item => {
+        const product = PRODUCTS.find(p => p.id === String(item.product_id));
+        return new CartItem({
+          id: String(item.product_id),
+          name: item.name || product?.name || 'Product',
+          price: Number(item.price || product?.price || 0),
+          category: product?.category || productCategoryFromName(item.name || ''),
+          desc: product?.desc || '',
+          img: product?.img || ''
+        }, Number(item.quantity || 1));
+      }));
+      saveCart();
+    } catch (err) {
+      console.warn('Using local cart fallback:', err.message);
+    }
+  }
+
   async function initProductsPage() {
     await syncProductsFromDatabase();
+    await syncCartFromDatabase();
     applyFiltersAndSort();
     updateBadges();
     updateNav();
