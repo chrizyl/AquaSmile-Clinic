@@ -240,6 +240,8 @@ function formatStatusLabel(status) {
 }
 
 function renderNotificationCenter() {
+  if (window.AquaNotify) return;
+
   const navLinks = document.getElementById('nav-links');
   if (document.body.classList.contains('admin-body')) return;
   if (!navLinks || !currentUser || currentAdmin) return;
@@ -315,9 +317,12 @@ function renderNotificationPanel() {
 function markNotificationsRead() {
   const all = DB.get('notifications') || [];
   all.forEach(n => {
-    if (isForCurrentUser(n)) n.read = true;
+    if ((n.audience || 'user') === 'user' && isForCurrentUser(n)) n.read = true;
   });
   DB.set('notifications', all);
+  apiRequest('mark_notifications_read', { userId: currentUser?.id }).catch(err => {
+    console.warn('Notification read sync failed:', err.message);
+  });
   renderNotificationPanel();
 }
 

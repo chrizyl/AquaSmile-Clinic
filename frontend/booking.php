@@ -364,7 +364,6 @@
 
   <!-- BOOKING WRAPPER -->
   <div class="booking-wrap">
-
     <!-- STEP INDICATORS -->
     <div class="booking-steps">
 
@@ -428,15 +427,12 @@
       <p class="booking-subtitle">Choose your preferred date and available time slot.</p>
 
       <div class="date-time-row">
-        <!-- Calendar -->
         <div class="calendar-wrap">
           <div class="calendar" id="booking-calendar"></div>
         </div>
 
-        <!-- Time Slots -->
         <div class="timeslot-wrap">
           <div class="timeslot-label">
-            <!-- Clock SVG inline -->
             <svg class="label-icon-svg" viewBox="0 0 24 24">
               <circle cx="12" cy="12" r="9"/>
               <path d="M12 7v5l3 3"/>
@@ -472,7 +468,6 @@
 
       <div class="form-group">
         <label class="form-label" for="booking-notes">
-          <!-- Notes SVG inline -->
           <svg class="label-icon-svg" viewBox="0 0 24 24">
             <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
             <polyline points="14 2 14 8 20 8"/>
@@ -490,7 +485,6 @@
         <button class="btn-primary" onclick="confirmBooking()">Confirm Booking</button>
       </div>
     </div>
-
   </div>
 
   <script src="js/main.js?v=20260523"></script>

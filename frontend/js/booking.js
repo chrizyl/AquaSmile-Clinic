@@ -81,7 +81,24 @@ function gotoStep(n) {
   if (n === 3) renderDentistAvailability();
   if (n === 4) renderConfirmSummary();
 
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  requestAnimationFrame(() => {
+    scrollToActiveBookingStep(n);
+  });
+}
+
+function scrollToActiveBookingStep(stepNumber) {
+  const activeCard = document.getElementById('booking-step-' + stepNumber);
+  const steps = document.querySelector('.booking-steps');
+  if (!activeCard) return;
+
+  const stepsHeight = steps ? steps.offsetHeight : 0;
+  const stepsBottom = steps ? steps.getBoundingClientRect().bottom + window.scrollY : 0;
+  const cardTop = activeCard.getBoundingClientRect().top + window.scrollY;
+  const targetTop = Math.max(0, cardTop - stepsHeight - 28);
+
+  if (cardTop < window.scrollY || cardTop < stepsBottom + 12) {
+    window.scrollTo({ top: targetTop, behavior: 'smooth' });
+  }
 }
 
 function updateStepIndicators() {

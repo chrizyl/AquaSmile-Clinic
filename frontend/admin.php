@@ -8,8 +8,8 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20260523">
-  <link rel="stylesheet" href="css/admin.css?v=20260523">
+  <link rel="stylesheet" href="css/style.css?v=20260524">
+  <link rel="stylesheet" href="css/admin.css?v=20260524">
 </head>
 
 <body class="admin-body">
@@ -33,7 +33,9 @@
       <button class="admin-side-link" type="button" data-view="dentists" onclick="showAdminView('dentists')">Dentist Calendar</button>
       <button class="admin-side-link" type="button" data-view="orders" onclick="showAdminView('orders')">Orders</button>
       <button class="admin-side-link" type="button" data-view="catalog" onclick="showAdminView('catalog')">Products & Services</button>
-      <button class="admin-side-link" type="button" data-view="notifications" onclick="showAdminView('notifications')">Notifications</button>
+      <button class="admin-side-link" type="button" data-view="notifications" onclick="showAdminView('notifications')">
+        Notifications <span class="admin-notify-badge" id="admin-notify-badge">0</span>
+      </button>
       <button class="admin-side-link" type="button" data-view="database" onclick="showAdminView('database')">Database Tables</button>
     </aside>
 
@@ -169,30 +171,7 @@
         <div class="dentist-calendar-grid" id="dentist-calendar-grid"></div>
       </article>
 
-      <article class="admin-panel">
-        <div class="panel-head">
-          <div>
-            <div class="section-label">Dentist Patient List</div>
-            <h2>Booked Patients by Dentist</h2>
-          </div>
-          <span class="admin-badge">calendar details</span>
-        </div>
-        <div class="table-wrap">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>Dentist</th>
-                <th>Patient</th>
-                <th>Service</th>
-                <th>Date</th>
-                <th>Time</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="dentist-patient-table"></tbody>
-          </table>
-        </div>
-      </article>
+      <div id="dentist-patient-lists"></div>
       </section>
 
       <section class="admin-view" id="view-orders" data-admin-view="orders">
@@ -358,8 +337,8 @@
     </section>
   </main>
 
-  <script src="js/main.js?v=20260523"></script>
-  <script src="js/admin.js?v=20260523"></script>
+  <script src="js/main.js?v=20260524"></script>
+  <script src="js/admin.js?v=20260524"></script>
 </body>
 
 </html>

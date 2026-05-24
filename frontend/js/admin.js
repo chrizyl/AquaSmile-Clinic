@@ -45,6 +45,14 @@ function isActiveAppointmentStatus(status) {
   return !['cancelled', 'user_cancelled'].includes(status);
 }
 
+function isScheduledAppointmentStatus(status) {
+  return ['pending', 'confirmed'].includes(status || 'pending');
+}
+
+function sameId(left, right) {
+  return String(left || '') === String(right || '');
+}
+
 function adminTableEmpty(colspan, label) {
   return `<tr><td colspan="${colspan}"><div class="empty-admin">${label}</div></td></tr>`;
 }
@@ -83,6 +91,10 @@ function adminAllProducts() {
 
 function adminAllServices() {
   return DB.get('dbServices') || SERVICES;
+}
+
+function adminAllDentists() {
+  return DB.get('dbDentists') || DENTISTS;
 }
 
 function adminSeedAppointments(appts) {
@@ -152,6 +164,10 @@ function showAdminView(view) {
   });
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  if (view === 'notifications') {
+    markAdminNotificationsRead();
+  }
 }
 
 function renderAdminStats(appts, users, cart, orders) {
@@ -265,6 +281,7 @@ function renderNotifications() {
 
   const notifications = DB.get('notifications') || [];
   const adminNotifications = notifications.filter(n => (n.audience || 'admin') === 'admin');
+  updateAdminNotificationBadge(adminNotifications);
   tbody.innerHTML = adminNotifications.length
     ? adminNotifications.map(n => `
       <tr>
@@ -276,22 +293,88 @@ function renderNotifications() {
     : adminTableEmpty(4, 'No client cancellation notifications yet.');
 }
 
-function renderDentistPatients(appts) {
-  const tbody = document.getElementById('dentist-patient-table');
-  if (!tbody) return;
+function updateAdminNotificationBadge(notifications = DB.get('notifications') || []) {
+  const badge = document.getElementById('admin-notify-badge');
+  if (!badge) return;
 
-  const rows = [...appts].sort((a, b) => `${a.dentistName}${a.date}${a.time}`.localeCompare(`${b.dentistName}${b.date}${b.time}`));
-  tbody.innerHTML = rows.length
-    ? rows.map(a => `
-      <tr>
-        <td>${a.dentistName || a.dentistId || 'Unassigned'}</td>
-        <td><strong>${a.userName || 'Patient'}</strong><br><small>${a.userEmail || ''}</small></td>
-        <td>${a.serviceName || a.serviceId || 'Service'}</td>
-        <td>${a.date || '-'}</td>
-        <td>${a.time || '-'}</td>
-        <td>${adminStatus(a.status)}</td>
-      </tr>`).join('')
-    : adminTableEmpty(6, 'No dentist schedules yet.');
+  const unread = notifications.filter(n => (n.audience || 'admin') === 'admin' && !n.read).length;
+  badge.textContent = unread;
+  badge.classList.toggle('show', unread > 0);
+}
+
+async function markAdminNotificationsRead() {
+  const notifications = DB.get('notifications') || [];
+  let changed = false;
+
+  notifications.forEach(n => {
+    if ((n.audience || 'admin') === 'admin' && !n.read) {
+      n.read = true;
+      changed = true;
+    }
+  });
+
+  if (changed) {
+    DB.set('notifications', notifications);
+    updateAdminNotificationBadge(notifications);
+    renderNotifications();
+  }
+
+  try {
+    await apiRequest('mark_admin_notifications_read', {});
+  } catch (err) {
+    console.warn('Admin notification read sync failed:', err.message);
+  }
+}
+
+function renderDentistPatients(appts) {
+  const container = document.getElementById('dentist-patient-lists');
+  if (!container) return;
+
+  const scheduled = [...appts]
+    .filter(a => isScheduledAppointmentStatus(a.status))
+    .sort((a, b) => `${a.date}${a.time}${a.userName}`.localeCompare(`${b.date}${b.time}${b.userName}`));
+
+  const dentists = adminAllDentists();
+  const html = dentists.map(dentist => {
+    const dentistRows = scheduled.filter(a => sameId(a.dentistId, dentist.id) || a.dentistName === dentist.name);
+    const rows = dentistRows.length
+      ? dentistRows.map(a => `
+        <tr>
+          <td><strong>${a.userName || 'Patient'}</strong><br><small>${a.userEmail || ''}</small></td>
+          <td>${a.serviceName || a.serviceId || 'Service'}</td>
+          <td>${a.date || '-'}</td>
+          <td>${a.time || '-'}</td>
+          <td>${adminStatus(a.status)}</td>
+        </tr>`)
+      : [`<tr><td colspan="5"><div class="empty-admin">No scheduled patients</div></td></tr>`];
+
+    return `
+      <article class="admin-panel">
+        <div class="panel-head">
+          <div>
+            <div class="section-label">${dentist.name}</div>
+            <h2>Patient List</h2>
+          </div>
+          <span class="admin-badge">${dentistRows.length} patient${dentistRows.length !== 1 ? 's' : ''}</span>
+        </div>
+        <div class="table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Patient</th>
+                <th>Service</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>${rows.join('')}</tbody>
+          </table>
+        </div>
+      </article>`;
+  }).join('');
+
+  container.innerHTML = `<div class="admin-grid-three">${html}</div>`;
 }
 
 function renderUsers(users) {
@@ -427,7 +510,7 @@ function renderDentists() {
   const list = document.getElementById('dentist-list');
   if (!list) return;
 
-  list.innerHTML = DENTISTS.map(d => `
+  list.innerHTML = adminAllDentists().map(d => `
     <div class="dentist-row">
       <img src="${d.photo}" alt="${d.name}" onerror="this.style.opacity='0'">
       <div>
@@ -450,6 +533,56 @@ function adminChangeMonth(delta) {
   renderDentistCalendars(adminGetAppointments());
 }
 
+function showAppointmentTooltip(e) {
+  const appointmentsJson = e.target.getAttribute('data-appointments');
+  if (!appointmentsJson) return;
+
+  try {
+    const appointments = JSON.parse(appointmentsJson);
+    const dateStr = e.target.getAttribute('data-date');
+
+    let tooltipHtml = `<div class="cal-tooltip"><strong>${dateStr}</strong>`;
+    appointments.forEach(a => {
+      tooltipHtml += `
+        <div class="tooltip-item">
+          <div class="tooltip-time">${a.time}</div>
+          <div class="tooltip-patient">${a.userName || 'Patient'}</div>
+          <div class="tooltip-service">${a.serviceName || 'Service'}</div>
+        </div>`;
+    });
+    tooltipHtml += '</div>';
+
+    let tooltip = document.getElementById('cal-tooltip');
+    if (!tooltip) {
+      tooltip = document.createElement('div');
+      tooltip.id = 'cal-tooltip';
+      document.body.appendChild(tooltip);
+    }
+    tooltip.innerHTML = tooltipHtml;
+    tooltip.style.display = 'block';
+
+    const rect = e.target.getBoundingClientRect();
+    tooltip.style.left = (rect.left + rect.width / 2) + 'px';
+    tooltip.style.top = (rect.top - 10) + 'px';
+  } catch (err) {
+    console.warn('Tooltip error:', err);
+  }
+}
+
+function hideAppointmentTooltip() {
+  const tooltip = document.getElementById('cal-tooltip');
+  if (tooltip) tooltip.style.display = 'none';
+}
+
+function attachCalendarHoverListeners() {
+  const calendarDays = document.querySelectorAll('.cal-mini-day.has-booking');
+
+  calendarDays.forEach(day => {
+    day.addEventListener('mouseenter', showAppointmentTooltip);
+    day.addEventListener('mouseleave', hideAppointmentTooltip);
+  });
+}
+
 function renderDentistCalendars(appts) {
   const grid = document.getElementById('dentist-calendar-grid');
   const title = document.getElementById('admin-calendar-title');
@@ -462,15 +595,21 @@ function renderDentistCalendars(appts) {
 
   if (title) title.textContent = `${monthNames[adminState.month]} ${adminState.year}`;
 
-  grid.innerHTML = DENTISTS.map(dentist => {
+  grid.innerHTML = adminAllDentists().map(dentist => {
     const days = [];
     dayNames.forEach(day => days.push(`<div class="cal-mini-name">${day}</div>`));
     for (let i = 0; i < firstDay; i += 1) days.push('<div class="cal-mini-day"></div>');
 
     for (let day = 1; day <= daysInMonth; day += 1) {
       const dateStr = `${adminState.year}-${String(adminState.month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      const count = appts.filter(a => a.dentistId === dentist.id && a.date === dateStr && isActiveAppointmentStatus(a.status)).length;
-      days.push(`<div class="cal-mini-day ${count ? 'has-booking' : ''}" data-count="${count || ''}" title="${count} booking(s)">${day}</div>`);
+      const dayAppts = appts.filter(a =>
+        (sameId(a.dentistId, dentist.id) || a.dentistName === dentist.name) &&
+        a.date === dateStr &&
+        isScheduledAppointmentStatus(a.status)
+      );
+      const count = dayAppts.length;
+      const apptData = JSON.stringify(dayAppts).replace(/"/g, '&quot;');
+      days.push(`<div class="cal-mini-day ${count ? 'has-booking' : ''}" data-count="${count || ''}" data-date="${dateStr}" data-dentist="${dentist.id}" data-appointments="${apptData}" title="${count} booking(s)">${day}</div>`);
     }
 
     return `
@@ -485,6 +624,8 @@ function renderDentistCalendars(appts) {
         <div class="calendar-mini">${days.join('')}</div>
       </div>`;
   }).join('');
+
+  attachCalendarHoverListeners();
 }
 
 async function loadAdminDatabase() {
@@ -507,6 +648,7 @@ async function loadAdminDatabase() {
     DB.set('orders', orders);
     DB.set('dbProducts', data.products || []);
     DB.set('dbServices', data.services || []);
+    DB.set('dbDentists', data.dentists || []);
     DB.set('notifications', (data.notifications || []).map(n => ({
       id: n.id,
       audience: n.audience || 'admin',
@@ -517,6 +659,7 @@ async function loadAdminDatabase() {
       createdAt: n.created_at,
       read: Number(n.is_read) === 1,
     })));
+    updateAdminNotificationBadge(DB.get('notifications') || []);
     return true;
   } catch (err) {
     console.warn('Using admin local fallback:', err.message);

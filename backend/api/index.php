@@ -21,6 +21,7 @@ try {
         'cancel_appointment' => cancel_appointment(),
         'notifications' => notifications(),
         'mark_notifications_read' => mark_notifications_read(),
+        'mark_admin_notifications_read' => mark_admin_notifications_read(),
         'update_stock' => update_stock(),
         'cart_items' => cart_items(),
         'save_cart_item' => save_cart_item(),
@@ -447,6 +448,12 @@ function mark_notifications_read(): never
 {
     $data = request_json();
     execute_sql("UPDATE notifications SET is_read = 1 WHERE user_id = ? AND audience = 'user'", [(int) ($data['userId'] ?? $data['user_id'] ?? 0)]);
+    json_response(['ok' => true]);
+}
+
+function mark_admin_notifications_read(): never
+{
+    execute_sql("UPDATE notifications SET is_read = 1 WHERE audience = 'admin'");
     json_response(['ok' => true]);
 }
 

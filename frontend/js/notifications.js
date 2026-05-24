@@ -87,7 +87,12 @@
         appointmentId: item.appointment_id,
         message: item.message,
         createdAt: item.created_at,
-        read: Number(item.is_read) === 1,
+        read: Number(item.is_read) === 1 || allNotifications.some(local =>
+          String(local.id) === String(item.id) &&
+          (local.audience || 'user') === 'user' &&
+          userMatches(user, local) &&
+          local.read
+        ),
       }));
       writeStorage('notifications', [...mappedNotes, ...others]);
 
@@ -116,21 +121,27 @@
     if (!navLinks || !user || admin) return null;
 
     let wrap = document.getElementById('notify-wrap');
-    if (wrap) return wrap;
+    if (!wrap) {
+      wrap = document.createElement('div');
+      wrap.className = 'notify-wrap';
+      wrap.id = 'notify-wrap';
+    }
 
-    wrap = document.createElement('div');
-    wrap.className = 'notify-wrap';
-    wrap.id = 'notify-wrap';
-    wrap.innerHTML = `
-      <button class="notify-btn" type="button" onclick="AquaNotify.toggle()" aria-label="Notifications">
-        <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 10-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-        <span class="notify-count" id="notify-count">0</span>
-      </button>
-      <div class="notify-panel" id="notify-panel"></div>`;
+    if (wrap.dataset.owner !== 'aquaNotify') {
+      wrap.dataset.owner = 'aquaNotify';
+      wrap.innerHTML = `
+        <button class="notify-btn" type="button" onclick="AquaNotify.toggle()" aria-label="Notifications">
+          <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 10-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+          <span class="notify-count" id="notify-count">0</span>
+        </button>
+        <div class="notify-panel" id="notify-panel"></div>`;
+    }
 
-    const userInfo = document.getElementById('nav-user-info');
-    const loginBtn = document.getElementById('nav-login-btn');
-    navLinks.insertBefore(wrap, userInfo || loginBtn || null);
+    if (!wrap.parentElement) {
+      const userInfo = document.getElementById('nav-user-info');
+      const loginBtn = document.getElementById('nav-login-btn');
+      navLinks.insertBefore(wrap, userInfo || loginBtn || null);
+    }
     return wrap;
   }
 
@@ -178,15 +189,21 @@
       ${appointmentsHtml}`;
   }
 
-  function markRead() {
+  async function markRead() {
     const user = getCurrentUser();
     const all = readStorage('notifications') || [];
     all.forEach(item => {
-      if (userMatches(user, item)) item.read = true;
+      if ((item.audience || 'user') === 'user' && userMatches(user, item)) item.read = true;
     });
     writeStorage('notifications', all);
-    apiPost('mark_notifications_read', { userId: user?.id }).catch(() => {});
     render();
+    try {
+      await apiPost('mark_notifications_read', { userId: user?.id });
+      await syncFromApi();
+      render();
+    } catch (err) {
+      console.warn('Notification read sync failed:', err.message);
+    }
   }
 
   function cancelBooking(id) {

@@ -32,7 +32,10 @@
 }
 
 .admin-side-link {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   width: 100%;
   border: none;
   background: transparent;
@@ -45,6 +48,24 @@
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.2s ease;
+}
+
+.admin-notify-badge {
+  display: none;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #c0392b;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+}
+
+.admin-notify-badge.show {
+  display: inline-block;
 }
 
 .admin-side-link:hover,
@@ -156,6 +177,13 @@
 .admin-grid-two {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 22px;
+  margin-bottom: 22px;
+}
+
+.admin-grid-three {
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 22px;
   margin-bottom: 22px;
 }
@@ -307,6 +335,14 @@
 
 .admin-table tr:last-child td {
   border-bottom: none;
+}
+
+.dentist-group-row td {
+  background: rgba(120,154,153,0.12);
+  color: var(--aqua-dark);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .status-pill {
@@ -526,6 +562,48 @@
   font-size: 0.84rem;
   padding: 18px;
   text-align: center;
+}
+
+#cal-tooltip {
+  position: fixed;
+  display: none;
+  background: rgba(0, 0, 0, 0.92);
+  color: #fff;
+  padding: 14px 16px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  z-index: 9999;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(-100%);
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.cal-tooltip strong {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding-bottom: 6px;
+}
+
+.tooltip-item {
+  margin-top: 8px;
+}
+
+.tooltip-time {
+  font-weight: 600;
+  color: var(--peach);
+}
+
+.tooltip-patient {
+  font-size: 0.78rem;
+  color: #e0e0e0;
+}
+
+.tooltip-service {
+  font-size: 0.74rem;
+  color: #b0b0b0;
 }
 
 @media (max-width: 1180px) {
