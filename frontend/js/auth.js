@@ -40,21 +40,9 @@ async function register() {
       DB.set('users', users);
     }
   } catch (err) {
-    const users = DB.get('users') || [];
-    if (users.find(u => u.email === email)) {
-      errEl.textContent = 'An account with this email already exists.';
-      errEl.style.display = 'block';
-      return;
-    }
-
-    users.push({
-      id:       'U' + Date.now(),
-      name:     fname + ' ' + lname,
-      email:    email,
-      contact:  contact,
-      password: password,
-    });
-    DB.set('users', users);
+    errEl.textContent = err.message || 'Registration failed. Please try again.';
+    errEl.style.display = 'block';
+    return;
   }
 
   sucEl.textContent = 'Account created successfully. Redirecting...';
@@ -94,8 +82,9 @@ async function login() {
     const result = await apiRequest('login', { email, password });
     user = result.user;
   } catch (err) {
-    const users = DB.get('users') || [];
-    user  = users.find(u => u.email === email && u.password === password);
+    errEl.textContent = err.message || 'Login failed. Please try again.';
+    errEl.style.display = 'block';
+    return;
   }
 
   if (user) {

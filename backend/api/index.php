@@ -38,6 +38,7 @@ function ensure_notifications_table(): void
             id INT AUTO_INCREMENT PRIMARY KEY,
             user_id INT NOT NULL,
             appointment_id INT NULL,
+            audience ENUM('user','admin') NOT NULL DEFAULT 'user',
             message TEXT NOT NULL,
             is_read TINYINT(1) NOT NULL DEFAULT 0,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -67,6 +68,10 @@ function ensure_optional_columns(): void
 
     if (!column_exists('appointments', 'cancelled_by')) {
         execute_sql("ALTER TABLE appointments ADD COLUMN cancelled_by ENUM('admin','user') NULL");
+    }
+
+    if (!column_exists('notifications', 'audience')) {
+        execute_sql("ALTER TABLE notifications ADD COLUMN audience ENUM('user','admin') NOT NULL DEFAULT 'user' AFTER appointment_id");
     }
 }
 
@@ -169,8 +174,8 @@ function normalize_appointment(array $row): array
         'time' => substr((string) $row['appointment_time'], 0, 5),
         'notes' => $row['notes'] ?? '',
         'status' => $row['status'],
-        'cancellationReason' => '',
-        'cancelledBy' => '',
+        'cancellationReason' => $row['cancellation_reason'] ?? '',
+        'cancelledBy' => $row['cancelled_by'] ?? '',
         'createdAt' => $row['created_at'] ?? '',
     ];
 }
@@ -191,9 +196,9 @@ function appointment_sql(): string
     return "SELECT a.*, u.first_name, u.last_name, u.email, u.phone,
             s.name AS service_name, d.name AS dentist_name
             FROM appointments a
-            JOIN users u ON u.id = a.user_id
-            JOIN services s ON s.id = a.service_id
-            JOIN dentists d ON d.id = a.dentist_id";
+            LEFT JOIN users u ON u.id = a.user_id
+            LEFT JOIN services s ON s.id = a.service_id
+            LEFT JOIN dentists d ON d.id = a.dentist_id";
 }
 
 function catalog(): never
@@ -240,6 +245,7 @@ function dashboard(): never
         "SELECT n.*, CONCAT(u.first_name, ' ', u.last_name) AS user_name
          FROM notifications n
          JOIN users u ON u.id = n.user_id
+         WHERE n.audience = 'admin'
          ORDER BY n.created_at DESC"
     );
 
@@ -317,15 +323,37 @@ function appointments(): never
 function create_appointment(): never
 {
     $data = request_json();
+    $userId = (int) ($data['userId'] ?? $data['user_id'] ?? 0);
+    $dentistId = (int) ($data['dentistId'] ?? $data['dentist_id'] ?? 0);
+    $serviceId = (int) ($data['serviceId'] ?? $data['service_id'] ?? 0);
+    $date = trim((string) ($data['date'] ?? $data['appointment_date'] ?? ''));
+    $time = normalize_time_for_mysql((string) ($data['time'] ?? $data['appointment_time'] ?? ''));
+
+    if ($userId <= 0 || $dentistId <= 0 || $serviceId <= 0 || $date === '' || $time === '') {
+        json_response(['ok' => false, 'message' => 'Invalid appointment details. Please log in again and retry.'], 422);
+    }
+
+    if (!fetch_one('SELECT id FROM users WHERE id = ?', [$userId])) {
+        json_response(['ok' => false, 'message' => 'Your account was not found in the database. Please log in again.'], 422);
+    }
+
+    if (!fetch_one('SELECT id FROM dentists WHERE id = ?', [$dentistId])) {
+        json_response(['ok' => false, 'message' => 'Selected dentist was not found. Please refresh and try again.'], 422);
+    }
+
+    if (!fetch_one('SELECT id FROM services WHERE id = ?', [$serviceId])) {
+        json_response(['ok' => false, 'message' => 'Selected service was not found. Please refresh and try again.'], 422);
+    }
+
     execute_sql(
         'INSERT INTO appointments (user_id, dentist_id, service_id, appointment_date, appointment_time, notes, status)
          VALUES (?, ?, ?, ?, ?, ?, ?)',
         [
-            (int) ($data['userId'] ?? $data['user_id'] ?? 0),
-            (int) ($data['dentistId'] ?? $data['dentist_id'] ?? 0),
-            (int) ($data['serviceId'] ?? $data['service_id'] ?? 0),
-            $data['date'] ?? $data['appointment_date'] ?? '',
-            normalize_time_for_mysql((string) ($data['time'] ?? $data['appointment_time'] ?? '')),
+            $userId,
+            $dentistId,
+            $serviceId,
+            $date,
+            $time,
             $data['notes'] ?? '',
             'pending',
         ]
@@ -336,11 +364,11 @@ function create_appointment(): never
     json_response(['ok' => true, 'appointment' => normalize_appointment($row)]);
 }
 
-function create_notification(int $userId, ?int $appointmentId, string $message): void
+function create_notification(int $userId, ?int $appointmentId, string $message, string $audience = 'user'): void
 {
     execute_sql(
-        'INSERT INTO notifications (user_id, appointment_id, message) VALUES (?, ?, ?)',
-        [$userId, $appointmentId, $message]
+        'INSERT INTO notifications (user_id, appointment_id, audience, message) VALUES (?, ?, ?, ?)',
+        [$userId, $appointmentId, $audience, $message]
     );
 }
 
@@ -365,11 +393,13 @@ function update_appointment(): never
         [$status, $reason ?: null, $status === 'cancelled' ? 'admin' : null, $id]
     );
 
-    $message = 'Your appointment for ' . $appt['service_name'] . ' on ' . $appt['appointment_date'] . ' at ' . substr((string) $appt['appointment_time'], 0, 5) . ' has been ' . $status . '.';
-    if ($reason !== '') {
-        $message .= ' Reason: ' . $reason;
+    if (in_array($status, ['confirmed', 'cancelled'], true)) {
+        $message = 'Your appointment for ' . $appt['service_name'] . ' on ' . $appt['appointment_date'] . ' at ' . substr((string) $appt['appointment_time'], 0, 5) . ' has been ' . $status . '.';
+        if ($reason !== '') {
+            $message .= ' Reason: ' . $reason;
+        }
+        create_notification((int) $appt['user_id'], $id, $message, 'user');
     }
-    create_notification((int) $appt['user_id'], $id, $message);
 
     $updated = fetch_one(appointment_sql() . ' WHERE a.id = ?', [$id]);
     json_response(['ok' => true, 'appointment' => normalize_appointment($updated)]);
@@ -393,7 +423,12 @@ function cancel_appointment(): never
         'UPDATE appointments SET status = ?, cancellation_reason = ?, cancelled_by = ? WHERE id = ?',
         ['cancelled', 'Cancelled by patient before admin approval.', 'user', $id]
     );
-    create_notification($userId, $id, 'You cancelled your appointment for ' . $appt['service_name'] . ' on ' . $appt['appointment_date'] . ' at ' . substr((string) $appt['appointment_time'], 0, 5) . '.');
+    create_notification(
+        $userId,
+        $id,
+        trim(($appt['first_name'] ?? '') . ' ' . ($appt['last_name'] ?? '')) . ' cancelled the appointment for ' . $appt['service_name'] . ' on ' . $appt['appointment_date'] . ' at ' . substr((string) $appt['appointment_time'], 0, 5) . '.',
+        'admin'
+    );
 
     json_response(['ok' => true]);
 }
@@ -403,14 +438,14 @@ function notifications(): never
     $userId = (int) ($_GET['user_id'] ?? 0);
     json_response([
         'ok' => true,
-        'notifications' => fetch_all('SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC', [$userId]),
+        'notifications' => fetch_all("SELECT * FROM notifications WHERE user_id = ? AND audience = 'user' ORDER BY created_at DESC", [$userId]),
     ]);
 }
 
 function mark_notifications_read(): never
 {
     $data = request_json();
-    execute_sql('UPDATE notifications SET is_read = 1 WHERE user_id = ?', [(int) ($data['userId'] ?? $data['user_id'] ?? 0)]);
+    execute_sql("UPDATE notifications SET is_read = 1 WHERE user_id = ? AND audience = 'user'", [(int) ($data['userId'] ?? $data['user_id'] ?? 0)]);
     json_response(['ok' => true]);
 }
 

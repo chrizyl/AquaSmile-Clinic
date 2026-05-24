@@ -80,6 +80,7 @@
       const others = allNotifications.filter(item => !userMatches(user, item));
       const mappedNotes = (notes.notifications || []).map(item => ({
         id: item.id,
+        audience: item.audience || 'user',
         userId: item.user_id,
         userName: user.name,
         userEmail: user.email,
@@ -100,7 +101,7 @@
 
   function getNotifications() {
     const user = getCurrentUser();
-    return (readStorage('notifications') || []).filter(item => userMatches(user, item));
+    return (readStorage('notifications') || []).filter(item => (item.audience || 'user') === 'user' && userMatches(user, item));
   }
 
   function getAppointments() {
@@ -202,29 +203,34 @@
     if (!confirm('Cancel this pending appointment?')) return;
 
     apiPost('cancel_appointment', { id, userId: user.id }).catch(err => {
-      console.warn('Appointment cancellation saved locally because API failed:', err.message);
+      console.warn('Appointment cancellation failed:', err.message);
+      showToastMessage(err.message || 'Appointment cancellation failed.');
+      return null;
+    }).then(result => {
+      if (!result) return;
+
+      appointment.status = 'cancelled';
+      appointment.cancelledBy = 'user';
+      appointment.cancellationReason = 'Cancelled by patient before admin approval.';
+      writeStorage('appointments', appointments);
+
+      const notifications = readStorage('notifications') || [];
+      notifications.unshift({
+        id: 'N' + Date.now(),
+        audience: 'admin',
+        userId: appointment.userId || '',
+        userEmail: appointment.userEmail || '',
+        userName: appointment.userName || 'Patient',
+        appointmentId: appointment.id,
+        message: `${appointment.userName || 'Patient'} cancelled the appointment for ${appointment.serviceName || 'the dental service'} on ${appointment.date} at ${appointment.time}.`,
+        createdAt: new Date().toLocaleString('en-PH'),
+        read: false,
+      });
+      writeStorage('notifications', notifications.slice(0, 30));
+
+      render();
+      showToastMessage('Your pending appointment has been cancelled.');
     });
-
-    appointment.status = 'user_cancelled';
-    appointment.cancelledBy = 'user';
-    appointment.cancellationReason = 'Cancelled by patient before admin approval.';
-    writeStorage('appointments', appointments);
-
-    const notifications = readStorage('notifications') || [];
-    notifications.unshift({
-      id: 'N' + Date.now(),
-      userId: appointment.userId || '',
-      userEmail: appointment.userEmail || '',
-      userName: appointment.userName || 'Patient',
-      appointmentId: appointment.id,
-      message: `You cancelled your appointment for ${appointment.serviceName || 'your dental service'} on ${appointment.date} at ${appointment.time}.`,
-      createdAt: new Date().toLocaleString('en-PH'),
-      read: false,
-    });
-    writeStorage('notifications', notifications.slice(0, 30));
-
-    render();
-    showToastMessage('Your pending appointment has been cancelled.');
   }
 
   function toggle() {

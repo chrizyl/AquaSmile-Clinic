@@ -311,10 +311,10 @@
       <article class="admin-panel">
         <div class="panel-head">
           <div>
-            <div class="section-label">User Notifications</div>
-            <h2>Appointment Updates Sent to Patients</h2>
+            <div class="section-label">Admin Notifications</div>
+            <h2>Client Cancellation Alerts</h2>
           </div>
-          <span class="admin-badge">ui simulation</span>
+          <span class="admin-badge">database</span>
         </div>
         <div class="table-wrap">
           <table class="admin-table">
@@ -350,7 +350,7 @@
           <div class="schema-card"><strong>order_items</strong><span>id, order_id, product_id, quantity, unit_price</span></div>
           <div class="schema-card"><strong>products</strong><span>id, name, description, price, image, stock, category</span></div>
           <div class="schema-card"><strong>services</strong><span>id, name, description, price, image, daily_slots, category</span></div>
-          <div class="schema-card"><strong>notifications</strong><span>id, user_id, appointment_id, message, is_read, created_at</span></div>
+          <div class="schema-card"><strong>notifications</strong><span>id, user_id, appointment_id, audience, message, is_read, created_at</span></div>
           <div class="schema-card"><strong>inventory_logs</strong><span>id, item_type, item_id, quantity, action, admin_id</span></div>
         </div>
       </article>

@@ -383,7 +383,9 @@ async function confirmBooking() {
     const result = await apiRequest('create_appointment', newAppt);
     newAppt = result.appointment;
   } catch (err) {
-    console.warn('Saving appointment locally because API failed:', err.message);
+    console.warn('Appointment save failed:', err.message);
+    showToast(err.message || 'Appointment was not saved to the database.');
+    return;
   }
 
   const appts = DB.get('appointments') || [];

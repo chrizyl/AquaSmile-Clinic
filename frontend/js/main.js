@@ -228,7 +228,7 @@ function isForCurrentUser(item) {
 }
 
 function getUserNotifications() {
-  return (DB.get('notifications') || []).filter(isForCurrentUser);
+  return (DB.get('notifications') || []).filter(item => (item.audience || 'user') === 'user' && isForCurrentUser(item));
 }
 
 function getUserAppointments() {
@@ -333,26 +333,32 @@ function cancelUserAppointment(id) {
 
   if (!confirm('Cancel this pending appointment?')) return;
 
-  appt.status = 'user_cancelled';
-  appt.cancelledBy = 'user';
-  appt.cancellationReason = 'Cancelled by patient before admin approval.';
-  DB.set('appointments', appts);
+  apiRequest('cancel_appointment', { id, userId: currentUser.id }).then(() => {
+    appt.status = 'cancelled';
+    appt.cancelledBy = 'user';
+    appt.cancellationReason = 'Cancelled by patient before admin approval.';
+    DB.set('appointments', appts);
 
-  const notifications = DB.get('notifications') || [];
-  notifications.unshift({
-    id: 'N' + Date.now(),
-    userId: appt.userId || '',
-    userEmail: appt.userEmail || '',
-    userName: appt.userName || 'Patient',
-    appointmentId: appt.id,
-    message: `You cancelled your appointment for ${appt.serviceName || 'your dental service'} on ${appt.date} at ${appt.time}.`,
-    createdAt: new Date().toLocaleString('en-PH'),
-    read: false,
+    const notifications = DB.get('notifications') || [];
+    notifications.unshift({
+      id: 'N' + Date.now(),
+      audience: 'admin',
+      userId: appt.userId || '',
+      userEmail: appt.userEmail || '',
+      userName: appt.userName || 'Patient',
+      appointmentId: appt.id,
+      message: `${appt.userName || 'Patient'} cancelled the appointment for ${appt.serviceName || 'the dental service'} on ${appt.date} at ${appt.time}.`,
+      createdAt: new Date().toLocaleString('en-PH'),
+      read: false,
+    });
+    DB.set('notifications', notifications.slice(0, 30));
+
+    renderNotificationPanel();
+    showToast('Your pending appointment has been cancelled.');
+  }).catch(err => {
+    console.warn('Appointment cancellation failed:', err.message);
+    showToast(err.message || 'Appointment cancellation failed.');
   });
-  DB.set('notifications', notifications.slice(0, 30));
-
-  renderNotificationPanel();
-  showToast('Your pending appointment has been cancelled.');
 }
 
 function notifyCurrentUser() {

@@ -231,10 +231,9 @@ async function updateAppointmentStatus(id, status) {
     const result = await apiRequest('update_appointment', { id, status, reason });
     Object.assign(target, result.appointment);
   } catch (err) {
-    target.status = status;
-    target.cancelledBy = status === 'cancelled' ? 'admin' : target.cancelledBy || '';
-    target.cancellationReason = reason || target.cancellationReason || '';
-    addAdminNotification(target, status, reason);
+    console.warn('Appointment status update failed:', err.message);
+    showToast(err.message || 'Appointment update failed.');
+    return;
   }
 
   DB.set('appointments', appts);
@@ -242,23 +241,17 @@ async function updateAppointmentStatus(id, status) {
   showToast(`Appointment ${id} marked as ${status}.`);
 }
 
-function addAdminNotification(appt, status, reason = '') {
+function addAdminNotification(appt, message) {
   const notifications = DB.get('notifications') || [];
-  const statusText = {
-    confirmed: 'confirmed',
-    completed: 'completed',
-    cancelled: 'cancelled',
-    pending: 'set to pending',
-  }[status] || status;
 
   notifications.unshift({
     id: 'N' + Date.now(),
+    audience: 'admin',
     userId: appt.userId || '',
     userEmail: appt.userEmail || '',
     userName: appt.userName || 'Patient',
     appointmentId: appt.id,
-    message: `Your appointment for ${appt.serviceName || 'your dental service'} on ${appt.date} at ${appt.time} has been ${statusText}.${reason ? ' Reason: ' + reason : ''}`,
-    reason: reason,
+    message: message,
     createdAt: new Date().toLocaleString('en-PH'),
     read: false,
   });
@@ -271,15 +264,16 @@ function renderNotifications() {
   if (!tbody) return;
 
   const notifications = DB.get('notifications') || [];
-  tbody.innerHTML = notifications.length
-    ? notifications.map(n => `
+  const adminNotifications = notifications.filter(n => (n.audience || 'admin') === 'admin');
+  tbody.innerHTML = adminNotifications.length
+    ? adminNotifications.map(n => `
       <tr>
         <td>${n.userName}</td>
         <td>${n.appointmentId}</td>
-        <td>${n.message}${n.reason ? `<br><small>Reason: ${n.reason}</small>` : ''}</td>
+        <td>${n.message}</td>
         <td>${n.createdAt}</td>
       </tr>`).join('')
-    : adminTableEmpty(4, 'No notifications sent yet. Confirm or cancel an appointment to create one.');
+    : adminTableEmpty(4, 'No client cancellation notifications yet.');
 }
 
 function renderDentistPatients(appts) {
@@ -515,6 +509,7 @@ async function loadAdminDatabase() {
     DB.set('dbServices', data.services || []);
     DB.set('notifications', (data.notifications || []).map(n => ({
       id: n.id,
+      audience: n.audience || 'admin',
       userId: n.user_id,
       userName: n.user_name,
       appointmentId: n.appointment_id,
