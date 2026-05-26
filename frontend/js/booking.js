@@ -58,7 +58,7 @@ function guardAuth() {
     window.location.href = 'login.php';
     return false;
   }
-  if (admin) {
+  if (admin || (user && user.role === 'admin')) {
     showToast('Admins cannot book appointments.');
     setTimeout(() => { window.location.href = 'admin.php'; }, 1200);
     return false;

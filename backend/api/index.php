@@ -1,5 +1,4 @@
 <?php
-declare(strict_types=1);
 
 require __DIR__ . '/db.php';
 
@@ -9,31 +8,66 @@ try {
     ensure_notifications_table();
     ensure_optional_columns();
 
-    match ($action) {
-        'health' => json_response(['ok' => true, 'database' => DB_NAME]),
-        'catalog' => catalog(),
-        'dashboard' => dashboard(),
-        'register' => register_user(),
-        'login' => login_user(),
-        'appointments' => appointments(),
-        'create_appointment' => create_appointment(),
-        'update_appointment' => update_appointment(),
-        'cancel_appointment' => cancel_appointment(),
-        'notifications' => notifications(),
-        'mark_notifications_read' => mark_notifications_read(),
-        'mark_admin_notifications_read' => mark_admin_notifications_read(),
-        'update_stock' => update_stock(),
-        'cart_items' => cart_items(),
-        'save_cart_item' => save_cart_item(),
-        'remove_cart_item' => remove_cart_item(),
-        'create_order' => create_order(),
-        default => json_response(['ok' => false, 'message' => 'Unknown API action.'], 404),
-    };
+    switch ($action) {
+        case 'health':
+            json_response(array('ok' => true, 'database' => DB_NAME));
+            break;
+        case 'catalog':
+            catalog();
+            break;
+        case 'dashboard':
+            dashboard();
+            break;
+        case 'register':
+            register_user();
+            break;
+        case 'login':
+            login_user();
+            break;
+        case 'appointments':
+            appointments();
+            break;
+        case 'create_appointment':
+            create_appointment();
+            break;
+        case 'update_appointment':
+            update_appointment();
+            break;
+        case 'cancel_appointment':
+            cancel_appointment();
+            break;
+        case 'notifications':
+            notifications();
+            break;
+        case 'mark_notifications_read':
+            mark_notifications_read();
+            break;
+        case 'mark_admin_notifications_read':
+            mark_admin_notifications_read();
+            break;
+        case 'update_stock':
+            update_stock();
+            break;
+        case 'cart_items':
+            cart_items();
+            break;
+        case 'save_cart_item':
+            save_cart_item();
+            break;
+        case 'remove_cart_item':
+            remove_cart_item();
+            break;
+        case 'create_order':
+            create_order();
+            break;
+        default:
+            json_response(array('ok' => false, 'message' => 'Unknown API action.'), 404);
+    }
 } catch (Throwable $e) {
     json_response(['ok' => false, 'message' => $e->getMessage()], 500);
 }
 
-function ensure_notifications_table(): void
+function ensure_notifications_table()
 {
     execute_sql(
         "CREATE TABLE IF NOT EXISTS notifications (
@@ -48,7 +82,7 @@ function ensure_notifications_table(): void
     );
 }
 
-function column_exists(string $table, string $column): bool
+function column_exists($table, $column)
 {
     $row = fetch_one(
         'SELECT COUNT(*) AS total FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?',
@@ -57,7 +91,7 @@ function column_exists(string $table, string $column): bool
     return (int) ($row['total'] ?? 0) > 0;
 }
 
-function ensure_optional_columns(): void
+function ensure_optional_columns()
 {
     if (!column_exists('services', 'daily_slots')) {
         execute_sql('ALTER TABLE services ADD COLUMN daily_slots INT NOT NULL DEFAULT 0');
@@ -77,7 +111,7 @@ function ensure_optional_columns(): void
     }
 }
 
-function normalize_user(array $row): array
+function normalize_user($row)
 {
     $name = trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? ''));
     return [
@@ -85,11 +119,12 @@ function normalize_user(array $row): array
         'name' => $name,
         'email' => $row['email'] ?? '',
         'contact' => $row['phone'] ?? '',
+        'role' => $row['role'] ?? 'patient',
         'createdAt' => $row['created_at'] ?? '',
     ];
 }
 
-function normalize_dentist(array $row): array
+function normalize_dentist($row)
 {
     $photos = [
         1 => 'images/dentist_doctorg12.jpg',
@@ -107,7 +142,7 @@ function normalize_dentist(array $row): array
     ];
 }
 
-function normalize_service(array $row): array
+function normalize_service($row)
 {
     $photos = [
         1 => 'images/dental cleaning.jpeg',
@@ -133,7 +168,7 @@ function normalize_service(array $row): array
     ];
 }
 
-function normalize_product(array $row): array
+function normalize_product($row)
 {
     $photos = [
         1 => 'images/toothbrush.avif',
@@ -160,7 +195,7 @@ function normalize_product(array $row): array
     ];
 }
 
-function normalize_appointment(array $row): array
+function normalize_appointment($row)
 {
     return [
         'id' => (string) $row['id'],
@@ -182,7 +217,7 @@ function normalize_appointment(array $row): array
     ];
 }
 
-function normalize_time_for_mysql(string $time): string
+function normalize_time_for_mysql($time)
 {
     $time = trim($time);
     $parsed = DateTime::createFromFormat('g:i A', $time)
@@ -193,7 +228,7 @@ function normalize_time_for_mysql(string $time): string
     return $parsed ? $parsed->format('H:i:s') : $time;
 }
 
-function appointment_sql(): string
+function appointment_sql()
 {
     return "SELECT a.*, u.first_name, u.last_name, u.email, u.phone,
             s.name AS service_name, d.name AS dentist_name
@@ -203,7 +238,7 @@ function appointment_sql(): string
             LEFT JOIN dentists d ON d.id = a.dentist_id";
 }
 
-function catalog(): never
+function catalog()
 {
     json_response([
         'ok' => true,
@@ -213,7 +248,7 @@ function catalog(): never
     ]);
 }
 
-function dashboard(): never
+function dashboard()
 {
     $orders = fetch_all(
         "SELECT o.*, IFNULL(CONCAT(u.first_name, ' ', u.last_name), o.customer_name) AS customer_name
@@ -221,20 +256,22 @@ function dashboard(): never
          LEFT JOIN users u ON u.id = o.user_id
          ORDER BY o.created_at DESC"
     );
-    $orders = array_map(fn($row) => [
-        'id' => (string) $row['id'],
-        'customer' => $row['customer_name'] ?: 'Customer',
-        'email' => $row['email'] ?? '',
-        'phone' => $row['phone'] ?? '',
-        'address' => $row['address'] ?? '',
-        'city' => $row['city'] ?? '',
-        'zip' => $row['zip'] ?? '',
-        'notes' => $row['notes'] ?? '',
-        'paymentMethod' => $row['payment_method'] ?? 'cod',
-        'total' => (float) $row['total_amount'],
-        'status' => $row['status'],
-        'created_at' => $row['created_at'],
-    ], $orders);
+    $orders = array_map(function ($row) {
+        return array(
+            'id' => (string) $row['id'],
+            'customer' => $row['customer_name'] ?: 'Customer',
+            'email' => $row['email'] ?? '',
+            'phone' => $row['phone'] ?? '',
+            'address' => $row['address'] ?? '',
+            'city' => $row['city'] ?? '',
+            'zip' => $row['zip'] ?? '',
+            'notes' => $row['notes'] ?? '',
+            'paymentMethod' => $row['payment_method'] ?? 'cod',
+            'total' => (float) $row['total_amount'],
+            'status' => $row['status'],
+            'created_at' => $row['created_at'],
+        );
+    }, $orders);
 
     $orderItems = fetch_all(
         "SELECT oi.*, p.name AS product_name
@@ -271,7 +308,7 @@ function dashboard(): never
     ]);
 }
 
-function register_user(): never
+function register_user()
 {
     $data = request_json();
     $firstName = trim($data['fname'] ?? $data['first_name'] ?? '');
@@ -293,7 +330,7 @@ function register_user(): never
     json_response(['ok' => true, 'user' => normalize_user($user)]);
 }
 
-function login_user(): never
+function login_user()
 {
     $data = request_json();
     $email = trim($data['email'] ?? '');
@@ -307,7 +344,7 @@ function login_user(): never
     json_response(['ok' => true, 'user' => normalize_user($user)]);
 }
 
-function appointments(): never
+function appointments()
 {
     $userId = $_GET['user_id'] ?? '';
     $sql = appointment_sql();
@@ -322,7 +359,7 @@ function appointments(): never
     json_response(['ok' => true, 'appointments' => array_map('normalize_appointment', fetch_all($sql, $params))]);
 }
 
-function create_appointment(): never
+function create_appointment()
 {
     $data = request_json();
     $userId = (int) ($data['userId'] ?? $data['user_id'] ?? 0);
@@ -366,7 +403,7 @@ function create_appointment(): never
     json_response(['ok' => true, 'appointment' => normalize_appointment($row)]);
 }
 
-function create_notification(int $userId, ?int $appointmentId, string $message, string $audience = 'user'): void
+function create_notification($userId, $appointmentId, $message, $audience = 'user')
 {
     execute_sql(
         'INSERT INTO notifications (user_id, appointment_id, audience, message) VALUES (?, ?, ?, ?)',
@@ -374,7 +411,7 @@ function create_notification(int $userId, ?int $appointmentId, string $message, 
     );
 }
 
-function update_appointment(): never
+function update_appointment()
 {
     $data = request_json();
     $id = (int) ($data['id'] ?? 0);
@@ -407,7 +444,7 @@ function update_appointment(): never
     json_response(['ok' => true, 'appointment' => normalize_appointment($updated)]);
 }
 
-function cancel_appointment(): never
+function cancel_appointment()
 {
     $data = request_json();
     $id = (int) ($data['id'] ?? 0);
@@ -435,7 +472,7 @@ function cancel_appointment(): never
     json_response(['ok' => true]);
 }
 
-function notifications(): never
+function notifications()
 {
     $userId = (int) ($_GET['user_id'] ?? 0);
     json_response([
@@ -444,20 +481,20 @@ function notifications(): never
     ]);
 }
 
-function mark_notifications_read(): never
+function mark_notifications_read()
 {
     $data = request_json();
     execute_sql("UPDATE notifications SET is_read = 1 WHERE user_id = ? AND audience = 'user'", [(int) ($data['userId'] ?? $data['user_id'] ?? 0)]);
     json_response(['ok' => true]);
 }
 
-function mark_admin_notifications_read(): never
+function mark_admin_notifications_read()
 {
     execute_sql("UPDATE notifications SET is_read = 1 WHERE audience = 'admin'");
     json_response(['ok' => true]);
 }
 
-function update_stock(): never
+function update_stock()
 {
     $data = request_json();
     $type = $data['type'] ?? 'product';
@@ -472,7 +509,7 @@ function update_stock(): never
     json_response(['ok' => true]);
 }
 
-function cart_items(): never
+function cart_items()
 {
     $userId = (int) ($_GET['user_id'] ?? 0);
     if ($userId <= 0) {
@@ -491,7 +528,7 @@ function cart_items(): never
     json_response(['ok' => true, 'cartItems' => $rows]);
 }
 
-function save_cart_item(): never
+function save_cart_item()
 {
     $data = request_json();
     $userId = (int) ($data['userId'] ?? 0);
@@ -522,7 +559,7 @@ function save_cart_item(): never
     json_response(['ok' => true]);
 }
 
-function remove_cart_item(): never
+function remove_cart_item()
 {
     $data = request_json();
     $userId = (int) ($data['userId'] ?? 0);
@@ -536,7 +573,7 @@ function remove_cart_item(): never
     json_response(['ok' => true]);
 }
 
-function create_order(): never
+function create_order()
 {
     $data = request_json();
     $items = $data['items'] ?? [];

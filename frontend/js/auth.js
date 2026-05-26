@@ -93,7 +93,10 @@ async function login() {
     DB.set('currentAdmin', null);
     sessionStorage.removeItem('aqsmile_cart'); // Clear previous user's cart
     showToast('Welcome back, ' + user.name.split(' ')[0] + '.');
-    setTimeout(() => { window.location.href = 'index.php'; }, 600);
+
+    // Role-based redirection
+    const redirectUrl = user.role === 'admin' ? 'admin.php' : 'index.php';
+    setTimeout(() => { window.location.href = redirectUrl; }, 600);
     return;
   }
 

@@ -1,5 +1,4 @@
 <?php
-declare(strict_types=1);
 
 // Database configuration
 const DB_HOST = '127.0.0.1';
@@ -50,7 +49,9 @@ try {
     // Split and execute statements
     $statements = array_filter(
         array_map('trim', explode(';', $sql)),
-        fn($s) => !empty($s)
+        function ($s) {
+            return !empty($s);
+        }
     );
 
     foreach ($statements as $statement) {
@@ -89,4 +90,3 @@ try {
     echo "<h1>Setup Error</h1>";
     echo "<p><strong>Error:</strong> " . htmlspecialchars($e->getMessage()) . "</p>";
 }
-

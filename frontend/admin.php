@@ -22,6 +22,7 @@
     </div>
     <div class="nav-links" id="nav-links">
       <button class="nav-btn" onclick="window.location.href='index.php'">Site</button>
+      <button class="nav-btn pill" onclick="logout()">Logout</button>
     </div>
   </nav>
 

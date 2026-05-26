@@ -1,12 +1,11 @@
 <?php
-declare(strict_types=1);
 
 const DB_HOST = '127.0.0.1';
 const DB_NAME = 'aquasmile_clinic';
 const DB_USER = 'root';
 const DB_PASS = '';
 
-function db(): PDO
+function db()
 {
     static $pdo = null;
 
@@ -24,7 +23,7 @@ function db(): PDO
     return $pdo;
 }
 
-function json_response(array $payload, int $status = 200): never
+function json_response($payload, $status = 200)
 {
     http_response_code($status);
     header('Content-Type: application/json; charset=utf-8');
@@ -32,7 +31,7 @@ function json_response(array $payload, int $status = 200): never
     exit;
 }
 
-function request_json(): array
+function request_json()
 {
     $raw = file_get_contents('php://input');
     if (!$raw) {
@@ -43,7 +42,7 @@ function request_json(): array
     return is_array($data) ? $data : [];
 }
 
-function table_exists(string $table): bool
+function table_exists($table)
 {
     $stmt = db()->prepare(
         'SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?'
@@ -52,14 +51,14 @@ function table_exists(string $table): bool
     return (int) $stmt->fetchColumn() > 0;
 }
 
-function fetch_all(string $sql, array $params = []): array
+function fetch_all($sql, $params = array())
 {
     $stmt = db()->prepare($sql);
     $stmt->execute($params);
     return $stmt->fetchAll();
 }
 
-function fetch_one(string $sql, array $params = []): ?array
+function fetch_one($sql, $params = array())
 {
     $stmt = db()->prepare($sql);
     $stmt->execute($params);
@@ -67,7 +66,7 @@ function fetch_one(string $sql, array $params = []): ?array
     return $row ?: null;
 }
 
-function execute_sql(string $sql, array $params = []): int
+function execute_sql($sql, $params = array())
 {
     $stmt = db()->prepare($sql);
     $stmt->execute($params);

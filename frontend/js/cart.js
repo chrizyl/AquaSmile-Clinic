@@ -5,9 +5,7 @@ Session.remove = function(key) {
 
 // ── LOGOUT ──
 function logout() {
-  Cookie.remove('currentUser');   // Clear the logged-in user cookie
-  Session.remove('cart');         // Remove cart data entirely from sessionStorage
-  window.location.href = 'login.php';
+  window.location.href = 'logout.php';
 }
 
 // ── ADD TO CART ──
@@ -15,6 +13,11 @@ function addToCart(pid) {
   const user = Cookie.get('currentUser');
   if (!user) {
     window.location.href = 'login.php';
+    return;
+  }
+
+  if (user.role === 'admin') {
+    showToast('Admins cannot purchase products.');
     return;
   }
 

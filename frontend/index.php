@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
-
+<?php
+session_start();
+include 'includes/admin-check.php';
+?>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -27,9 +30,11 @@
       <button class="nav-btn active" onclick="window.location.href='index.php'">Home</button>
       <button class="nav-btn" onclick="window.location.href='dentists.php'">Our Dentists</button>
       <button class="nav-btn" onclick="window.location.href='services.php'">Services</button>
-      <button class="nav-btn" onclick="window.location.href='products.php'">Shop</button>
-      <button class="nav-btn" id="nav-book-btn" onclick="window.location.href='booking.php'" style="display:none">Book
-        Appointment</button>
+      <?php if (!isAdmin()): ?>
+        <button class="nav-btn" onclick="window.location.href='products.php'">Shop</button>
+        <button class="nav-btn" id="nav-book-btn" onclick="window.location.href='booking.php'" style="display:none">Book
+          Appointment</button>
+      <?php endif; ?>
       <div id="nav-user-info" style="display:none"></div>
       <button class="nav-btn pill" id="nav-login-btn" onclick="window.location.href='login.php'">Log In</button>
       <button class="nav-btn pill-aqua" id="nav-logout-btn" onclick="logout()" style="display:none">Log Out</button>

@@ -3,6 +3,10 @@ const adminState = {
   month: new Date().getMonth(),
 };
 
+function logout() {
+  window.location.href = 'logout.php';
+}
+
 const ADMIN_SAMPLE_ORDERS = [
   {
     id: 'O1001',

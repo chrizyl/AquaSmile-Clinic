@@ -1,5 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
+<?php
+
+if (isset($_COOKIE['currentUser'])) {
+    $currentUser = json_decode($_COOKIE['currentUser'], true);
+    if (isset($currentUser['role']) && $currentUser['role'] === 'admin') {
+        http_response_code(403);
+        header('Location: admin.php');
+        exit;
+    }
+}
+?>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">

@@ -35,6 +35,15 @@ const Cookie = {
   },
 };
 
+function isAdmin() {
+  const user = Cookie.get('currentUser');
+  return user && user.role === 'admin';
+}
+
+function getCurrentUser() {
+  return Cookie.get('currentUser');
+}
+
 const API_BASE = new URL('../backend/api/index.php', window.location.href).pathname;
 
 async function apiRequest(action, data = null, method = 'POST') {

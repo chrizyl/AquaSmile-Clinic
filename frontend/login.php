@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AquaSmile — Sign In</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20260523">
-  <link rel="stylesheet" href="css/auth.css?v=20260523">
+  <link rel="stylesheet" href="css/style.css?v=20260526">
+  <link rel="stylesheet" href="css/auth.css?v=20260526">
 </head>
 <body>
 
@@ -63,7 +63,7 @@
     </div>
   </div>
 
-  <script src="js/main.js?v=20260523"></script>
-  <script src="js/auth.js?v=20260523"></script>
+  <script src="js/main.js?v=20260526"></script>
+  <script src="js/auth.js?v=20260526"></script>
 </body>
 </html>

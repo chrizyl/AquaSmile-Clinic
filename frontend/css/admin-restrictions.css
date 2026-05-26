@@ -1,0 +1,76 @@
+/* Admin Restriction Styles */
+
+.admin-disabled {
+  opacity: 0.6;
+  pointer-events: none;
+  cursor: not-allowed !important;
+}
+
+.admin-disabled:hover {
+  cursor: not-allowed;
+  background-color: inherit;
+  transform: none;
+}
+
+/* Disabled buttons */
+button.admin-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+button.admin-disabled:hover {
+  cursor: not-allowed;
+}
+
+/* Disabled links */
+a.admin-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+  text-decoration: line-through;
+}
+
+a.admin-disabled:hover {
+  cursor: not-allowed;
+  color: inherit;
+}
+
+/* Input/form elements */
+input.admin-disabled,
+select.admin-disabled,
+textarea.admin-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+  background-color: #f5f5f5;
+}
+
+/* Tooltip for disabled buttons */
+.admin-disabled::after {
+  content: 'Admins cannot perform this action';
+  display: none;
+  position: absolute;
+  background-color: #333;
+  color: white;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px 10px;
+  z-index: 1;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.admin-disabled:hover::after {
+  display: block;
+}
+
+/* Ban icon cursor effect */
+.admin-disabled {
+  position: relative;
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="none" stroke="red" stroke-width="2"/><line x1="8" y1="24" x2="24" y2="8" stroke="red" stroke-width="2"/></svg>') 16 16, not-allowed;
+}
+
