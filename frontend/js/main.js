@@ -184,7 +184,18 @@ function updateNav() {
   if (loginBtn)  loginBtn.style.display  = loggedIn ? 'none' : '';
   if (logoutBtn) logoutBtn.style.display = loggedIn ? '' : 'none';
   if (userInfo)  userInfo.style.display  = loggedIn ? '' : 'none';
-  if (bookBtn)   bookBtn.style.display   = (currentUser && !currentAdmin) ? '' : 'none';
+  if (bookBtn) {
+    bookBtn.style.display = (currentUser && !currentAdmin) ? '' : 'none';
+    if (currentUser && !currentAdmin) {
+      bookBtn.classList.remove('admin-disabled');
+      bookBtn.disabled = false;
+      bookBtn.onclick = function() { window.location.href = 'booking.php'; };
+    } else if (currentAdmin) {
+      bookBtn.classList.add('admin-disabled');
+      bookBtn.disabled = true;
+      bookBtn.onclick = function() { return false; };
+    }
+  }
   if (apptsBtn)  apptsBtn.style.display  = currentUser ? '' : 'none';
   if (cartBtn)   cartBtn.style.display   = currentUser ? '' : 'none';
   if (adminBtn)  adminBtn.style.display  = currentAdmin ? '' : 'none';

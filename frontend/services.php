@@ -1,5 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
+<?php
+session_start();
+include 'includes/admin-check.php';
+?>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +12,7 @@
   <link rel="stylesheet" href="css/style.css?v=20260523">
   <link rel="stylesheet" href="css/services.css?v=20260523">
   <link rel="stylesheet" href="css/notifications.css?v=20260523">
+  <link rel="stylesheet" href="css/admin-restrictions.css">
 </head>
 <body>
 
@@ -24,7 +29,7 @@
       <button class="nav-btn" onclick="window.location.href='index.php'">Home</button>
       <button class="nav-btn" onclick="window.location.href='dentists.php'">Our Dentists</button>
       <button class="nav-btn active" onclick="window.location.href='services.php'">Services</button>
-      <button class="nav-btn" onclick="window.location.href='products.php'">Shop</button>
+      <button class="nav-btn <?php echo getAdminClass(); ?>" onclick="<?php if (!isAdmin()): ?>window.location.href='products.php'<?php endif; ?>" <?php echo getAdminDisabled(); ?>>Shop</button>
       <button class="nav-btn" id="nav-book-btn" onclick="window.location.href='booking.php'" style="display:none">Book Appointment</button>
       <div id="nav-user-info" style="display:none"></div>
       </button>
@@ -119,7 +124,7 @@
     <div class="cta-content">
       <div class="cta-title">Not sure which service you need?</div>
       <p class="cta-sub">Book a general consultation and let our dentists recommend the right treatment for you.</p>
-      <button class="btn-primary" onclick="requireBooking()">Book a Consultation</button>
+      <button class="btn-primary <?php echo getAdminClass(); ?>" onclick="<?php if (!isAdmin()): ?>requireBooking()<?php endif; ?>" <?php echo getAdminDisabled(); ?>>Book a Consultation</button>
     </div>
     <div class="cta-img">
       <img src="images/dental consulation.png" alt="Dental Services">
