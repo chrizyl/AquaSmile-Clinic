@@ -1,5 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+<?php
+session_start();
+include 'includes/admin-check.php';
+
+if (isAdmin()) {
+    header('Location: admin.php');
+    exit;
+}
+?>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +16,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/products.css?v=20260523">
   <link rel="stylesheet" href="css/notifications.css?v=20260523">
+  <link rel="stylesheet" href="css/admin-restrictions.css">
 </head>
 <body>
 

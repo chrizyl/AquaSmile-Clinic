@@ -106,8 +106,9 @@ function renderServiceCards() {
               onclick="openServiceModal('${s.id}')"
             >Learn More</button>
             <button
-              class="btn-book-service-pg"
-              onclick="bookService('${s.id}')"
+              class="btn-book-service-pg ${isAdmin() ? 'admin-disabled' : ''}"
+              onclick="${isAdmin() ? 'return false;' : `bookService('${s.id}')`}"
+              ${isAdmin() ? 'disabled' : ''}
             >Book Now</button>
           </div>
         </div>
@@ -136,7 +137,7 @@ function openServiceModal(sid) {
         <span class="modal-price-label">Starting Price</span>
         <span class="modal-price-value">${service.price}</span>
       </div>
-      <button class="modal-book-btn" onclick="bookService('${sid}')">
+      <button class="modal-book-btn ${isAdmin() ? 'admin-disabled' : ''}" onclick="${isAdmin() ? 'return false;' : `bookService('${sid}')`}" ${isAdmin() ? 'disabled' : ''}>
         Book This Service
       </button>
     </div>`;

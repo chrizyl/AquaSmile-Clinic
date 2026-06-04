@@ -66,8 +66,9 @@ function renderDentistCards() {
               onclick="openDentistModal('${d.id}')"
             >View Profile</button>
             <button
-              class="btn-book-dentist"
-              onclick="bookWithDentist('${d.id}')"
+              class="btn-book-dentist ${isAdmin() ? 'admin-disabled' : ''}"
+              onclick="${isAdmin() ? 'return false;' : `bookWithDentist('${d.id}')`}"
+              ${isAdmin() ? 'disabled' : ''}
             >Book Now</button>
           </div>
         </div>
@@ -122,7 +123,7 @@ function openDentistModal(did) {
         </div>
       </div>
 
-      <button class="modal-book-btn" onclick="bookWithDentist('${did}')">
+      <button class="modal-book-btn ${isAdmin() ? 'admin-disabled' : ''}" onclick="${isAdmin() ? 'return false;' : `bookWithDentist('${did}')`}" ${isAdmin() ? 'disabled' : ''}>
         Book an Appointment with ${dentist.name.split(' ')[1]}
       </button>
     </div>`;
