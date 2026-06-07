@@ -509,5 +509,9 @@ if (isAdmin()) {
   updateNav();
 </script>
 <script src="js/notifications.js?v=20260523"></script>
+</script>
+
+  <div id="site-footer-root"></div>
+  <script src="js/footer.js?v=20260608"></script>
 </body>
 </html>

@@ -65,5 +65,9 @@
 
   <script src="js/main.js?v=20260526"></script>
   <script src="js/auth.js?v=20260526"></script>
+</script>
+
+  <div id="site-footer-root"></div>
+  <script src="js/footer.js?v=20260608"></script>
 </body>
 </html>
