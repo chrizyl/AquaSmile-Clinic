@@ -63,6 +63,27 @@
 }
 
 /* ── FULL-WIDTH BUTTON ── */
+.error-msg[hidden],
+.success-msg[hidden] {
+  display: none;
+}
+
+.error-msg ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.error-msg li + li {
+  margin-top: 4px;
+}
+
+.form-hint {
+  margin-top: 6px;
+  color: var(--text-mid);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
 .btn-full {
   width: 100%;
   padding: 14px;

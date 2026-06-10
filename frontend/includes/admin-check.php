@@ -1,13 +1,11 @@
 <?php
 
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
 function isAdmin() {
-    if (isset($_COOKIE['aqsmile_currentUser'])) {
-        $currentUser = json_decode($_COOKIE['aqsmile_currentUser'], true);
-        if (isset($currentUser['role']) && $currentUser['role'] === 'admin') {
-            return true;
-        }
-    }
-    return false;
+    return !empty($_SESSION['user_id']) && ($_SESSION['role'] ?? '') === 'admin';
 }
 
 function getAdminClass() {

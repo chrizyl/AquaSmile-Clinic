@@ -37,7 +37,8 @@ const Cookie = {
 
 function isAdmin() {
   const user = Cookie.get('currentUser');
-  return user && user.role === 'admin';
+  const admin = Cookie.get('currentAdmin');
+  return (user && user.role === 'admin') || (admin && admin.role === 'admin');
 }
 
 function getCurrentUser() {
@@ -61,7 +62,9 @@ async function apiRequest(action, data = null, method = 'POST') {
   const payload = await response.json();
 
   if (!response.ok || !payload.ok) {
-    throw new Error(payload.message || 'Database request failed.');
+    const error = new Error(payload.message || 'Database request failed.');
+    error.errors = payload.errors || null;
+    throw error;
   }
 
   return payload;
@@ -149,12 +152,6 @@ const PRODUCTS = [
   { id: 'P8', photo: 'images/bamboo toothbrush.webp',     name: 'Natural Bamboo Brush Set', desc: '4-pack biodegradable bamboo toothbrushes with charcoal bristles.', price: 549 },
 ];
 
-const ADMIN_ACCOUNTS = [
-  { id: 'D1', email: 'sophia@aquasmile.ph', password: 'sophia123', name: 'Dr. Sophia Reyes' },
-  { id: 'D2', email: 'marcus@aquasmile.ph', password: 'marcus123', name: 'Dr. Marcus Tan'   },
-  { id: 'D3', email: 'leila@aquasmile.ph',  password: 'leila123',  name: 'Dr. Leila Varon'  },
-];
-
 // ── SESSION STATE ──
 let currentUser  = Cookie.get('currentUser');
 let currentAdmin = Cookie.get('currentAdmin');
@@ -214,9 +211,7 @@ function logout() {
   Cookie.remove('currentAdmin');
   Session.remove('cart');              
   localStorage.removeItem('aqsmile_cart');
-  updateNav();
-  showToast('You have been signed out.');
-  setTimeout(() => { window.location.href = 'index.php'; }, 500);
+  window.location.href = 'logout.php';
 }
 
 // ── AUTH GUARD ──

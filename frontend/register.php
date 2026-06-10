@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AquaSmile — Create Account</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20260523">
-  <link rel="stylesheet" href="css/auth.css?v=20260523">
+  <link rel="stylesheet" href="css/style.css?v=20260610">
+  <link rel="stylesheet" href="css/auth.css?v=20260610">
 </head>
 <body>
 
@@ -38,40 +38,48 @@
       <div class="auth-title">Create account</div>
       <div class="auth-sub">Join AquaSmile for a seamless booking experience.</div>
 
-      <div id="register-error" class="error-msg" style="display:none"></div>
-      <div id="register-success" class="success-msg" style="display:none"></div>
+      <div id="register-error" class="error-msg" role="alert" aria-live="polite" hidden></div>
+      <div id="register-success" class="success-msg" role="status" aria-live="polite" hidden></div>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label" for="reg-fname">First name</label>
-          <input class="form-input" id="reg-fname" placeholder="Maria">
+      <form id="register-form" method="post" novalidate>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="reg-fname">First name</label>
+            <input class="form-input" id="reg-fname" name="first_name" type="text" placeholder="Maria" autocomplete="given-name" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reg-lname">Last name</label>
+            <input class="form-input" id="reg-lname" name="last_name" type="text" placeholder="Santos" autocomplete="family-name" required>
+          </div>
         </div>
+
         <div class="form-group">
-          <label class="form-label" for="reg-lname">Last name</label>
-          <input class="form-input" id="reg-lname" placeholder="Santos">
+          <label class="form-label" for="reg-email">Email</label>
+          <input class="form-input" type="email" id="reg-email" name="email" placeholder="you@example.com" autocomplete="email" required>
         </div>
-      </div>
 
-      <div class="form-group">
-        <label class="form-label" for="reg-email">Email</label>
-        <input class="form-input" type="email" id="reg-email" placeholder="you@example.com">
-      </div>
+        <div class="form-group">
+          <label class="form-label" for="reg-contact">Contact number</label>
+          <input class="form-input"
+                 id="reg-contact"
+                 name="contact"
+                 type="tel"
+                 placeholder="09123456789"
+                 autocomplete="tel"
+                 inputmode="numeric"
+                 pattern="09[0-9]{9}"
+                 maxlength="11"
+                 required>
+        </div>
 
-      <div class="form-group">
-        <label class="form-label" for="reg-contact">Contact number</label>
-        <input class="form-input" 
-               id="reg-contact" 
-               type="text" 
-               placeholder="09123456789" 
-               oninput="this.value = this.value.replace(/[^0-9]/g, '')">
-      </div>
+        <div class="form-group">
+          <label class="form-label" for="reg-password">Password</label>
+          <input class="form-input" type="password" id="reg-password" name="password" placeholder="At least 8 characters" autocomplete="new-password" minlength="8" required>
+          <div class="form-hint">Use at least 8 characters with a letter and a number.</div>
+        </div>
 
-      <div class="form-group">
-        <label class="form-label" for="reg-password">Password</label>
-        <input class="form-input" type="password" id="reg-password" placeholder="Min. 6 characters">
-      </div>
-
-      <button class="btn-full" onclick="register()">Create Account</button>
+        <button class="btn-full" type="submit">Create Account</button>
+      </form>
 
       <div class="auth-toggle">
         Already have an account?
@@ -81,9 +89,8 @@
     </div>
   </div>
 
-  <script src="js/main.js?v=20260523"></script>
-  <script src="js/auth.js?v=20260523"></script>
-</script>
+  <script src="js/main.js?v=20260610"></script>
+  <script src="js/auth.js?v=20260610"></script>
 
   <div id="site-footer-root"></div>
   <script src="js/footer.js?v=20260608"></script>

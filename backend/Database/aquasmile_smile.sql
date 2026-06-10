@@ -277,7 +277,7 @@ CREATE TABLE `users` (
   `first_name` varchar(100) NOT NULL,
   `last_name` varchar(100) NOT NULL,
   `email` varchar(120) NOT NULL,
-  `phone` varchar(20) DEFAULT NULL,
+  `phone` varchar(20) NOT NULL,
   `password_hash` varchar(255) NOT NULL,
   `role` varchar(20) NOT NULL DEFAULT 'patient',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()

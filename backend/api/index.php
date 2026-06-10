@@ -2,6 +2,16 @@
 
 require __DIR__ . '/db.php';
 
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_set_cookie_params([
+        'httponly' => true,
+        'samesite' => 'Lax',
+        'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+        'path' => '/',
+    ]);
+    session_start();
+}
+
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
 try {
@@ -64,7 +74,8 @@ try {
             json_response(array('ok' => false, 'message' => 'Unknown API action.'), 404);
     }
 } catch (Throwable $e) {
-    json_response(['ok' => false, 'message' => $e->getMessage()], 500);
+    error_log('AquaSmile API error: ' . $e->getMessage());
+    json_response(['ok' => false, 'message' => 'Something went wrong. Please try again.'], 500);
 }
 
 function ensure_notifications_table()
@@ -122,6 +133,13 @@ function normalize_user($row)
         'role' => $row['role'] ?? 'patient',
         'createdAt' => $row['created_at'] ?? '',
     ];
+}
+
+function require_admin()
+{
+    if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
+        json_response(['ok' => false, 'message' => 'Authentication required.'], 401);
+    }
 }
 
 function normalize_dentist($row)
@@ -250,6 +268,8 @@ function catalog()
 
 function dashboard()
 {
+    require_admin();
+
     $orders = fetch_all(
         "SELECT o.*, IFNULL(CONCAT(u.first_name, ' ', u.last_name), o.customer_name) AS customer_name
          FROM orders o
@@ -313,35 +333,117 @@ function register_user()
     $data = request_json();
     $firstName = trim($data['fname'] ?? $data['first_name'] ?? '');
     $lastName = trim($data['lname'] ?? $data['last_name'] ?? '');
-    $email = trim($data['email'] ?? '');
+    $email = strtolower(trim($data['email'] ?? ''));
     $phone = trim($data['contact'] ?? $data['phone'] ?? '');
-    $password = (string) ($data['password'] ?? '');
+    $password = trim((string) ($data['password'] ?? ''));
+    $errors = [];
 
-    if ($firstName === '' || $lastName === '' || $email === '' || $password === '') {
-        json_response(['ok' => false, 'message' => 'All fields are required.'], 422);
+    if ($firstName === '') {
+        $errors[] = 'First name is required.';
+    }
+    if ($lastName === '') {
+        $errors[] = 'Last name is required.';
+    }
+    if ($email === '') {
+        $errors[] = 'Email is required.';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $errors[] = 'Please enter a valid email address.';
+    }
+    if ($phone === '') {
+        $errors[] = 'Contact number is required.';
+    } elseif (!preg_match('/^09\d{9}$/', $phone)) {
+        $errors[] = 'Contact number must use the format 09XXXXXXXXX (11 digits).';
+    }
+    if ($password === '') {
+        $errors[] = 'Password is required.';
+    } elseif (strlen($password) < 8) {
+        $errors[] = 'Password must be at least 8 characters.';
+    } elseif (!preg_match('/[A-Za-z]/', $password) || !preg_match('/\d/', $password)) {
+        $errors[] = 'Password must contain at least one letter and one number.';
     }
 
-    execute_sql(
-        'INSERT INTO users (first_name, last_name, email, phone, password_hash) VALUES (?, ?, ?, ?, ?)',
-        [$firstName, $lastName, $email, $phone, password_hash($password, PASSWORD_DEFAULT)]
-    );
+    if ($errors) {
+        json_response([
+            'ok' => false,
+            'message' => 'Please correct the errors below.',
+            'errors' => $errors,
+        ], 422);
+    }
+
+    if (fetch_one('SELECT id FROM users WHERE email = ?', [$email])) {
+        json_response([
+            'ok' => false,
+            'message' => 'An account with this email already exists.',
+            'errors' => ['An account with this email already exists.'],
+        ], 409);
+    }
+
+    try {
+        execute_sql(
+            'INSERT INTO users (first_name, last_name, email, phone, password_hash) VALUES (?, ?, ?, ?, ?)',
+            [$firstName, $lastName, $email, $phone, password_hash($password, PASSWORD_DEFAULT)]
+        );
+    } catch (PDOException $e) {
+        if ($e->getCode() === '23000') {
+            json_response([
+                'ok' => false,
+                'message' => 'An account with this email already exists.',
+                'errors' => ['An account with this email already exists.'],
+            ], 409);
+        }
+        throw $e;
+    }
 
     $user = fetch_one('SELECT * FROM users WHERE email = ?', [$email]);
-    json_response(['ok' => true, 'user' => normalize_user($user)]);
+    json_response([
+        'ok' => true,
+        'message' => 'Account created successfully.',
+        'user' => normalize_user($user),
+    ], 201);
 }
 
 function login_user()
 {
     $data = request_json();
-    $email = trim($data['email'] ?? '');
-    $password = (string) ($data['password'] ?? '');
+    $email = strtolower(trim($data['email'] ?? ''));
+    $password = trim((string) ($data['password'] ?? ''));
+    $errors = [];
+
+    if ($email === '') {
+        $errors[] = 'Email is required.';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $errors[] = 'Please enter a valid email address.';
+    }
+    if ($password === '') {
+        $errors[] = 'Password is required.';
+    }
+
+    if ($errors) {
+        json_response([
+            'ok' => false,
+            'message' => 'Please correct the errors below.',
+            'errors' => $errors,
+        ], 422);
+    }
+
     $user = fetch_one('SELECT * FROM users WHERE email = ?', [$email]);
 
     if (!$user || !password_verify($password, $user['password_hash'])) {
         json_response(['ok' => false, 'message' => 'Invalid email or password.'], 401);
     }
 
-    json_response(['ok' => true, 'user' => normalize_user($user)]);
+    session_regenerate_id(true);
+    $_SESSION['user_id'] = (int) $user['id'];
+    $_SESSION['user_name'] = trim($user['first_name'] . ' ' . $user['last_name']);
+    $_SESSION['user_email'] = $user['email'];
+    $_SESSION['role'] = $user['role'] ?? 'patient';
+
+    $normalizedUser = normalize_user($user);
+    json_response([
+        'ok' => true,
+        'user' => $normalizedUser,
+        'redirect' => $normalizedUser['role'] === 'admin' ? 'admin.php' : 'index.php',
+    ]);
 }
 
 function appointments()
@@ -413,6 +515,8 @@ function create_notification($userId, $appointmentId, $message, $audience = 'use
 
 function update_appointment()
 {
+    require_admin();
+
     $data = request_json();
     $id = (int) ($data['id'] ?? 0);
     $status = $data['status'] ?? 'pending';
@@ -490,12 +594,16 @@ function mark_notifications_read()
 
 function mark_admin_notifications_read()
 {
+    require_admin();
+
     execute_sql("UPDATE notifications SET is_read = 1 WHERE audience = 'admin'");
     json_response(['ok' => true]);
 }
 
 function update_stock()
 {
+    require_admin();
+
     $data = request_json();
     $type = $data['type'] ?? 'product';
     $id = (int) ($data['id'] ?? 0);
