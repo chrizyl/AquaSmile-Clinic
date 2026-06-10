@@ -4,7 +4,7 @@
 const DB_HOST = '127.0.0.1';
 const DB_USER = 'root';
 const DB_PASS = '';
-const DB_NAME = 'aquasmile_clinic';
+const DB_NAME = 'aquasmile_db';
 
 try {
     // First, connect without database to create it
