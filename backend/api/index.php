@@ -2,6 +2,20 @@
 
 require __DIR__ . '/db.php';
 
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
+
+$mailConfigPaths = [
+    __DIR__ . '/mail_config.php',
+    __DIR__ . '/mail-config.php',
+];
+foreach ($mailConfigPaths as $mailConfigPath) {
+    if (is_file($mailConfigPath)) {
+        require $mailConfigPath;
+        break;
+    }
+}
+
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_set_cookie_params([
         'httponly' => true,
@@ -14,8 +28,14 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
+$sessionWriteActions = ['login', 'verify_registration_otp'];
+if (!in_array($action, $sessionWriteActions, true) && session_status() === PHP_SESSION_ACTIVE) {
+    session_write_close();
+}
+
 try {
     ensure_notifications_table();
+    ensure_otp_verifications_table();
     ensure_optional_columns();
 
     switch ($action) {
@@ -30,6 +50,12 @@ try {
             break;
         case 'register':
             register_user();
+            break;
+        case 'verify_registration_otp':
+            verify_registration_otp();
+            break;
+        case 'resend_registration_otp':
+            resend_registration_otp();
             break;
         case 'login':
             login_user();
@@ -91,6 +117,54 @@ function ensure_notifications_table()
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         )"
     );
+}
+
+function ensure_otp_verifications_table()
+{
+    execute_sql(
+        "CREATE TABLE IF NOT EXISTS otp_verifications (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            email VARCHAR(120) NOT NULL UNIQUE,
+            first_name VARCHAR(100) NOT NULL,
+            last_name VARCHAR(100) NOT NULL,
+            phone VARCHAR(20) NOT NULL,
+            password_hash VARCHAR(255) NOT NULL,
+            otp_code VARCHAR(6) NOT NULL,
+            expires_at DATETIME NOT NULL,
+            attempts TINYINT UNSIGNED NOT NULL DEFAULT 0,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_expires_at (expires_at)
+        )"
+    );
+
+    if (!column_exists('otp_verifications', 'first_name')) {
+        execute_sql('ALTER TABLE otp_verifications ADD COLUMN first_name VARCHAR(100) NULL AFTER email');
+    }
+
+    if (!column_exists('otp_verifications', 'last_name')) {
+        execute_sql('ALTER TABLE otp_verifications ADD COLUMN last_name VARCHAR(100) NULL AFTER first_name');
+    }
+
+    if (!column_exists('otp_verifications', 'phone')) {
+        execute_sql('ALTER TABLE otp_verifications ADD COLUMN phone VARCHAR(20) NULL AFTER last_name');
+    }
+
+    if (!column_exists('otp_verifications', 'password_hash')) {
+        execute_sql('ALTER TABLE otp_verifications ADD COLUMN password_hash VARCHAR(255) NULL AFTER phone');
+    }
+
+    if (!column_exists('otp_verifications', 'attempts')) {
+        execute_sql('ALTER TABLE otp_verifications ADD COLUMN attempts TINYINT UNSIGNED NOT NULL DEFAULT 0 AFTER expires_at');
+    }
+
+    if (!column_exists('otp_verifications', 'updated_at')) {
+        execute_sql('ALTER TABLE otp_verifications ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER created_at');
+    }
+
+    if (!column_exists('otp_verifications', 'last_otp_sent_at')) {
+        execute_sql('ALTER TABLE otp_verifications ADD COLUMN last_otp_sent_at DATETIME NULL AFTER updated_at');
+    }
 }
 
 function column_exists($table, $column)
@@ -378,13 +452,96 @@ function register_user()
         ], 409);
     }
 
+    $otp = generate_otp_code();
+    $expiresAt = otp_expiry_time();
+    $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+
+    execute_sql('DELETE FROM otp_verifications WHERE expires_at < NOW()');
+
+    execute_sql('DELETE FROM otp_verifications WHERE email = ?', [$email]);
+    execute_sql(
+        "INSERT INTO otp_verifications
+            (email, first_name, last_name, phone, password_hash, otp_code, expires_at, attempts, last_otp_sent_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 0, NOW())",
+        [$email, $firstName, $lastName, $phone, $passwordHash, $otp, $expiresAt]
+    );
+
+    $mailSent = send_registration_otp($email, $firstName, $otp);
+
+    json_response([
+        'ok' => true,
+        'message' => registration_otp_delivery_message($mailSent),
+        'email' => $email,
+        'expiresInMinutes' => 10,
+        'mailSent' => $mailSent,
+        'debugOtp' => (!$mailSent && should_expose_debug_otp()) ? $otp : null,
+    ], 202);
+}
+
+function verify_registration_otp()
+{
+    $data = request_json();
+    $email = strtolower(trim($data['email'] ?? ''));
+    $otp = preg_replace('/\D/', '', (string) ($data['otp'] ?? ''));
+
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL) || !preg_match('/^\d{6}$/', $otp)) {
+        json_response([
+            'ok' => false,
+            'message' => 'Please enter the 6-digit verification code.',
+            'errors' => ['Please enter the 6-digit verification code.'],
+        ], 422);
+    }
+
+    if (fetch_one('SELECT id FROM users WHERE email = ?', [$email])) {
+        execute_sql('DELETE FROM otp_verifications WHERE email = ?', [$email]);
+        json_response([
+            'ok' => false,
+            'message' => 'An account with this email already exists.',
+            'errors' => ['An account with this email already exists.'],
+        ], 409);
+    }
+
+    $pending = fetch_one('SELECT * FROM otp_verifications WHERE email = ?', [$email]);
+    if (!$pending) {
+        json_response([
+            'ok' => false,
+            'message' => 'No pending verification found. Please register again.',
+        ], 404);
+    }
+
+    if ((int) $pending['attempts'] >= 5) {
+        execute_sql('DELETE FROM otp_verifications WHERE email = ?', [$email]);
+        json_response([
+            'ok' => false,
+            'message' => 'Too many incorrect attempts. Please register again.',
+        ], 429);
+    }
+
+    if (strtotime($pending['expires_at']) < time()) {
+        execute_sql('DELETE FROM otp_verifications WHERE email = ?', [$email]);
+        json_response([
+            'ok' => false,
+            'message' => 'Verification code expired. Please register again.',
+        ], 410);
+    }
+
+    if (!hash_equals($pending['otp_code'], $otp)) {
+        execute_sql('UPDATE otp_verifications SET attempts = attempts + 1 WHERE email = ?', [$email]);
+        json_response([
+            'ok' => false,
+            'message' => 'Incorrect verification code.',
+            'errors' => ['Incorrect verification code.'],
+        ], 422);
+    }
+
     try {
         execute_sql(
             'INSERT INTO users (first_name, last_name, email, phone, password_hash) VALUES (?, ?, ?, ?, ?)',
-            [$firstName, $lastName, $email, $phone, password_hash($password, PASSWORD_DEFAULT)]
+            [$pending['first_name'], $pending['last_name'], $pending['email'], $pending['phone'], $pending['password_hash']]
         );
     } catch (PDOException $e) {
         if ($e->getCode() === '23000') {
+            execute_sql('DELETE FROM otp_verifications WHERE email = ?', [$email]);
             json_response([
                 'ok' => false,
                 'message' => 'An account with this email already exists.',
@@ -394,12 +551,262 @@ function register_user()
         throw $e;
     }
 
+    execute_sql('DELETE FROM otp_verifications WHERE email = ?', [$email]);
+
     $user = fetch_one('SELECT * FROM users WHERE email = ?', [$email]);
+    session_regenerate_id(true);
+    $_SESSION['user_id'] = (int) $user['id'];
+    $_SESSION['user_name'] = trim($user['first_name'] . ' ' . $user['last_name']);
+    $_SESSION['user_email'] = $user['email'];
+    $_SESSION['role'] = $user['role'] ?? 'patient';
+
     json_response([
         'ok' => true,
         'message' => 'Account created successfully.',
         'user' => normalize_user($user),
     ], 201);
+}
+
+function resend_registration_otp()
+{
+    $data = request_json();
+    $email = strtolower(trim($data['email'] ?? ''));
+
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        json_response(['ok' => false, 'message' => 'Please enter a valid email address.'], 422);
+    }
+
+    $pending = fetch_one('SELECT * FROM otp_verifications WHERE email = ?', [$email]);
+    if (!$pending) {
+        json_response(['ok' => false, 'message' => 'No pending verification found. Please register again.'], 404);
+    }
+
+    $lastSentAt = $pending['last_otp_sent_at'] ? strtotime($pending['last_otp_sent_at']) : 0;
+    $now = time();
+    $secondsSinceLastSend = $now - $lastSentAt;
+
+    if ($secondsSinceLastSend < 60) {
+        $waitSeconds = 60 - $secondsSinceLastSend;
+        json_response([
+            'ok' => false,
+            'message' => 'Please wait ' . $waitSeconds . ' second' . ($waitSeconds === 1 ? '' : 's') . ' before requesting a new code.',
+            'waitSeconds' => $waitSeconds,
+        ], 429);
+    }
+
+    $otp = generate_otp_code();
+    $expiresAt = otp_expiry_time();
+
+    execute_sql(
+        'UPDATE otp_verifications SET otp_code = ?, expires_at = ?, attempts = 0, last_otp_sent_at = NOW() WHERE email = ?',
+        [$otp, $expiresAt, $email]
+    );
+
+    $mailSent = send_registration_otp($email, $pending['first_name'], $otp);
+
+    json_response([
+        'ok' => true,
+        'message' => registration_otp_delivery_message($mailSent, true),
+        'expiresInMinutes' => 10,
+        'mailSent' => $mailSent,
+        'debugOtp' => (!$mailSent && should_expose_debug_otp()) ? $otp : null,
+    ]);
+}
+
+function generate_otp_code()
+{
+    return (string) random_int(100000, 999999);
+}
+
+function otp_expiry_time()
+{
+    return (new DateTimeImmutable('+10 minutes'))->format('Y-m-d H:i:s');
+}
+
+function send_registration_otp($email, $firstName, $otp)
+{
+    $subject = 'Your AquaSmile verification code';
+    $message = "Hi {$firstName},\n\nYour AquaSmile verification code is {$otp}. It expires in 10 minutes.\n\nIf you did not create an account, you can ignore this email.";
+
+    if (is_smtp_configured()) {
+        return smtp_send_mail($email, $subject, $message);
+    }
+
+    error_log("AquaSmile registration OTP for {$email}: {$otp}");
+    return false;
+}
+
+function registration_otp_delivery_message($mailSent, $resent = false)
+{
+    if ($mailSent) {
+        return $resent
+            ? 'A new verification code has been sent. Please check your email.'
+            : 'Verification code sent. Please check your email.';
+    }
+
+    if (is_smtp_configured()) {
+        return $resent
+            ? 'New verification code created, but the email could not be sent. Please check the SMTP settings.'
+            : 'Verification code created, but the email could not be sent. Please check the SMTP settings.';
+    }
+
+    return $resent
+        ? 'New verification code created, but email sending is not configured on this server.'
+        : 'Verification code created, but email sending is not configured on this server.';
+}
+
+function is_smtp_configured()
+{
+    if (
+        !defined('MAIL_HOST')
+        || !defined('MAIL_PORT')
+        || !defined('MAIL_USERNAME')
+        || !defined('MAIL_PASSWORD')
+        || !defined('MAIL_FROM_EMAIL')
+    ) {
+        return false;
+    }
+
+    $host = trim((string) MAIL_HOST);
+    $username = trim((string) MAIL_USERNAME);
+    $password = trim((string) MAIL_PASSWORD);
+    $fromEmail = trim((string) MAIL_FROM_EMAIL);
+
+    return $host !== ''
+        && (int) MAIL_PORT > 0
+        && filter_var($username, FILTER_VALIDATE_EMAIL)
+        && $password !== ''
+        && stripos($username, 'yourgmail') === false
+        && stripos($password, 'your-16-character') === false
+        && filter_var($fromEmail, FILTER_VALIDATE_EMAIL);
+}
+
+function smtp_send_mail($to, $subject, $body)
+{
+    $host = trim((string) MAIL_HOST);
+    $port = (int) MAIL_PORT;
+    $encryption = defined('MAIL_ENCRYPTION') ? strtolower((string) MAIL_ENCRYPTION) : 'ssl';
+    $timeout = defined('MAIL_TIMEOUT') ? (int) MAIL_TIMEOUT : 8;
+    $timeout = max(3, min($timeout, 10));
+    $username = trim((string) MAIL_USERNAME);
+    $password = preg_replace('/\s+/', '', (string) MAIL_PASSWORD);
+    $fromEmail = trim((string) MAIL_FROM_EMAIL);
+    $fromName = defined('MAIL_FROM_NAME') ? (string) MAIL_FROM_NAME : 'AquaSmile';
+    $remote = $encryption === 'ssl' ? "ssl://{$host}:{$port}" : "tcp://{$host}:{$port}";
+
+    $socket = @stream_socket_client($remote, $errno, $errstr, $timeout, STREAM_CLIENT_CONNECT);
+    if (!$socket) {
+        error_log("AquaSmile SMTP connection failed: {$errstr} ({$errno})");
+        return false;
+    }
+
+    stream_set_timeout($socket, $timeout);
+
+    try {
+        smtp_expect($socket, [220]);
+        smtp_command($socket, "EHLO " . smtp_local_domain(), [250]);
+
+        if ($encryption === 'tls') {
+            smtp_command($socket, "STARTTLS", [220]);
+            if (!stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+                throw new RuntimeException('Unable to enable SMTP TLS encryption.');
+            }
+            smtp_command($socket, "EHLO " . smtp_local_domain(), [250]);
+        }
+
+        smtp_command($socket, "AUTH LOGIN", [334]);
+        smtp_command($socket, base64_encode($username), [334]);
+        smtp_command($socket, base64_encode($password), [235]);
+        smtp_command($socket, "MAIL FROM:<{$fromEmail}>", [250]);
+        smtp_command($socket, "RCPT TO:<{$to}>", [250, 251]);
+        smtp_command($socket, "DATA", [354]);
+
+        $headers = [
+            'Date: ' . date(DATE_RFC2822),
+            'From: ' . smtp_format_address($fromEmail, $fromName),
+            'To: <' . $to . '>',
+            'Subject: ' . $subject,
+            'MIME-Version: 1.0',
+            'Content-Type: text/plain; charset=UTF-8',
+            'Content-Transfer-Encoding: 8bit',
+        ];
+        $data = implode("\r\n", $headers) . "\r\n\r\n" . smtp_dot_stuff($body) . "\r\n.";
+        smtp_command($socket, $data, [250]);
+        smtp_command($socket, "QUIT", [221]);
+        fclose($socket);
+        return true;
+    } catch (Throwable $e) {
+        error_log('AquaSmile SMTP send failed: ' . $e->getMessage());
+        @fclose($socket);
+        return false;
+    }
+}
+
+function smtp_command($socket, $command, $expectedCodes)
+{
+    $written = fwrite($socket, $command . "\r\n");
+    if ($written === false) {
+        throw new RuntimeException('Unable to write SMTP command.');
+    }
+
+    return smtp_expect($socket, $expectedCodes);
+}
+
+function smtp_expect($socket, $expectedCodes)
+{
+    $response = '';
+
+    while (($line = fgets($socket, 515)) !== false) {
+        $response .= $line;
+        if (preg_match('/^\d{3}\s/', $line)) {
+            break;
+        }
+
+        $meta = stream_get_meta_data($socket);
+        if (!empty($meta['timed_out'])) {
+            throw new RuntimeException('SMTP response timed out.');
+        }
+    }
+
+    $meta = stream_get_meta_data($socket);
+    if (!empty($meta['timed_out'])) {
+        throw new RuntimeException('SMTP response timed out.');
+    }
+
+    $code = (int) substr($response, 0, 3);
+    if (!in_array($code, $expectedCodes, true)) {
+        throw new RuntimeException(trim($response) ?: 'Empty SMTP response.');
+    }
+
+    return $response;
+}
+
+function smtp_local_domain()
+{
+    return $_SERVER['SERVER_NAME'] ?? 'localhost';
+}
+
+function smtp_format_address($email, $name)
+{
+    $cleanName = str_replace(['"', "\r", "\n"], ['', '', ''], $name);
+    return '"' . $cleanName . '" <' . $email . '>';
+}
+
+function smtp_dot_stuff($body)
+{
+    $body = str_replace(["\r\n", "\r"], "\n", $body);
+    $lines = explode("\n", $body);
+    $lines = array_map(function ($line) {
+        return substr($line, 0, 1) === '.' ? '.' . $line : $line;
+    }, $lines);
+
+    return implode("\r\n", $lines);
+}
+
+function should_expose_debug_otp()
+{
+    $host = $_SERVER['HTTP_HOST'] ?? '';
+    return stripos($host, 'localhost') !== false || stripos($host, '127.0.0.1') !== false;
 }
 
 function login_user()

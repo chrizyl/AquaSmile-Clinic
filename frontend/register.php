@@ -81,6 +81,31 @@
         <button class="btn-full" type="submit">Create Account</button>
       </form>
 
+      <form id="otp-form" method="post" novalidate hidden>
+        <div class="otp-context">
+          <strong>Verify your email</strong>
+          <span>Enter the 6-digit code sent to <span id="otp-email-label"></span>.</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="reg-otp">Verification code</label>
+          <input class="form-input otp-input"
+                 type="text"
+                 id="reg-otp"
+                 name="otp"
+                 placeholder="000000"
+                 autocomplete="one-time-code"
+                 inputmode="numeric"
+                 pattern="[0-9]{6}"
+                 maxlength="6"
+                 required>
+        </div>
+
+        <button class="btn-full" type="submit">Verify Account</button>
+        <button class="btn-link" type="button" id="resend-otp-btn">Resend OTP</button>
+        <button class="btn-link muted" type="button" id="edit-registration-btn">Edit registration details</button>
+      </form>
+
       <div class="auth-toggle">
         Already have an account?
         <span onclick="window.location.href='login.php'">Sign in</span>

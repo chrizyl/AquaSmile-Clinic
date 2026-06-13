@@ -974,6 +974,18 @@ if (isAdmin()) {
       this.value = v;
     });
 
+    document.getElementById('phone').addEventListener('input', function() {
+      this.value = this.value.replace(/[^0-9]/g, '');
+    });
+
+    document.getElementById('gcash-number').addEventListener('input', function() {
+      this.value = this.value.replace(/[^0-9]/g, '');
+    });
+
+    document.getElementById('zip').addEventListener('input', function() {
+      this.value = this.value.replace(/[^0-9]/g, '');
+    });
+
     /* ── CART DATA (from localStorage, same key as cart.php) ── */
     const checkoutCart = JSON.parse(localStorage.getItem('aqCart') || '[]');
 

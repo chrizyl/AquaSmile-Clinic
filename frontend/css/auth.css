@@ -157,3 +157,50 @@
     font-size: 1.7rem;
   }
 }
+
+.btn-link {
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px;
+  border: none;
+  background: transparent;
+  color: var(--aqua);
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.btn-link:hover {
+  color: var(--aqua-dark);
+}
+
+.btn-link.muted {
+  margin-top: 4px;
+  color: var(--text-mid);
+  font-size: 0.82rem;
+}
+
+.otp-context {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 20px;
+  color: var(--text-mid);
+  font-size: 0.86rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.otp-context strong {
+  color: var(--text-dark);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.otp-input {
+  text-align: center;
+  font-size: 1.4rem;
+  letter-spacing: 0.18em;
+}

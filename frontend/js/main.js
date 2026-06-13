@@ -59,7 +59,7 @@ async function apiRequest(action, data = null, method = 'POST') {
 
   const url = API_BASE + '?action=' + encodeURIComponent(action);
   const response = await fetch(url, { ...options, cache: 'no-store' });
-  const payload = await response.json();
+  const payload = await parseApiResponse(response);
 
   if (!response.ok || !payload.ok) {
     const error = new Error(payload.message || 'Database request failed.');
@@ -73,13 +73,27 @@ async function apiRequest(action, data = null, method = 'POST') {
 async function apiGet(action, params = {}) {
   const query = new URLSearchParams({ action, ...params });
   const response = await fetch(API_BASE + '?' + query.toString(), { cache: 'no-store' });
-  const payload = await response.json();
+  const payload = await parseApiResponse(response);
 
   if (!response.ok || !payload.ok) {
     throw new Error(payload.message || 'Database request failed.');
   }
 
   return payload;
+}
+
+async function parseApiResponse(response) {
+  const text = await response.text();
+
+  try {
+    return text ? JSON.parse(text) : {};
+  } catch (err) {
+    console.error('Non-JSON API response:', text);
+    return {
+      ok: false,
+      message: 'Server returned an invalid response. Please try again.',
+    };
+  }
 }
 
 async function syncCatalogFromDatabase() {
@@ -544,6 +558,7 @@ function truncateStr(str, maxLen) {
 function renderDeals() {
   const grid = document.getElementById('deals-grid');
   if (!grid) return;
+  const adminViewing = isAdmin();
 
   // forEach loop — Lesson 2 (JS forEach equivalent)
   let html = '';
@@ -564,7 +579,11 @@ function renderDeals() {
             <span class="deal-discounted">${formatPeso(discounted)}</span>
             <span class="deal-savings">Save ${formatPeso(savings)}</span>
           </div>
-          <button class="deal-book-btn" onclick="bookDeal('${deal.code}')">Book This Deal</button>
+          <button
+            class="deal-book-btn ${adminViewing ? 'admin-disabled' : ''}"
+            onclick="${adminViewing ? 'return false;' : `bookDeal('${deal.code}')`}"
+            ${adminViewing ? 'disabled' : ''}
+          >${adminViewing ? 'View Only' : 'Book This Deal'}</button>
         </div>
       </div>`;
   });
@@ -572,6 +591,11 @@ function renderDeals() {
 }
 
 function bookDeal(code) {
+  if (isAdmin()) {
+    showToast('Admin accounts cannot book appointments.');
+    return;
+  }
+
   if (!currentUser) {
     showToast('Please log in to book a deal.');
     setTimeout(() => window.location.href = 'login.php', 1200);

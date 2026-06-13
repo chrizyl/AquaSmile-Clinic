@@ -301,6 +301,12 @@ if (isAdmin()) {
 
   function sortProducts(val) { activeSort = val; applyFiltersAndSort(); }
 
+  function isAdminAccount() {
+    const user = Cookie.get('currentUser');
+    const admin = Cookie.get('currentAdmin');
+    return (admin && admin.role === 'admin') || (user && user.role === 'admin');
+  }
+
   function applyFiltersAndSort() {
     let list = activeCategory==='all' ? [...PRODUCTS] : PRODUCTS.filter(p=>p.category===activeCategory);
     if (activeSort==='price-asc')  list.sort((a,b)=>a.price-b.price);
@@ -313,6 +319,7 @@ if (isAdmin()) {
     const grid=document.getElementById('products-grid');
     const empty=document.getElementById('shop-empty');
     const count=document.getElementById('products-count');
+    const adminViewing = isAdminAccount();
     if (!list.length) { grid.innerHTML=''; empty.style.display=''; count.textContent=''; return; }
     empty.style.display='none';
     count.textContent=`Showing ${list.length} product${list.length!==1?'s':''}`;
@@ -330,8 +337,13 @@ if (isAdmin()) {
           <div class="product-desc">${p.desc}</div>
           <div class="product-card-actions">
             <button class="btn-view-details" onclick="openProductDetail('${p.id}')">View Details</button>
-            <button class="btn-add-cart" id="btn-${p.id}" onclick="addToCart('${p.id}')">
-              ${SVG.cart} Add to Cart
+            <button
+              class="btn-add-cart ${adminViewing ? 'admin-disabled' : ''}"
+              id="btn-${p.id}"
+              onclick="${adminViewing ? 'return false;' : `addToCart('${p.id}')`}"
+              ${adminViewing ? 'disabled' : ''}
+            >
+              ${SVG.cart} ${adminViewing ? 'View Only' : 'Add to Cart'}
             </button>
           </div>
         </div>
@@ -341,6 +353,11 @@ if (isAdmin()) {
   /* ── AUTH GUARD for cart/checkout navigation ── */
   function requireLoginThen(url) {
     const user = Cookie.get('currentUser');
+    const admin = Cookie.get('currentAdmin');
+    if (admin) {
+      showToast('Admin accounts are view-only on the site.');
+      return;
+    }
     if (!user) {
       window.location.href = 'login.php';
       return;
@@ -349,6 +366,11 @@ if (isAdmin()) {
   }
 
   async function addToCart(pid) {
+    if (isAdminAccount()) {
+      showToast('Admin accounts are view-only on the site.');
+      return;
+    }
+
     if (pendingCartAdds.has(pid)) return;
     const p = PRODUCTS.find(x=>x.id===pid); if (!p) return;
     pendingCartAdds.add(pid);
@@ -570,9 +592,10 @@ if (isAdmin()) {
   initProductsPage();
 
 
-  function openProductDetail(pid) {
+function openProductDetail(pid) {
     const product = PRODUCTS.find(p => p.id === pid);
     if (!product) return;
+    const adminViewing = isAdminAccount();
 
     /* Instantiate a CartItem to show inheritance — lineTotal getter */
     const previewItem = new CartItem(product, 1);
@@ -610,8 +633,12 @@ if (isAdmin()) {
 
       <p class="pd-desc">${product.desc}</p>
 
-      <button class="pd-add-btn" onclick="addToCart('${product.id}'); closeProductDetail();">
-        ${SVG.cart} Add to Cart
+      <button
+        class="pd-add-btn ${adminViewing ? 'admin-disabled' : ''}"
+        onclick="${adminViewing ? 'return false;' : `addToCart('${product.id}'); closeProductDetail();`}"
+        ${adminViewing ? 'disabled' : ''}
+      >
+        ${SVG.cart} ${adminViewing ? 'View Only' : 'Add to Cart'}
       </button>`;
 
     document.getElementById('pd-overlay').classList.add('open');
