@@ -17,6 +17,7 @@ $initialFirstName = preg_split('/\s+/', $sessionName)[0] ?? 'Patient';
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>My Account | AquaSmile</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="css/style.css?v=20260614">
   <link rel="stylesheet" href="css/notifications.css?v=20260523">
   <link rel="stylesheet" href="css/auth-nav.css?v=20260614">
@@ -65,12 +66,12 @@ $initialFirstName = preg_split('/\s+/', $sessionName)[0] ?? 'Patient';
           </div>
         </div>
         <div class="portal-menu" role="navigation" aria-label="Patient account sections">
-          <button class="portal-menu-item active" type="button" data-section="overview"><span>&#8962;</span>Overview</button>
-          <button class="portal-menu-item" type="button" data-section="personal"><span>&#128100;</span>Personal Information</button>
-          <button class="portal-menu-item" type="button" data-section="appointments"><span>&#128197;</span>Appointments</button>
-          <button class="portal-menu-item" type="button" data-section="orders"><span>&#128722;</span>Orders</button>
-          <button class="portal-menu-item" type="button" data-section="notifications"><span>&#128276;</span>Notifications <b id="sidebar-unread" hidden>0</b></button>
-          <button class="portal-menu-item" type="button" data-section="password"><span>&#128274;</span>Change Password</button>
+          <button class="portal-menu-item active" type="button" data-section="overview"><i class="bi bi-house-door-fill" aria-hidden="true"></i>Overview</button>
+          <button class="portal-menu-item" type="button" data-section="personal"><i class="bi bi-person-fill" aria-hidden="true"></i>Personal Information</button>
+          <button class="portal-menu-item" type="button" data-section="appointments"><i class="bi bi-calendar-event-fill" aria-hidden="true"></i>Appointments</button>
+          <button class="portal-menu-item" type="button" data-section="orders"><i class="bi bi-bag-fill" aria-hidden="true"></i>Orders</button>
+          <button class="portal-menu-item" type="button" data-section="notifications"><i class="bi bi-bell-fill" aria-hidden="true"></i>Notifications <b id="sidebar-unread" hidden>0</b></button>
+          <button class="portal-menu-item" type="button" data-section="password"><i class="bi bi-gear-fill" aria-hidden="true"></i>Change Password</button>
         </div>
       </aside>
 

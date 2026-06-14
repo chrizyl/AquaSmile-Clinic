@@ -75,6 +75,11 @@
         <div class="form-group">
           <label class="form-label" for="reg-password">Password</label>
           <input class="form-input" type="password" id="reg-password" name="password" placeholder="At least 8 characters" autocomplete="new-password" minlength="8" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="reg-confirm-password">Confirm Password</label>
+          <input class="form-input" type="password" id="reg-confirm-password" placeholder="Re-enter your password" autocomplete="new-password" minlength="8" required>
           <div class="form-hint">Use at least 8 characters with a letter and a number.</div>
         </div>
 
@@ -115,9 +120,6 @@
   </div>
 
   <script src="js/main.js?v=20260614b"></script>
-  <script src="js/auth.js?v=20260610"></script>
-
-  <div id="site-footer-root"></div>
-  <script src="js/footer.js?v=20260608"></script>
+  <script src="js/auth.js?v=20260614"></script>
 </body>
 </html>

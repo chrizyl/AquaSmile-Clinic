@@ -23,6 +23,14 @@ function showMessage(element, messages) {
   element.hidden = false;
 }
 
+function clearRegistrationPasswords() {
+  const passwordInput = document.getElementById('reg-password');
+  const confirmPasswordInput = document.getElementById('reg-confirm-password');
+
+  if (passwordInput) passwordInput.value = '';
+  if (confirmPasswordInput) confirmPasswordInput.value = '';
+}
+
 async function register(event) {
   event.preventDefault();
 
@@ -33,12 +41,21 @@ async function register(event) {
   const email = document.getElementById('reg-email').value.trim();
   const contact = document.getElementById('reg-contact').value.trim();
   const passwordInput = document.getElementById('reg-password');
+  const confirmPasswordInput = document.getElementById('reg-confirm-password');
   const password = passwordInput.value;
+  const confirmPassword = confirmPasswordInput.value;
   const errEl = document.getElementById('register-error');
   const sucEl = document.getElementById('register-success');
 
   hideMessage(errEl);
   hideMessage(sucEl);
+
+  if (password !== confirmPassword) {
+    clearRegistrationPasswords();
+    passwordInput.focus();
+    showMessage(errEl, 'Passwords do not match.');
+    return;
+  }
 
   try {
     const result = await apiRequest('register', { fname, lname, email, contact, password });
@@ -53,12 +70,13 @@ async function register(event) {
     const debugNote = result.debugOtp ? ' Local test OTP: ' + result.debugOtp : '';
     showMessage(sucEl, (result.message || 'Verification code sent. Please check your email.') + debugNote);
   } catch (err) {
-    passwordInput.value = '';
+    clearRegistrationPasswords();
+    passwordInput.focus();
     showMessage(errEl, err.errors || err.message || 'Registration failed. Please try again.');
     return;
   }
 
-  passwordInput.value = '';
+  clearRegistrationPasswords();
 }
 
 async function verifyRegistrationOtp(event) {
@@ -150,7 +168,7 @@ function editRegistrationDetails() {
   hideMessage(sucEl);
   otpForm.hidden = true;
   registerForm.hidden = false;
-  document.getElementById('reg-password').value = '';
+  clearRegistrationPasswords();
   document.getElementById('reg-password').focus();
 }
 

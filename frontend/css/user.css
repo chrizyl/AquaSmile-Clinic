@@ -30,8 +30,8 @@
 .sidebar-profile strong { display:block; max-width:155px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.85rem; }
 .sidebar-profile span { color:var(--account-muted); font-size:.68rem; text-transform:uppercase; letter-spacing:.08em; }
 .portal-menu { position:static; inset:auto; z-index:auto; width:100%; height:auto; display:grid; gap:6px; padding:16px 0 0; background:transparent; border:0; box-shadow:none; backdrop-filter:none; }
-.portal-menu-item { position:relative; width:100%; min-width:0; display:flex; align-items:center; gap:11px; border:0; border-radius:12px; padding:12px 13px; background:transparent; color:var(--text-mid); font:500 .82rem 'DM Sans',sans-serif; text-align:left; cursor:pointer; transition:.2s; white-space:normal; }
-.portal-menu-item > span { width:18px; text-align:center; }
+.portal-menu-item { position:relative; width:100%; min-width:0; display:flex; align-items:center; gap:12px; border:0; border-radius:12px; padding:12px 13px; background:transparent; color:var(--text-mid); font:500 .82rem 'DM Sans',sans-serif; text-align:left; cursor:pointer; transition:.2s; white-space:normal; }
+.portal-menu-item > i { width:19px; flex:0 0 19px; text-align:center; font-size:1rem; line-height:1; }
 .portal-menu-item:hover { background:#f0f7f7; color:var(--aqua-dark); }
 .portal-menu-item.active { background:linear-gradient(100deg,var(--aqua),var(--aqua-dark)); color:#fff; box-shadow:0 7px 18px rgba(90,121,120,.2); }
 .portal-menu-item b { margin-left:auto; min-width:20px; height:20px; padding:0 5px; border-radius:99px; background:var(--peach); color:var(--text-dark); display:grid; place-items:center; font-size:.62rem; }
