@@ -108,6 +108,39 @@ try {
         case 'change_password':
             change_password();
             break;
+        case 'admin_update_order_status':
+            admin_update_order_status();       
+            break;
+        case 'admin_update_appointment_status':
+            admin_update_appointment_status(); 
+            break;
+        case 'admin_update_product_status':
+            admin_update_product_status(); 
+            break;
+        case 'admin_update_service_status':
+            admin_update_service_status(); 
+            break;
+        case 'admin_update_dentist_status':
+            admin_update_dentist_status(); 
+            break;
+        case 'admin_add_product':
+            admin_add_product(); 
+            break;
+        case 'admin_add_service':
+            admin_add_service();               
+            break;
+        case 'admin_add_dentist':
+            admin_add_dentist();               
+            break;
+        case 'admin_edit_product':
+            admin_edit_product();              
+            break;
+        case 'admin_edit_service':
+            admin_edit_service();              
+            break;
+        case 'admin_edit_dentist':
+            admin_edit_dentist();              
+            break;
         default:
             json_response(array('ok' => false, 'message' => 'Unknown API action.'), 404);
     }
@@ -190,6 +223,9 @@ function column_exists($table, $column)
 
 function ensure_optional_columns()
 {
+    try { 
+        ensure_status_columns(); }  
+        catch (Throwable $e) { error_log('AquaSmile status columns: ' . $e->getMessage()); }
     if (!column_exists('services', 'daily_slots')) {
         execute_sql('ALTER TABLE services ADD COLUMN daily_slots INT NOT NULL DEFAULT 0');
         execute_sql('UPDATE services SET daily_slots = 8 WHERE daily_slots = 0');
@@ -207,6 +243,323 @@ function ensure_optional_columns()
         execute_sql("ALTER TABLE notifications ADD COLUMN audience ENUM('user','admin') NOT NULL DEFAULT 'user' AFTER appointment_id");
     }
 }
+
+function ensure_status_columns()
+{
+    if (!column_exists('products', 'status')) {
+        execute_sql("ALTER TABLE products ADD COLUMN status ENUM('available','unavailable','archived') NOT NULL DEFAULT 'available'");
+    }
+
+    if (!column_exists('services', 'status')) {
+        execute_sql("ALTER TABLE services ADD COLUMN status ENUM('available','unavailable','archived') NOT NULL DEFAULT 'available'");
+    }
+
+    if (!column_exists('dentists', 'status')) {
+        execute_sql("ALTER TABLE dentists ADD COLUMN status ENUM('available','unavailable','archived') NOT NULL DEFAULT 'available'");
+    }
+
+    $orderCol = fetch_one("SELECT COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND COLUMN_NAME = 'status'");
+    if ($orderCol) {
+        $orderColType = strtolower((string)($orderCol['COLUMN_TYPE'] ?? $orderCol['column_type'] ?? ''));
+        if ($orderColType !== '' && strpos($orderColType, 'processing') === false) {
+            execute_sql("ALTER TABLE orders MODIFY COLUMN status ENUM('pending','processing','out_for_delivery','delivered','completed','cancelled','archived') NOT NULL DEFAULT 'pending'");
+        }
+    }
+
+    $apptCol = fetch_one("SELECT COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'appointments' AND COLUMN_NAME = 'status'");
+    if ($apptCol) {
+        $apptColType = strtolower((string)($apptCol['COLUMN_TYPE'] ?? $apptCol['column_type'] ?? ''));
+        if ($apptColType !== '' && strpos($apptColType, 'archived') === false) {
+            execute_sql("ALTER TABLE appointments MODIFY COLUMN status ENUM('pending','confirmed','completed','cancelled','archived') NOT NULL DEFAULT 'pending'");
+        }
+    }
+}
+
+function valid_order_status($s)
+{
+    return in_array($s, ['pending','processing','out_for_delivery','delivered','completed','cancelled','archived'], true);
+}
+
+function valid_appointment_status($s)
+{
+    return in_array($s, ['pending','confirmed','completed','cancelled','archived'], true);
+}
+
+function valid_catalog_status($s)
+{
+    return in_array($s, ['available','unavailable','archived'], true);
+}
+
+function admin_update_order_status()
+{
+    require_admin();
+    $data   = request_json();
+    $id     = (int)($data['id'] ?? 0);
+    $status = trim($data['status'] ?? '');
+
+    if ($id <= 0 || !valid_order_status($status)) {
+        json_response(['ok' => false, 'message' => 'Invalid order ID or status.'], 422);
+    }
+    if (!fetch_one('SELECT id FROM orders WHERE id = ?', [$id])) {
+        json_response(['ok' => false, 'message' => 'Order not found.'], 404);
+    }
+
+    execute_sql('UPDATE orders SET status = ? WHERE id = ?', [$status, $id]);
+    json_response(['ok' => true, 'message' => 'Order status updated to ' . $status . '.']);
+}
+
+function admin_update_appointment_status()
+{
+    require_admin();
+    $data   = request_json();
+    $id     = (int)($data['id'] ?? 0);
+    $status = trim($data['status'] ?? '');
+    $reason = trim($data['reason'] ?? '');
+
+    if ($id <= 0 || !valid_appointment_status($status)) {
+        json_response(['ok' => false, 'message' => 'Invalid appointment ID or status.'], 422);
+    }
+
+    $appt = fetch_one(appointment_sql() . ' WHERE a.id = ?', [$id]);
+    if (!$appt) {
+        json_response(['ok' => false, 'message' => 'Appointment not found.'], 404);
+    }
+
+    $cancelledBy = ($status === 'cancelled') ? 'admin' : null;
+    execute_sql(
+        'UPDATE appointments SET status = ?, cancellation_reason = ?, cancelled_by = ? WHERE id = ?',
+        [$status, $reason ?: null, $cancelledBy, $id]
+    );
+
+    if (in_array($status, ['confirmed', 'cancelled'], true)) {
+        $msg = 'Your appointment for ' . $appt['service_name'] . ' on ' . $appt['appointment_date']
+             . ' at ' . substr((string)$appt['appointment_time'], 0, 5) . ' has been ' . $status . '.';
+        if ($reason !== '') {
+            $msg .= ' Reason: ' . $reason;
+        }
+        create_notification((int)$appt['user_id'], $id, $msg, 'user');
+    }
+
+    $updated = fetch_one(appointment_sql() . ' WHERE a.id = ?', [$id]);
+    json_response(['ok' => true, 'message' => 'Appointment updated to ' . $status . '.', 'appointment' => normalize_appointment($updated)]);
+}
+
+function admin_update_product_status()
+{
+    require_admin();
+    $data   = request_json();
+    $id     = (int)($data['id'] ?? 0);
+    $status = trim($data['status'] ?? '');
+
+    if ($id <= 0 || !valid_catalog_status($status)) {
+        json_response(['ok' => false, 'message' => 'Invalid product ID or status.'], 422);
+    }
+    if (!fetch_one('SELECT id FROM products WHERE id = ?', [$id])) {
+        json_response(['ok' => false, 'message' => 'Product not found.'], 404);
+    }
+
+    execute_sql('UPDATE products SET status = ? WHERE id = ?', [$status, $id]);
+    json_response(['ok' => true, 'message' => 'Product status updated to ' . $status . '.']);
+}
+
+function admin_update_service_status()
+{
+    require_admin();
+    $data   = request_json();
+    $id     = (int)($data['id'] ?? 0);
+    $status = trim($data['status'] ?? '');
+
+    if ($id <= 0 || !valid_catalog_status($status)) {
+        json_response(['ok' => false, 'message' => 'Invalid service ID or status.'], 422);
+    }
+    if (!fetch_one('SELECT id FROM services WHERE id = ?', [$id])) {
+        json_response(['ok' => false, 'message' => 'Service not found.'], 404);
+    }
+
+    execute_sql('UPDATE services SET status = ? WHERE id = ?', [$status, $id]);
+    json_response(['ok' => true, 'message' => 'Service status updated to ' . $status . '.']);
+}
+
+function admin_update_dentist_status()
+{
+    require_admin();
+    $data   = request_json();
+    $id     = (int)($data['id'] ?? 0);
+    $status = trim($data['status'] ?? '');
+
+    if ($id <= 0 || !valid_catalog_status($status)) {
+        json_response(['ok' => false, 'message' => 'Invalid dentist ID or status.'], 422);
+    }
+    if (!fetch_one('SELECT id FROM dentists WHERE id = ?', [$id])) {
+        json_response(['ok' => false, 'message' => 'Dentist not found.'], 404);
+    }
+
+    execute_sql('UPDATE dentists SET status = ? WHERE id = ?', [$status, $id]);
+    json_response(['ok' => true, 'message' => 'Dentist status updated to ' . $status . '.']);
+}
+
+function admin_add_product()
+{
+    require_admin();
+    $data        = request_json();
+    $name        = trim($data['name'] ?? '');
+    $description = trim($data['description'] ?? '');
+    $price       = (float)($data['price'] ?? 0);
+    $stock       = max(0, (int)($data['stock_quantity'] ?? 0));
+    $errors      = [];
+
+    if ($name === '') $errors[] = 'Product name is required.';
+    if ($price <= 0)  $errors[] = 'Price must be greater than 0.';
+    if ($errors) {
+        json_response(['ok' => false, 'message' => implode(' ', $errors), 'errors' => $errors], 422);
+    }
+
+    execute_sql(
+        "INSERT INTO products (name, description, price, stock_quantity, status) VALUES (?, ?, ?, ?, 'available')",
+        [$name, $description, $price, $stock]
+    );
+    $id  = (int)db()->lastInsertId();
+    $row = fetch_one('SELECT * FROM products WHERE id = ?', [$id]);
+    json_response(['ok' => true, 'message' => 'Product added successfully.', 'product' => normalize_product($row)]);
+}
+
+function admin_edit_product()
+{
+    require_admin();
+    $data        = request_json();
+    $id          = (int)($data['id'] ?? 0);
+    $name        = trim($data['name'] ?? '');
+    $description = trim($data['description'] ?? '');
+    $price       = (float)($data['price'] ?? 0);
+    $stock       = max(0, (int)($data['stock_quantity'] ?? 0));
+    $errors      = [];
+
+    if ($id <= 0)    $errors[] = 'Invalid product ID.';
+    if ($name === '') $errors[] = 'Product name is required.';
+    if ($price <= 0)  $errors[] = 'Price must be greater than 0.';
+    if ($errors) {
+        json_response(['ok' => false, 'message' => implode(' ', $errors), 'errors' => $errors], 422);
+    }
+    if (!fetch_one('SELECT id FROM products WHERE id = ?', [$id])) {
+        json_response(['ok' => false, 'message' => 'Product not found.'], 404);
+    }
+
+    execute_sql(
+        'UPDATE products SET name = ?, description = ?, price = ?, stock_quantity = ? WHERE id = ?',
+        [$name, $description, $price, $stock, $id]
+    );
+    $row = fetch_one('SELECT * FROM products WHERE id = ?', [$id]);
+    json_response(['ok' => true, 'message' => 'Product updated successfully.', 'product' => normalize_product($row)]);
+}
+
+function admin_add_service()
+{
+    require_admin();
+    $data        = request_json();
+    $name        = trim($data['name'] ?? '');
+    $description = trim($data['description'] ?? '');
+    $price       = (float)($data['price'] ?? 0);
+    $category    = trim($data['category'] ?? '');
+    $dailySlots  = max(0, (int)($data['daily_slots'] ?? 8));
+    $errors      = [];
+
+    if ($name === '') $errors[] = 'Service name is required.';
+    if ($price <= 0)  $errors[] = 'Price must be greater than 0.';
+    if ($errors) {
+        json_response(['ok' => false, 'message' => implode(' ', $errors), 'errors' => $errors], 422);
+    }
+
+    execute_sql(
+        "INSERT INTO services (name, description, price, category, daily_slots, status) VALUES (?, ?, ?, ?, ?, 'available')",
+        [$name, $description, $price, $category, $dailySlots]
+    );
+    $id  = (int)db()->lastInsertId();
+    $row = fetch_one('SELECT * FROM services WHERE id = ?', [$id]);
+    json_response(['ok' => true, 'message' => 'Service added successfully.', 'service' => normalize_service($row)]);
+}
+
+function admin_edit_service()
+{
+    require_admin();
+    $data        = request_json();
+    $id          = (int)($data['id'] ?? 0);
+    $name        = trim($data['name'] ?? '');
+    $description = trim($data['description'] ?? '');
+    $price       = (float)($data['price'] ?? 0);
+    $category    = trim($data['category'] ?? '');
+    $dailySlots  = max(0, (int)($data['daily_slots'] ?? 8));
+    $errors      = [];
+
+    if ($id <= 0)     $errors[] = 'Invalid service ID.';
+    if ($name === '') $errors[] = 'Service name is required.';
+    if ($price <= 0)  $errors[] = 'Price must be greater than 0.';
+    if ($errors) {
+        json_response(['ok' => false, 'message' => implode(' ', $errors), 'errors' => $errors], 422);
+    }
+    if (!fetch_one('SELECT id FROM services WHERE id = ?', [$id])) {
+        json_response(['ok' => false, 'message' => 'Service not found.'], 404);
+    }
+
+    execute_sql(
+        'UPDATE services SET name = ?, description = ?, price = ?, category = ?, daily_slots = ? WHERE id = ?',
+        [$name, $description, $price, $category, $dailySlots, $id]
+    );
+    $row = fetch_one('SELECT * FROM services WHERE id = ?', [$id]);
+    json_response(['ok' => true, 'message' => 'Service updated successfully.', 'service' => normalize_service($row)]);
+}
+
+function admin_add_dentist()
+{
+    require_admin();
+    $data           = request_json();
+    $name           = trim($data['name'] ?? '');
+    $specialization = trim($data['specialization'] ?? '');
+    $credentials    = trim($data['credentials'] ?? '');
+    $bio            = trim($data['bio'] ?? '');
+    $errors         = [];
+
+    if ($name === '') $errors[] = 'Dentist name is required.';
+    if ($errors) {
+        json_response(['ok' => false, 'message' => implode(' ', $errors), 'errors' => $errors], 422);
+    }
+
+    execute_sql(
+        "INSERT INTO dentists (name, specialization, credentials, bio, status) VALUES (?, ?, ?, ?, 'available')",
+        [$name, $specialization, $credentials, $bio]
+    );
+    $id  = (int)db()->lastInsertId();
+    $row = fetch_one('SELECT * FROM dentists WHERE id = ?', [$id]);
+    json_response(['ok' => true, 'message' => 'Dentist added successfully.', 'dentist' => normalize_dentist($row)]);
+}
+
+function admin_edit_dentist()
+{
+    require_admin();
+    $data           = request_json();
+    $id             = (int)($data['id'] ?? 0);
+    $name           = trim($data['name'] ?? '');
+    $specialization = trim($data['specialization'] ?? '');
+    $credentials    = trim($data['credentials'] ?? '');
+    $bio            = trim($data['bio'] ?? '');
+    $errors         = [];
+
+    if ($id <= 0)     $errors[] = 'Invalid dentist ID.';
+    if ($name === '') $errors[] = 'Dentist name is required.';
+    if ($errors) {
+        json_response(['ok' => false, 'message' => implode(' ', $errors), 'errors' => $errors], 422);
+    }
+    if (!fetch_one('SELECT id FROM dentists WHERE id = ?', [$id])) {
+        json_response(['ok' => false, 'message' => 'Dentist not found.'], 404);
+    }
+
+    execute_sql(
+        'UPDATE dentists SET name = ?, specialization = ?, credentials = ?, bio = ? WHERE id = ?',
+        [$name, $specialization, $credentials, $bio, $id]
+    );
+    $row = fetch_one('SELECT * FROM dentists WHERE id = ?', [$id]);
+    json_response(['ok' => true, 'message' => 'Dentist updated successfully.', 'dentist' => normalize_dentist($row)]);
+}
+
 
 function normalize_user($row)
 {
@@ -265,6 +618,7 @@ function normalize_dentist($row)
         'spec' => $row['specialization'] ?? '',
         'desc' => $row['bio'] ?? '',
         'photo' => $photos[(int) $row['id']] ?? '',
+        'status' => $row['status'] ?? 'available',
     ];
 }
 
@@ -291,6 +645,7 @@ function normalize_service($row)
         'photo' => $photos[(int) $row['id']] ?? '',
         'category' => $row['category'] ?? '',
         'dailySlots' => (int) ($row['daily_slots'] ?? 0),
+        'status' => $row['status'] ?? 'available',
     ];
 }
 
@@ -318,6 +673,7 @@ function normalize_product($row)
         'img' => $photo,
         'category' => '',
         'stock' => (int) ($row['stock_quantity'] ?? 0),
+        'status' => $row['status'] ?? 'available',
     ];
 }
 
@@ -368,9 +724,9 @@ function catalog()
 {
     json_response([
         'ok' => true,
-        'services' => array_map('normalize_service', fetch_all('SELECT * FROM services ORDER BY name')),
-        'products' => array_map('normalize_product', fetch_all('SELECT * FROM products ORDER BY name')),
-        'dentists' => array_map('normalize_dentist', fetch_all('SELECT * FROM dentists ORDER BY name')),
+        'services' => array_map('normalize_service', fetch_all("SELECT * FROM services WHERE status != 'archived' ORDER BY name")),
+        'products' => array_map('normalize_product', fetch_all("SELECT * FROM products WHERE status != 'archived' ORDER BY name")),
+        'dentists' => array_map('normalize_dentist', fetch_all("SELECT * FROM dentists WHERE status != 'archived' ORDER BY name")),
     ]);
 }
 

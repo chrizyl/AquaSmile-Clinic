@@ -348,7 +348,7 @@ if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
   </main>
 
   <script src="js/main.js?v=20260614b"></script>
-  <script src="js/admin.js?v=20260524"></script>
+  <script src="js/admin.js?v=20260615"></script>
 </body>
 
 </html>
