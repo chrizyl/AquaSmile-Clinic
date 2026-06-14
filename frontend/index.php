@@ -1,9 +1,10 @@
+<?php
+require_once 'includes/session-init.php';
+include 'includes/admin-check.php';
+require_once 'includes/navbar-auth.php';
+?>
 <!DOCTYPE html>
 <html lang="en">
-<?php
-session_start();
-include 'includes/admin-check.php';
-?>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,6 +14,7 @@ include 'includes/admin-check.php';
     rel="stylesheet">
   <link rel="stylesheet" href="css/style.css?v=20260608">
   <link rel="stylesheet" href="css/notifications.css?v=20260523">
+  <link rel="stylesheet" href="css/auth-nav.css?v=20260614">
   <link rel="stylesheet" href="css/admin-restrictions.css">
 </head>
 
@@ -32,11 +34,9 @@ include 'includes/admin-check.php';
       <button class="nav-btn" onclick="window.location.href='dentists.php'">Our Dentists</button>
       <button class="nav-btn" onclick="window.location.href='services.php'">Services</button>
       <button class="nav-btn <?php echo getAdminClass(); ?>" onclick="<?php if (!isAdmin()): ?>window.location.href='products.php'<?php endif; ?>" <?php echo getAdminDisabled(); ?>>Shop</button>
-      <button class="nav-btn" id="nav-book-btn" onclick="window.location.href='booking.php'" style="display:none">Book
+      <button class="nav-btn" id="nav-book-btn" onclick="window.location.href='booking.php'" <?php echo nav_is_patient() ? '' : 'style="display:none"'; ?>>Book
         Appointment</button>
-      <div id="nav-user-info" style="display:none"></div>
-      <button class="nav-btn pill" id="nav-login-btn" onclick="window.location.href='login.php'">Log In</button>
-      <button class="nav-btn pill-aqua" id="nav-logout-btn" onclick="logout()" style="display:none">Log Out</button>
+      <?php render_nav_auth(); ?>
     </div>
   </nav>
 
@@ -137,8 +137,8 @@ include 'includes/admin-check.php';
   <div class="clinic-stats-strip" id="clinic-stats-strip"></div>
 
   <script src="js/auth.js?v=20260523"></script>
-  <script src="js/main.js?v=20260523"></script>
-  <script src="js/notifications.js?v=20260523"></script>
+  <script src="js/main.js?v=20260614b"></script>
+  <script src="js/notifications.js?v=20260614b"></script>
 
   <div id="site-footer-root"></div>
   <script src="js/footer.js?v=20260523"></script>

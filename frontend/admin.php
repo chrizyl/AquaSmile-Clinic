@@ -335,7 +335,7 @@ if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
           <div class="schema-card"><strong>users</strong><span>id, name, email, contact, password, role, created_at</span></div>
           <div class="schema-card"><strong>cart_items</strong><span>id, user_id, product_id, quantity, created_at</span></div>
           <div class="schema-card"><strong>dentists</strong><span>id, name, credentials, specialization, photo, status</span></div>
-          <div class="schema-card"><strong>orders</strong><span>id, user_id, customer_name, total, payment_method, status</span></div>
+          <div class="schema-card"><strong>orders</strong><span>id, user_id, first_name, last_name, total, payment_method, status</span></div>
           <div class="schema-card"><strong>order_items</strong><span>id, order_id, product_id, quantity, unit_price</span></div>
           <div class="schema-card"><strong>products</strong><span>id, name, description, price, image, stock, category</span></div>
           <div class="schema-card"><strong>services</strong><span>id, name, description, price, image, daily_slots, category</span></div>
@@ -347,7 +347,7 @@ if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
     </section>
   </main>
 
-  <script src="js/main.js?v=20260524"></script>
+  <script src="js/main.js?v=20260614b"></script>
   <script src="js/admin.js?v=20260524"></script>
 </body>
 

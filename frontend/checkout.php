@@ -946,7 +946,7 @@ if (isAdmin()) {
     </div>
   </div>
 
-  <script src="js/main.js?v=20260523"></script>
+  <script src="js/main.js?v=20260614b"></script>
 
   <script>
     function selectPayment(el) {
@@ -1145,7 +1145,8 @@ if (isAdmin()) {
         const currentUser = Cookie.get('currentUser');
         await apiRequest('create_order', {
           userId: currentUser ? currentUser.id : null,
-          customerName: formData.first_name + ' ' + formData.last_name,
+          first_name: formData.first_name,
+          last_name: formData.last_name,
           email: formData.email,
           phone: formData.phone,
           address: formData.address,
@@ -1251,7 +1252,7 @@ if (isAdmin()) {
     }
   </script>
 
-<script src="js/notifications.js?v=20260523"></script>
+<script src="js/notifications.js?v=20260614b"></script>
 </script>
 
   <div id="site-footer-root"></div>

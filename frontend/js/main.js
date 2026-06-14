@@ -184,6 +184,7 @@ function showToast(msg) {
 // ── NAV UPDATE ──
 function updateNav() {
   const loggedIn = currentUser || currentAdmin;
+  const serverAuth = document.getElementById('nav-auth-state');
   const loginBtn  = document.getElementById('nav-login-btn');
   const logoutBtn = document.getElementById('nav-logout-btn');
   const userInfo  = document.getElementById('nav-user-info');
@@ -192,16 +193,21 @@ function updateNav() {
   const cartBtn   = document.getElementById('nav-cart-btn');
   const adminBtn  = document.getElementById('nav-admin-btn');
 
-  if (loginBtn)  loginBtn.style.display  = loggedIn ? 'none' : '';
-  if (logoutBtn) logoutBtn.style.display = loggedIn ? '' : 'none';
-  if (userInfo)  userInfo.style.display  = loggedIn ? '' : 'none';
+  if (!serverAuth) {
+    if (loginBtn)  loginBtn.style.display  = loggedIn ? 'none' : '';
+    if (logoutBtn) logoutBtn.style.display = loggedIn ? '' : 'none';
+    if (userInfo)  userInfo.style.display  = loggedIn ? '' : 'none';
+  }
   if (bookBtn) {
-    bookBtn.style.display = (currentUser && !currentAdmin) ? '' : 'none';
-    if (currentUser && !currentAdmin) {
+    const patientActive = serverAuth
+      ? serverAuth.dataset.authenticated === 'patient'
+      : Boolean(currentUser && !currentAdmin);
+    bookBtn.style.display = patientActive ? '' : 'none';
+    if (patientActive) {
       bookBtn.classList.remove('admin-disabled');
       bookBtn.disabled = false;
       bookBtn.onclick = function() { window.location.href = 'booking.php'; };
-    } else if (currentAdmin) {
+    } else if (currentAdmin || serverAuth?.dataset.authenticated === 'admin') {
       bookBtn.classList.add('admin-disabled');
       bookBtn.disabled = true;
       bookBtn.onclick = function() { return false; };
@@ -211,8 +217,10 @@ function updateNav() {
   if (cartBtn)   cartBtn.style.display   = currentUser ? '' : 'none';
   if (adminBtn)  adminBtn.style.display  = currentAdmin ? '' : 'none';
 
-  if (currentAdmin && userInfo) userInfo.textContent = currentAdmin.name;
-  else if (currentUser && userInfo) userInfo.textContent = currentUser.name;
+  if (!serverAuth) {
+    if (currentAdmin && userInfo) userInfo.textContent = currentAdmin.name;
+    else if (currentUser && userInfo) userInfo.textContent = currentUser.name;
+  }
 
   updateCartBadge();
   renderNotificationCenter();
@@ -264,6 +272,41 @@ function getUserAppointments() {
   return (DB.get('appointments') || []).filter(isForCurrentUser);
 }
 
+function shownNotificationToastKey() {
+  return 'aqsmile_shownNotificationToasts_' + (currentUser?.id || 'guest');
+}
+
+function getShownNotificationToasts() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(shownNotificationToastKey()) || '[]'));
+  } catch {
+    return new Set();
+  }
+}
+
+function notificationToastId(notification) {
+  return String(notification.id || `${notification.createdAt || ''}:${notification.message || ''}`);
+}
+
+function showNextUnreadNotificationToast(notifications = getUserNotifications()) {
+  if (!currentUser) return;
+
+  const shown = getShownNotificationToasts();
+  const note = notifications.find(item =>
+    !item.read && !shown.has(notificationToastId(item))
+  );
+  if (!note) return;
+
+  showToast(note.message);
+  shown.add(notificationToastId(note));
+  localStorage.setItem(
+    shownNotificationToastKey(),
+    JSON.stringify(Array.from(shown).slice(-200))
+  );
+}
+
+window.showNextUnreadNotificationToast = showNextUnreadNotificationToast;
+
 function formatStatusLabel(status) {
   return (status || 'pending').replace('_', ' ');
 }
@@ -307,7 +350,6 @@ function renderNotificationPanel() {
   if (!panel || !badge || !currentUser) return;
 
   const notifications = getUserNotifications();
-  const appointments = getUserAppointments();
   const unread = notifications.filter(n => !n.read).length;
 
   badge.textContent = unread;
@@ -319,18 +361,7 @@ function renderNotificationPanel() {
         <div class="notify-message">${n.message}</div>
         <div class="notify-meta">${n.createdAt || ''}</div>
       </div>`).join('')
-    : '<div class="notify-empty">No appointment updates yet.</div>';
-
-  const appointmentHtml = appointments.length
-    ? appointments.map(a => `
-      <div class="notify-item">
-        <div class="notify-booking-title">${a.serviceName || 'Dental Service'} - ${formatStatusLabel(a.status)}</div>
-        <div class="notify-booking-body">${a.date || '-'} at ${a.time || '-'}<br>${a.dentistName || 'Dentist pending'}</div>
-        ${a.status === 'pending'
-          ? `<button class="notify-cancel-btn" type="button" onclick="cancelUserAppointment('${a.id}')">Cancel Booking</button>`
-          : ''}
-      </div>`).join('')
-    : '<div class="notify-empty">No bookings yet.</div>';
+    : '<div class="notify-empty">No notifications yet.</div>';
 
   panel.innerHTML = `
     <div class="notify-panel-head">
@@ -338,9 +369,7 @@ function renderNotificationPanel() {
       <button class="notify-mark-btn" type="button" onclick="markNotificationsRead()">Mark read</button>
     </div>
     <div class="notify-section-label">Updates</div>
-    ${notificationHtml}
-    <div class="notify-section-label">My Bookings</div>
-    ${appointmentHtml}`;
+    ${notificationHtml}`;
 }
 
 function markNotificationsRead() {
@@ -398,8 +427,7 @@ function cancelUserAppointment(id) {
 function notifyCurrentUser() {
   if (!currentUser) return;
 
-  const note = getUserNotifications().find(n => !n.read);
-  if (note) showToast(note.message);
+  showNextUnreadNotificationToast();
   renderNotificationPanel();
 }
 

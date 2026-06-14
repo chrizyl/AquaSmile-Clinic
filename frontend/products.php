@@ -1,14 +1,15 @@
-<!DOCTYPE html>
-<html lang="en">
 <?php
-session_start();
+require_once 'includes/session-init.php';
 include 'includes/admin-check.php';
+require_once 'includes/navbar-auth.php';
 
 if (isAdmin()) {
     header('Location: admin.php');
     exit;
 }
 ?>
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,6 +17,7 @@ if (isAdmin()) {
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/products.css?v=20260523">
   <link rel="stylesheet" href="css/notifications.css?v=20260523">
+  <link rel="stylesheet" href="css/auth-nav.css?v=20260614">
   <link rel="stylesheet" href="css/admin-restrictions.css">
 </head>
 <body>
@@ -33,15 +35,13 @@ if (isAdmin()) {
     <button class="nav-btn" onclick="window.location.href='dentists.php'">Our Dentists</button>
     <button class="nav-btn" onclick="window.location.href='services.php'">Services</button>
     <button class="nav-btn active" onclick="window.location.href='products.php'">Shop</button>
-    <button class="nav-btn" id="nav-book-btn" onclick="window.location.href='booking.php'" style="display:none">Book Appointment</button>
-    <div id="nav-user-info" style="display:none"></div>
+    <button class="nav-btn" id="nav-book-btn" onclick="window.location.href='booking.php'" <?php echo nav_is_patient() ? '' : 'style="display:none"'; ?>>Book Appointment</button>
     <button class="nav-cart-btn" onclick="openCart()">
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
       Cart
       <span class="nav-cart-badge" id="nav-cart-count">0</span>
     </button>
-    <button class="nav-btn pill" id="nav-login-btn" onclick="window.location.href='login.php'">Log In</button>
-    <button class="nav-btn pill-aqua" id="nav-logout-btn" onclick="logout()" style="display:none">Log Out</button>
+    <?php render_nav_auth(); ?>
   </div>
 </nav>
 
@@ -494,16 +494,25 @@ if (isAdmin()) {
     const currentUser  = Cookie.get('currentUser');
     const currentAdmin = Cookie.get('currentAdmin');
     const loggedIn = currentUser || currentAdmin;
+    const serverAuth = document.getElementById('nav-auth-state');
     const loginBtn  = document.getElementById('nav-login-btn');
     const logoutBtn = document.getElementById('nav-logout-btn');
     const userInfo  = document.getElementById('nav-user-info');
     const bookBtn   = document.getElementById('nav-book-btn');
-    if (loginBtn)  loginBtn.style.display  = loggedIn ? 'none' : '';
-    if (logoutBtn) logoutBtn.style.display = loggedIn ? '' : 'none';
-    if (userInfo)  userInfo.style.display  = loggedIn ? '' : 'none';
-    if (bookBtn)   bookBtn.style.display   = (currentUser && !currentAdmin) ? '' : 'none';
-    if (currentAdmin && userInfo) userInfo.textContent = currentAdmin.name;
-    else if (currentUser && userInfo) userInfo.textContent = currentUser.name;
+    if (!serverAuth) {
+      if (loginBtn)  loginBtn.style.display  = loggedIn ? 'none' : '';
+      if (logoutBtn) logoutBtn.style.display = loggedIn ? '' : 'none';
+      if (userInfo)  userInfo.style.display  = loggedIn ? '' : 'none';
+    }
+    if (bookBtn) {
+      bookBtn.style.display = serverAuth
+        ? (serverAuth.dataset.authenticated === 'patient' ? '' : 'none')
+        : ((currentUser && !currentAdmin) ? '' : 'none');
+    }
+    if (!serverAuth) {
+      if (currentAdmin && userInfo) userInfo.textContent = currentAdmin.name;
+      else if (currentUser && userInfo) userInfo.textContent = currentUser.name;
+    }
   }
 
   function logout() {
@@ -654,7 +663,7 @@ function openProductDetail(pid) {
 
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeProductDetail(); });
 </script>
-<script src="js/notifications.js?v=20260523"></script>
+<script src="js/notifications.js?v=20260614b"></script>
 </script>
 
   <div id="site-footer-root"></div>

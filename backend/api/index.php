@@ -28,7 +28,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
-$sessionWriteActions = ['login', 'verify_registration_otp'];
+$sessionWriteActions = ['login', 'verify_registration_otp', 'update_profile'];
 if (!in_array($action, $sessionWriteActions, true) && session_status() === PHP_SESSION_ACTIVE) {
     session_write_close();
 }
@@ -78,6 +78,9 @@ try {
         case 'mark_notifications_read':
             mark_notifications_read();
             break;
+        case 'mark_notification_read':
+            mark_notification_read();
+            break;
         case 'mark_admin_notifications_read':
             mark_admin_notifications_read();
             break;
@@ -95,6 +98,15 @@ try {
             break;
         case 'create_order':
             create_order();
+            break;
+        case 'user_account':
+            user_account();
+            break;
+        case 'update_profile':
+            update_profile();
+            break;
+        case 'change_password':
+            change_password();
             break;
         default:
             json_response(array('ok' => false, 'message' => 'Unknown API action.'), 404);
@@ -202,8 +214,21 @@ function normalize_user($row)
     return [
         'id' => (string) $row['id'],
         'name' => $name,
+        'first_name' => $row['first_name'] ?? '',
+        'last_name' => $row['last_name'] ?? '',
         'email' => $row['email'] ?? '',
+        'phone' => $row['phone'] ?? '',
         'contact' => $row['phone'] ?? '',
+        'birthdate' => $row['birthdate'] ?? '',
+        'gender' => $row['gender'] ?? '',
+        'house_no' => $row['house_no'] ?? '',
+        'street' => $row['street'] ?? '',
+        'barangay' => $row['barangay'] ?? '',
+        'city' => $row['city'] ?? '',
+        'province' => $row['province'] ?? '',
+        'zip_code' => $row['zip_code'] ?? '',
+        'emergency_contact_name' => $row['emergency_contact_name'] ?? '',
+        'emergency_contact_number' => $row['emergency_contact_number'] ?? '',
         'role' => $row['role'] ?? 'patient',
         'createdAt' => $row['created_at'] ?? '',
     ];
@@ -214,6 +239,15 @@ function require_admin()
     if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
         json_response(['ok' => false, 'message' => 'Authentication required.'], 401);
     }
+}
+
+function require_patient()
+{
+    if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') === 'admin') {
+        json_response(['ok' => false, 'message' => 'Patient authentication required.'], 401);
+    }
+
+    return (int) $_SESSION['user_id'];
 }
 
 function normalize_dentist($row)
@@ -345,7 +379,7 @@ function dashboard()
     require_admin();
 
     $orders = fetch_all(
-        "SELECT o.*, IFNULL(CONCAT(u.first_name, ' ', u.last_name), o.customer_name) AS customer_name
+        "SELECT o.*, TRIM(CONCAT(o.first_name, ' ', o.last_name)) AS customer_name
          FROM orders o
          LEFT JOIN users u ON u.id = o.user_id
          ORDER BY o.created_at DESC"
@@ -957,9 +991,15 @@ function update_appointment()
 
 function cancel_appointment()
 {
+    $userId = require_patient();
     $data = request_json();
     $id = (int) ($data['id'] ?? 0);
-    $userId = (int) ($data['userId'] ?? $data['user_id'] ?? 0);
+    $reason = trim((string) ($data['reason'] ?? ''));
+
+    if ($reason === '') {
+        json_response(['ok' => false, 'message' => 'Please provide a cancellation reason.'], 422);
+    }
+
     $appt = fetch_one(appointment_sql() . ' WHERE a.id = ? AND a.user_id = ?', [$id, $userId]);
 
     if (!$appt) {
@@ -971,16 +1011,21 @@ function cancel_appointment()
 
     execute_sql(
         'UPDATE appointments SET status = ?, cancellation_reason = ?, cancelled_by = ? WHERE id = ?',
-        ['cancelled', 'Cancelled by patient before admin approval.', 'user', $id]
+        ['cancelled', $reason, 'user', $id]
     );
     create_notification(
         $userId,
         $id,
-        trim(($appt['first_name'] ?? '') . ' ' . ($appt['last_name'] ?? '')) . ' cancelled the appointment for ' . $appt['service_name'] . ' on ' . $appt['appointment_date'] . ' at ' . substr((string) $appt['appointment_time'], 0, 5) . '.',
+        trim(($appt['first_name'] ?? '') . ' ' . ($appt['last_name'] ?? '')) . ' cancelled the appointment for ' . $appt['service_name'] . ' on ' . $appt['appointment_date'] . ' at ' . substr((string) $appt['appointment_time'], 0, 5) . '. Reason: ' . $reason,
         'admin'
     );
 
-    json_response(['ok' => true]);
+    $updated = fetch_one(appointment_sql() . ' WHERE a.id = ?', [$id]);
+    json_response([
+        'ok' => true,
+        'message' => 'Appointment cancelled successfully.',
+        'appointment' => normalize_appointment($updated),
+    ]);
 }
 
 function notifications()
@@ -996,6 +1041,24 @@ function mark_notifications_read()
 {
     $data = request_json();
     execute_sql("UPDATE notifications SET is_read = 1 WHERE user_id = ? AND audience = 'user'", [(int) ($data['userId'] ?? $data['user_id'] ?? 0)]);
+    json_response(['ok' => true]);
+}
+
+function mark_notification_read()
+{
+    $userId = require_patient();
+    $data = request_json();
+    $notificationId = (int) ($data['id'] ?? 0);
+
+    if ($notificationId <= 0) {
+        json_response(['ok' => false, 'message' => 'Invalid notification.'], 422);
+    }
+
+    execute_sql(
+        "UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ? AND audience = 'user'",
+        [$notificationId, $userId]
+    );
+
     json_response(['ok' => true]);
 }
 
@@ -1094,7 +1157,8 @@ function create_order()
     $items = $data['items'] ?? [];
     $userId = (int) ($data['userId'] ?? 0);
     $total = (float) ($data['total'] ?? 0);
-    $customerName = $data['customerName'] ?? $data['first_name'] . ' ' . ($data['last_name'] ?? '');
+    $firstName = trim($data['first_name'] ?? '');
+    $lastName = trim($data['last_name'] ?? '');
     $email = $data['email'] ?? '';
     $phone = $data['phone'] ?? '';
     $address = $data['address'] ?? '';
@@ -1105,8 +1169,8 @@ function create_order()
     $gcashNumber = $data['gcash_number'] ?? '';
 
     execute_sql(
-        'INSERT INTO orders (user_id, customer_name, email, phone, address, city, zip, notes, payment_method, gcash_number, total_amount, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [$userId ?: null, $customerName, $email, $phone, $address, $city, $zip, $notes, $paymentMethod, $gcashNumber, $total, 'pending']
+        'INSERT INTO orders (user_id, first_name, last_name, email, phone, address, city, zip, notes, payment_method, gcash_number, total_amount, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [$userId ?: null, $firstName, $lastName, $email, $phone, $address, $city, $zip, $notes, $paymentMethod, $gcashNumber, $total, 'pending']
     );
 
     $orderId = (string) db()->lastInsertId();
@@ -1127,4 +1191,247 @@ function create_order()
     }
 
     json_response(['ok' => true, 'orderId' => $orderId]);
+}
+
+function user_account()
+{
+    $userId = require_patient();
+    $user = fetch_one(
+        'SELECT id, first_name, last_name, email, phone, birthdate, gender, emergency_contact_name,
+                emergency_contact_number, house_no, street, barangay, city, province, zip_code,
+                role, created_at
+         FROM users
+         WHERE id = ?',
+        [$userId]
+    );
+
+    if (!$user) {
+        json_response(['ok' => false, 'message' => 'Your account could not be found.'], 404);
+    }
+
+    $appointments = fetch_all(
+        appointment_sql() . ' WHERE a.user_id = ? ORDER BY a.appointment_date DESC, a.appointment_time DESC',
+        [$userId]
+    );
+
+    $orders = fetch_all(
+        'SELECT id, total_amount, payment_method, status, created_at, address, city, zip, notes
+         FROM orders
+         WHERE user_id = ?
+         ORDER BY created_at DESC',
+        [$userId]
+    );
+
+    $orderItems = fetch_all(
+        'SELECT oi.order_id, oi.quantity, oi.unit_price, p.name AS product_name
+         FROM order_items oi
+         LEFT JOIN products p ON p.id = oi.product_id
+         JOIN orders o ON o.id = oi.order_id
+         WHERE o.user_id = ?
+         ORDER BY oi.order_id DESC, oi.id ASC',
+        [$userId]
+    );
+    $itemsByOrder = [];
+    foreach ($orderItems as $item) {
+        $orderId = (string) $item['order_id'];
+        $quantity = (int) ($item['quantity'] ?? 0);
+        $unitPrice = (float) ($item['unit_price'] ?? 0);
+        $itemsByOrder[$orderId][] = [
+            'name' => $item['product_name'] ?? 'Product',
+            'quantity' => $quantity,
+            'unit_price' => $unitPrice,
+            'subtotal' => $quantity * $unitPrice,
+        ];
+    }
+
+    $notifications = fetch_all(
+        "SELECT id, message, is_read, created_at
+         FROM notifications
+         WHERE user_id = ? AND audience = 'user'
+         ORDER BY created_at DESC",
+        [$userId]
+    );
+
+    json_response([
+        'ok' => true,
+        'user' => [
+            'id' => (string) $user['id'],
+            'first_name' => $user['first_name'] ?? '',
+            'last_name' => $user['last_name'] ?? '',
+            'name' => trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')),
+            'email' => $user['email'] ?? '',
+            'phone' => $user['phone'] ?? '',
+            'birthdate' => $user['birthdate'] ?? '',
+            'gender' => $user['gender'] ?? '',
+            'house_no' => $user['house_no'] ?? '',
+            'street' => $user['street'] ?? '',
+            'barangay' => $user['barangay'] ?? '',
+            'city' => $user['city'] ?? '',
+            'province' => $user['province'] ?? '',
+            'zip_code' => $user['zip_code'] ?? '',
+            'emergency_contact_name' => $user['emergency_contact_name'] ?? '',
+            'emergency_contact_number' => $user['emergency_contact_number'] ?? '',
+            'role' => $user['role'] ?? 'patient',
+            'created_at' => $user['created_at'] ?? '',
+        ],
+        'appointments' => array_map('normalize_appointment', $appointments),
+        'orders' => array_map(function ($order) use ($itemsByOrder) {
+            $orderId = (string) $order['id'];
+            return [
+                'id' => $orderId,
+                'total' => (float) $order['total_amount'],
+                'payment_method' => $order['payment_method'] ?? '',
+                'status' => $order['status'] ?? 'pending',
+                'created_at' => $order['created_at'] ?? '',
+                'address' => $order['address'] ?? '',
+                'city' => $order['city'] ?? '',
+                'zip' => $order['zip'] ?? '',
+                'notes' => $order['notes'] ?? '',
+                'items' => $itemsByOrder[$orderId] ?? [],
+            ];
+        }, $orders),
+        'notifications' => array_map(function ($notification) {
+            return [
+                'id' => (string) $notification['id'],
+                'message' => $notification['message'] ?? '',
+                'is_read' => (int) ($notification['is_read'] ?? 0) === 1,
+                'created_at' => $notification['created_at'] ?? '',
+            ];
+        }, $notifications),
+    ]);
+}
+
+function update_profile()
+{
+    $userId = require_patient();
+    $data = request_json();
+    $firstName = trim((string) ($data['first_name'] ?? ''));
+    $lastName = trim((string) ($data['last_name'] ?? ''));
+    $phone = trim((string) ($data['phone'] ?? ''));
+    $birthdate = trim((string) ($data['birthdate'] ?? ''));
+    $gender = trim((string) ($data['gender'] ?? ''));
+    $houseNo = trim((string) ($data['house_no'] ?? ''));
+    $street = trim((string) ($data['street'] ?? ''));
+    $barangay = trim((string) ($data['barangay'] ?? ''));
+    $city = trim((string) ($data['city'] ?? ''));
+    $province = trim((string) ($data['province'] ?? ''));
+    $zipCode = trim((string) ($data['zip_code'] ?? ''));
+    $emergencyContactName = trim((string) ($data['emergency_contact_name'] ?? ''));
+    $emergencyContactNumber = trim((string) ($data['emergency_contact_number'] ?? ''));
+    $errors = [];
+
+    if ($firstName === '') {
+        $errors[] = 'First name is required.';
+    }
+    if ($lastName === '') {
+        $errors[] = 'Last name is required.';
+    }
+    if ($phone === '') {
+        $errors[] = 'Phone number is required.';
+    } elseif (!preg_match('/^09\d{9}$/', $phone)) {
+        $errors[] = 'Phone number must start with 09 and contain exactly 11 digits.';
+    }
+    if ($birthdate !== '') {
+        $parsedBirthdate = DateTime::createFromFormat('Y-m-d', $birthdate);
+        $today = new DateTime('today');
+        if (!$parsedBirthdate || $parsedBirthdate->format('Y-m-d') !== $birthdate || $parsedBirthdate >= $today) {
+            $errors[] = 'Birthdate must be a valid past date.';
+        }
+    }
+    $allowedGenders = ['Female', 'Male', 'Prefer not to say'];
+    if (!in_array($gender, $allowedGenders, true)) {
+        $errors[] = 'Please select a valid gender.';
+    }
+    $addressLimits = [
+        'House No.' => [$houseNo, 50],
+        'Street' => [$street, 150],
+        'Barangay' => [$barangay, 100],
+        'City / Municipality' => [$city, 100],
+        'Province / Region' => [$province, 100],
+        'ZIP Code' => [$zipCode, 10],
+    ];
+    foreach ($addressLimits as $label => [$value, $limit]) {
+        $length = function_exists('mb_strlen') ? mb_strlen($value) : strlen($value);
+        if ($length > $limit) {
+            $errors[] = "{$label} must not exceed {$limit} characters.";
+        }
+    }
+    if ($zipCode !== '' && !preg_match('/^\d+$/', $zipCode)) {
+        $errors[] = 'ZIP Code must contain numbers only.';
+    }
+    if ($emergencyContactNumber !== '' && !preg_match('/^09\d{9}$/', $emergencyContactNumber)) {
+        $errors[] = 'Emergency contact number must start with 09 and contain exactly 11 digits.';
+    }
+    if ($errors) {
+        json_response(['ok' => false, 'message' => 'Please correct the profile fields.', 'errors' => $errors], 422);
+    }
+
+    execute_sql(
+        'UPDATE users
+         SET first_name = ?, last_name = ?, phone = ?, birthdate = ?, gender = ?,
+             emergency_contact_name = ?, emergency_contact_number = ?, house_no = ?, street = ?,
+             barangay = ?, city = ?, province = ?, zip_code = ?
+         WHERE id = ?',
+        [
+            $firstName,
+            $lastName,
+            $phone,
+            $birthdate !== '' ? $birthdate : null,
+            $gender !== '' ? $gender : null,
+            $emergencyContactName !== '' ? $emergencyContactName : null,
+            $emergencyContactNumber !== '' ? $emergencyContactNumber : null,
+            $houseNo !== '' ? $houseNo : null,
+            $street !== '' ? $street : null,
+            $barangay !== '' ? $barangay : null,
+            $city !== '' ? $city : null,
+            $province !== '' ? $province : null,
+            $zipCode !== '' ? $zipCode : null,
+            $userId,
+        ]
+    );
+
+    $user = fetch_one('SELECT * FROM users WHERE id = ?', [$userId]);
+    $_SESSION['user_name'] = trim($firstName . ' ' . $lastName);
+
+    json_response(['ok' => true, 'message' => 'Profile updated successfully.', 'user' => normalize_user($user)]);
+}
+
+function change_password()
+{
+    $userId = require_patient();
+    $data = request_json();
+    $currentPassword = (string) ($data['current_password'] ?? '');
+    $newPassword = (string) ($data['new_password'] ?? '');
+    $confirmPassword = (string) ($data['confirm_password'] ?? '');
+    $errors = [];
+
+    if ($currentPassword === '') {
+        $errors[] = 'Current password is required.';
+    }
+    if (strlen($newPassword) < 8) {
+        $errors[] = 'New password must be at least 8 characters.';
+    } elseif (!preg_match('/[A-Za-z]/', $newPassword) || !preg_match('/\d/', $newPassword)) {
+        $errors[] = 'New password must include at least one letter and one number.';
+    }
+    if ($newPassword !== $confirmPassword) {
+        $errors[] = 'New password and confirmation do not match.';
+    }
+    if ($errors) {
+        json_response(['ok' => false, 'message' => 'Please correct the password fields.', 'errors' => $errors], 422);
+    }
+
+    $user = fetch_one('SELECT password_hash FROM users WHERE id = ?', [$userId]);
+    if (!$user || !password_verify($currentPassword, $user['password_hash'])) {
+        json_response(['ok' => false, 'message' => 'Current password is incorrect.'], 422);
+    }
+    if (password_verify($newPassword, $user['password_hash'])) {
+        json_response(['ok' => false, 'message' => 'New password must be different from your current password.'], 422);
+    }
+
+    execute_sql(
+        'UPDATE users SET password_hash = ? WHERE id = ?',
+        [password_hash($newPassword, PASSWORD_DEFAULT), $userId]
+    );
+
+    json_response(['ok' => true, 'message' => 'Password changed successfully.']);
 }

@@ -153,7 +153,6 @@
     if (!panel || !badge) return;
 
     const notifications = getNotifications();
-    const appointments = getAppointments();
     const unread = notifications.filter(item => !item.read).length;
 
     badge.textContent = unread;
@@ -165,18 +164,7 @@
           <div class="notify-message">${item.message}</div>
           <div class="notify-meta">${item.createdAt || ''}</div>
         </div>`).join('')
-      : '<div class="notify-empty">No appointment updates yet.</div>';
-
-    const appointmentsHtml = appointments.length
-      ? appointments.map(item => `
-        <div class="notify-item">
-          <div class="notify-booking-title">${item.serviceName || 'Dental Service'} - ${statusLabel(item.status)}</div>
-          <div class="notify-booking-body">${item.date || '-'} at ${item.time || '-'}<br>${item.dentistName || 'Dentist pending'}</div>
-          ${item.status === 'pending'
-            ? `<button class="notify-cancel-btn" type="button" onclick="AquaNotify.cancelBooking('${item.id}')">Cancel Booking</button>`
-            : ''}
-        </div>`).join('')
-      : '<div class="notify-empty">No bookings yet.</div>';
+      : '<div class="notify-empty">No notifications yet.</div>';
 
     panel.innerHTML = `
       <div class="notify-panel-head">
@@ -184,9 +172,7 @@
         <button class="notify-mark-btn" type="button" onclick="AquaNotify.markRead()">Mark read</button>
       </div>
       <div class="notify-section-label">Updates</div>
-      ${updatesHtml}
-      <div class="notify-section-label">My Bookings</div>
-      ${appointmentsHtml}`;
+      ${updatesHtml}`;
   }
 
   async function markRead() {
@@ -262,9 +248,15 @@
   document.addEventListener('DOMContentLoaded', async () => {
     await syncFromApi();
     render();
+    if (typeof window.showNextUnreadNotificationToast === 'function') {
+      window.showNextUnreadNotificationToast(getNotifications());
+    }
   });
   window.addEventListener('pageshow', async () => {
     await syncFromApi();
     render();
+    if (typeof window.showNextUnreadNotificationToast === 'function') {
+      window.showNextUnreadNotificationToast(getNotifications());
+    }
   });
 })();

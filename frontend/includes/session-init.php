@@ -1,17 +1,18 @@
 <?php
 
 // Initialize session for admin restriction checking
-if (!isset($_SESSION)) {
+if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
-// If using cookies, sync to session (bridge from old cookie system)
-if (!isset($_SESSION['role']) && isset($_COOKIE['currentUser'])) {
-    $user = json_decode($_COOKIE['currentUser'], true);
+// If using cookies, sync to session (bridge from the client-side login state).
+if (!isset($_SESSION['role']) && isset($_COOKIE['aqsmile_currentUser'])) {
+    $user = json_decode($_COOKIE['aqsmile_currentUser'], true);
     if (isset($user['role'])) {
         $_SESSION['role'] = $user['role'];
         $_SESSION['user_id'] = $user['id'] ?? null;
         $_SESSION['user_email'] = $user['email'] ?? null;
+        $_SESSION['user_name'] = $user['name'] ?? null;
     }
 }
 

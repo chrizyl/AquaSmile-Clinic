@@ -1,14 +1,15 @@
-<!DOCTYPE html>
-<html lang="en">
 <?php
-session_start();
+require_once 'includes/session-init.php';
 include 'includes/admin-check.php';
+require_once 'includes/navbar-auth.php';
 
 if (isAdmin()) {
     header('Location: admin.php');
     exit;
 }
 ?>
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,6 +18,7 @@ if (isAdmin()) {
   <link rel="stylesheet" href="css/style.css?v=20260523">
   <link rel="stylesheet" href="css/booking.css?v=20260523">
   <link rel="stylesheet" href="css/notifications.css?v=20260523">
+  <link rel="stylesheet" href="css/auth-nav.css?v=20260614">
 
   <style>
 
@@ -358,9 +360,7 @@ if (isAdmin()) {
       <button class="nav-btn" onclick="window.location.href='services.php'">Services</button>
       <button class="nav-btn" onclick="window.location.href='products.php'">Shop</button>
       <button class="nav-btn active" onclick="window.location.href='booking.php'">Book Appointment</button>
-      <div id="nav-user-info" style="display:none"></div>
-      <button class="nav-btn pill" id="nav-login-btn" onclick="window.location.href='login.php'">Log In</button>
-      <button class="nav-btn pill-aqua" id="nav-logout-btn" onclick="logout()" style="display:none">Log Out</button>
+      <?php render_nav_auth(); ?>
     </div>
   </nav>
 
@@ -496,9 +496,9 @@ if (isAdmin()) {
     </div>
   </div>
 
-  <script src="js/main.js?v=20260523"></script>
+  <script src="js/main.js?v=20260614b"></script>
   <script src="js/booking.js?v=20260523"></script>
-  <script src="js/notifications.js?v=20260523"></script>
+  <script src="js/notifications.js?v=20260614b"></script>
 
   <div id="site-footer-root"></div>
   <script src="js/footer.js?v=20260523"></script>

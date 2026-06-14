@@ -114,7 +114,7 @@
     </div>
   </div>
 
-  <script src="js/main.js?v=20260610"></script>
+  <script src="js/main.js?v=20260614b"></script>
   <script src="js/auth.js?v=20260610"></script>
 
   <div id="site-footer-root"></div>
