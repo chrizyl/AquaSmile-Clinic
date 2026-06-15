@@ -104,7 +104,7 @@ CREATE TABLE `dentists` (
   `credentials` text DEFAULT NULL,
   `bio` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `status` enum('active','archived') NOT NULL DEFAULT 'active'
+  `status` enum('available','unavailable') NOT NULL DEFAULT 'available'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -112,9 +112,9 @@ CREATE TABLE `dentists` (
 --
 
 INSERT INTO `dentists` (`dentist_id`, `first_name`, `last_name`, `specialization`, `credentials`, `bio`, `created_at`, `status`) VALUES
-(1, 'Sophia ', 'Reyes', 'General & Cosmetic Dentistry', 'DMD - 12 years experience', 'Smile transformations and preventive care.', '2026-05-23 01:55:18', 'active'),
-(2, 'Marcus', 'Tan', 'Orthodontics & Oral Surgery', 'DMD, MScD - 9 years experience', 'Complex cases with precision and care.', '2026-05-23 01:55:18', 'active'),
-(3, 'Leila', 'Varon', 'Pediatric & Family Dentistry', 'DMD, PedDent - 7 years experience', 'Warm care for families and younger patients.', '2026-05-23 01:55:18', 'active');
+(1, 'Sophia ', 'Reyes', 'General & Cosmetic Dentistry', 'DMD - 12 years experience', 'Smile transformations and preventive care.', '2026-05-23 01:55:18', 'available'),
+(2, 'Marcus', 'Tan', 'Orthodontics & Oral Surgery', 'DMD, MScD - 9 years experience', 'Complex cases with precision and care.', '2026-05-23 01:55:18', 'available'),
+(3, 'Leila', 'Varon', 'Pediatric & Family Dentistry', 'DMD, PedDent - 7 years experience', 'Warm care for families and younger patients.', '2026-05-23 01:55:18', 'available');
 
 -- --------------------------------------------------------
 
@@ -280,7 +280,7 @@ CREATE TABLE `products` (
   `price` decimal(10,2) DEFAULT NULL,
   `stock_quantity` int(11) DEFAULT 0,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `status` enum('active','archived') NOT NULL DEFAULT 'active'
+  `status` enum('available','sold_out') NOT NULL DEFAULT 'available'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -288,14 +288,14 @@ CREATE TABLE `products` (
 --
 
 INSERT INTO `products` (`product_id`, `product_name`, `description`, `price`, `stock_quantity`, `created_at`, `status`) VALUES
-(1, 'Sonic Pro Toothbrush', 'Rechargeable electric toothbrush with 3 modes.', 1299.00, 12, '2026-05-23 01:55:18', 'active'),
-(2, 'WhiteGlow Toothpaste', 'Enamel-strengthening whitening paste.', 299.00, 30, '2026-05-23 01:55:18', 'active'),
-(3, 'Silk Dental Floss', 'Natural silk floss with wax coating.', 189.00, 24, '2026-05-23 01:55:18', 'active'),
-(4, 'AquaFresh Mouthwash', 'Antibacterial alcohol-free rinse.', 349.00, 18, '2026-05-23 01:55:18', 'active'),
-(5, 'Teeth Whitening Strips', '14-day whitening kit.', 899.00, 16, '2026-05-23 01:55:18', 'active'),
-(6, 'Tongue Scraper Set', 'Stainless steel scrapers.', 249.00, 20, '2026-05-23 01:55:18', 'active'),
-(7, 'Sensitive Gum Gel', 'Soothing gel for gum sensitivity.', 399.00, 15, '2026-05-23 01:55:18', 'active'),
-(8, 'Natural Bamboo Brush Set', '4-pack biodegradable bamboo toothbrushes.', 549.00, 10, '2026-05-23 01:55:18', 'active');
+(1, 'Sonic Pro Toothbrush', 'Rechargeable electric toothbrush with 3 modes.', 1299.00, 12, '2026-05-23 01:55:18', 'available'),
+(2, 'WhiteGlow Toothpaste', 'Enamel-strengthening whitening paste.', 299.00, 30, '2026-05-23 01:55:18', 'available'),
+(3, 'Silk Dental Floss', 'Natural silk floss with wax coating.', 189.00, 24, '2026-05-23 01:55:18', 'available'),
+(4, 'AquaFresh Mouthwash', 'Antibacterial alcohol-free rinse.', 349.00, 18, '2026-05-23 01:55:18', 'available'),
+(5, 'Teeth Whitening Strips', '14-day whitening kit.', 899.00, 16, '2026-05-23 01:55:18', 'available'),
+(6, 'Tongue Scraper Set', 'Stainless steel scrapers.', 249.00, 20, '2026-05-23 01:55:18', 'available'),
+(7, 'Sensitive Gum Gel', 'Soothing gel for gum sensitivity.', 399.00, 15, '2026-05-23 01:55:18', 'available'),
+(8, 'Natural Bamboo Brush Set', '4-pack biodegradable bamboo toothbrushes.', 549.00, 10, '2026-05-23 01:55:18', 'available');
 
 -- --------------------------------------------------------
 
@@ -312,7 +312,7 @@ CREATE TABLE `services` (
   `category` varchar(50) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `daily_slots` int(11) NOT NULL DEFAULT 0,
-  `status` enum('active','archived') NOT NULL DEFAULT 'active'
+  `status` enum('available','unavailable') NOT NULL DEFAULT 'available'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -320,15 +320,15 @@ CREATE TABLE `services` (
 --
 
 INSERT INTO `services` (`service_id`, `service_name`, `description`, `price`, `category`, `created_at`, `daily_slots`, `status`) VALUES
-(1, 'Dental Cleaning', 'Professional prophylaxis to remove plaque and tartar.', 800.00, 'Preventive', '2026-05-23 01:55:18', 8, 'active'),
-(2, 'Dental X-Ray', 'Digital X-rays for accurate diagnosis.', 450.00, 'Diagnostic', '2026-05-23 01:55:18', 8, 'active'),
-(3, 'Tooth Extraction', 'Safe removal of damaged or problematic teeth.', 1200.00, 'Restorative', '2026-05-23 01:55:18', 8, 'active'),
-(4, 'Teeth Whitening', 'Professional-grade whitening treatment.', 3500.00, 'Cosmetic', '2026-05-23 01:55:18', 19, 'active'),
-(5, 'Dental Braces Consult', 'Orthodontic evaluation and treatment planning.', 500.00, 'Orthodontic', '2026-05-23 01:55:18', 8, 'active'),
-(6, 'Root Canal Treatment', 'Precision endodontic therapy.', 6000.00, 'Restorative', '2026-05-23 01:55:18', 8, 'active'),
-(7, 'Dental Crown', 'Custom-fitted porcelain crowns.', 8000.00, 'Restorative', '2026-05-23 01:55:18', 16, 'active'),
-(8, 'Porcelain Veneers', 'Custom shells for aesthetic results.', 12000.00, 'Cosmetic', '2026-05-23 01:55:18', 11, 'active'),
-(9, 'Pediatric Check-Up', 'Gentle dental visits for children.', 600.00, 'Preventive', '2026-05-23 01:55:18', 8, 'active');
+(1, 'Dental Cleaning', 'Professional prophylaxis to remove plaque and tartar.', 800.00, 'Preventive', '2026-05-23 01:55:18', 8, 'available'),
+(2, 'Dental X-Ray', 'Digital X-rays for accurate diagnosis.', 450.00, 'Diagnostic', '2026-05-23 01:55:18', 8, 'available'),
+(3, 'Tooth Extraction', 'Safe removal of damaged or problematic teeth.', 1200.00, 'Restorative', '2026-05-23 01:55:18', 8, 'available'),
+(4, 'Teeth Whitening', 'Professional-grade whitening treatment.', 3500.00, 'Cosmetic', '2026-05-23 01:55:18', 19, 'available'),
+(5, 'Dental Braces Consult', 'Orthodontic evaluation and treatment planning.', 500.00, 'Orthodontic', '2026-05-23 01:55:18', 8, 'available'),
+(6, 'Root Canal Treatment', 'Precision endodontic therapy.', 6000.00, 'Restorative', '2026-05-23 01:55:18', 8, 'available'),
+(7, 'Dental Crown', 'Custom-fitted porcelain crowns.', 8000.00, 'Restorative', '2026-05-23 01:55:18', 16, 'available'),
+(8, 'Porcelain Veneers', 'Custom shells for aesthetic results.', 12000.00, 'Cosmetic', '2026-05-23 01:55:18', 11, 'available'),
+(9, 'Pediatric Check-Up', 'Gentle dental visits for children.', 600.00, 'Preventive', '2026-05-23 01:55:18', 8, 'available');
 
 -- --------------------------------------------------------
 

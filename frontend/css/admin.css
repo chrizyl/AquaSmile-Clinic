@@ -207,6 +207,64 @@
   margin-bottom: 18px;
 }
 
+.catalog-accordion {
+  gap: 14px;
+}
+
+.catalog-accordion .admin-panel {
+  margin-bottom: 0;
+}
+
+.catalog-collapsible > :not(.panel-head) {
+  transition: opacity .2s ease;
+}
+
+.catalog-collapsible.is-collapsed > :not(.panel-head) {
+  display: none;
+}
+
+.catalog-collapsible.is-collapsed .panel-head {
+  margin-bottom: 0;
+}
+
+.catalog-collapse-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 13px;
+  border: 1.5px solid rgba(120,154,153,.28);
+  border-radius: 99px;
+  background: rgba(255,255,255,.72);
+  color: var(--aqua-dark);
+  font: 600 .76rem 'DM Sans', sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color .2s ease, background .2s ease;
+}
+
+.catalog-collapse-toggle:hover {
+  border-color: var(--aqua);
+  background: #fff;
+}
+
+.catalog-collapse-toggle:focus-visible {
+  outline: 3px solid rgba(120,154,153,.22);
+  outline-offset: 2px;
+}
+
+.catalog-chevron {
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform .2s ease;
+}
+
+.catalog-collapse-toggle[aria-expanded="true"] .catalog-chevron {
+  transform: rotate(225deg) translate(-2px, -2px);
+}
+
 .admin-panel h2 {
   font-size: 1.65rem;
   line-height: 1.15;
@@ -683,6 +741,7 @@
 .pill-delivered       { background: #d4edda; color: #155724; }
 .pill-available       { background: #d4edda; color: #155724; }
 .pill-unavailable     { background: #fff3cd; color: #856404; }
+.pill-sold_out        { background: #f8d7da; color: #721c24; }
 
 .status-select {
   padding: 3px 6px;
@@ -1186,7 +1245,8 @@
 .status-select.status-delivered,
 .status-select.status-available { background-color: #e9f6ec; color: #356b43; }
 .status-select.status-cancelled,
-.status-select.status-unavailable { background-color: #fff0ed; color: #9c4f43; }
+.status-select.status-unavailable,
+.status-select.status-sold_out { background-color: #fff0ed; color: #9c4f43; }
 .status-select.status-archived { background-color: #f0f1f1; color: #646c6b; }
 .status-select.status-out_for_delivery { background-color: #edf1ff; color: #4b5f99; }
 
@@ -1311,6 +1371,15 @@
 
 .catalog-item-actions .status-select {
   max-width: none;
+}
+
+.catalog-management-actions {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.catalog-management-actions .status-select,
+.catalog-management-actions .edit-btn {
+  width: 100%;
 }
 
 .dentist-list {
@@ -1565,6 +1634,15 @@
   }
 
   .panel-head .panel-link-btn {
+    width: 100%;
+  }
+
+  .catalog-collapsible .panel-head {
+    align-items: stretch;
+  }
+
+  .catalog-collapse-toggle {
+    justify-content: center;
     width: 100%;
   }
 

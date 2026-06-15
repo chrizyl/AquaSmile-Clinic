@@ -19,7 +19,7 @@ if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
     href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&amp;family=DM+Sans:wght@300;400;500&amp;display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="css/style.css?v=20260524">
-  <link rel="stylesheet" href="css/admin.css?v=20260616e">
+  <link rel="stylesheet" href="css/admin.css?v=20260616g">
 </head>
 
 <body class="admin-body">
@@ -179,38 +179,45 @@ if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
       </section>
 
       <section class="admin-view" id="view-catalog" data-admin-view="catalog">
-      <section class="admin-grid-two" id="catalog">
-        <article class="admin-panel">
+      <section class="admin-grid-one catalog-accordion" id="catalog">
+        <article class="admin-panel catalog-collapsible is-collapsed" data-catalog-panel="products">
           <div class="panel-head">
             <div>
               <div class="section-label">Products</div>
               <h2>Product Inventory</h2>
             </div>
-            <span class="admin-badge">inventory</span>
+            <button class="catalog-collapse-toggle" type="button" aria-expanded="false" aria-controls="products-grid-admin" onclick="toggleCatalogPanel(this)">
+              <span>Show products</span>
+              <span class="catalog-chevron" aria-hidden="true"></span>
+            </button>
           </div>
           <div class="catalog-grid" id="products-grid-admin"></div>
         </article>
 
-        <article class="admin-panel">
+        <article class="admin-panel catalog-collapsible is-collapsed" data-catalog-panel="services">
           <div class="panel-head">
             <div>
               <div class="section-label">Services</div>
               <h2>Clinic Services</h2>
             </div>
-            <span class="admin-badge">clinic care</span>
+            <button class="catalog-collapse-toggle" type="button" aria-expanded="false" aria-controls="services-grid-admin" onclick="toggleCatalogPanel(this)">
+              <span>Show services</span>
+              <span class="catalog-chevron" aria-hidden="true"></span>
+            </button>
           </div>
           <div class="catalog-grid" id="services-grid-admin"></div>
         </article>
-      </section>
 
-      <section class="admin-grid-one">
-        <article class="admin-panel">
+        <article class="admin-panel catalog-collapsible is-collapsed" data-catalog-panel="dentists">
           <div class="panel-head">
             <div>
               <div class="section-label">Dentists</div>
               <h2>Dentist Records</h2>
             </div>
-            <span class="admin-badge">dentists</span>
+            <button class="catalog-collapse-toggle" type="button" aria-expanded="false" aria-controls="dentist-list" onclick="toggleCatalogPanel(this)">
+              <span>Show dentists</span>
+              <span class="catalog-chevron" aria-hidden="true"></span>
+            </button>
           </div>
           <div class="dentist-list" id="dentist-list"></div>
         </article>
@@ -247,7 +254,7 @@ if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
   </main>
 
   <script src="js/main.js?v=20260614b"></script>
-  <script src="js/admin.js?v=20260616g"></script>
+  <script src="js/admin.js?v=20260616i"></script>
 </body>
 
 </html>

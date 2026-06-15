@@ -75,6 +75,28 @@ async function showAdminView(view) {
   }
 }
 
+function toggleCatalogPanel(button) {
+  const panel = button.closest('.catalog-collapsible');
+  if (!panel) return;
+
+  const willExpand = panel.classList.contains('is-collapsed');
+  document.querySelectorAll('.catalog-collapsible').forEach(item => {
+    item.classList.add('is-collapsed');
+    const itemButton = item.querySelector('.catalog-collapse-toggle');
+    if (!itemButton) return;
+    itemButton.setAttribute('aria-expanded', 'false');
+    const label = itemButton.querySelector('span:first-child');
+    if (label) label.textContent = 'Show ' + item.dataset.catalogPanel;
+  });
+
+  if (willExpand) {
+    panel.classList.remove('is-collapsed');
+    button.setAttribute('aria-expanded', 'true');
+    const label = button.querySelector('span:first-child');
+    if (label) label.textContent = 'Hide ' + panel.dataset.catalogPanel;
+  }
+}
+
 function renderOverview(d) {
   const appointments = d.appointments || [];
   const orders = d.orders || [];
@@ -602,7 +624,6 @@ function renderProductsGrid(products) {
     let tr = panel.querySelector('.archive-toggle-row');
     if (!tr) { tr = document.createElement('div'); tr.className = 'archive-toggle-row'; panel.querySelector('.panel-head').after(tr); }
     tr.innerHTML = `
-      <label class="toggle-label"><input type="checkbox" onchange="toggleArchived('products', this.checked)" ${showArchived ? 'checked' : ''}>Show archived</label>
       <button class="mini-btn add-btn" type="button" onclick="openAddModal('product')">+ Add Product</button>`;
   }
 
@@ -611,9 +632,9 @@ function renderProductsGrid(products) {
       <div class="catalog-item-name">${esc(p.name)}</div>
       <div class="catalog-item-meta">PHP ${parseFloat(p.price).toLocaleString('en-PH', {minimumFractionDigits:2})} · Stock: ${p.stock}</div>
       <div class="catalog-item-status"><span class="status-pill pill-${p.status||'available'}">${statusLabel(p.status||'available')}</span></div>
-      <div class="catalog-item-actions">
+      <div class="catalog-item-actions catalog-management-actions">
         <select class="status-select status-${p.status||'available'}" onchange="changeProductStatus(${p.id}, this.value, this)" data-current="${p.status||'available'}">
-          ${catalogStatusOptions(p.status||'available')}
+          ${productStatusOptions(p.status||'available')}
         </select>
         <button class="mini-btn edit-btn" type="button" onclick="openEditModal('product', ${p.id})">Edit Product</button>
       </div>
@@ -631,7 +652,6 @@ function renderServicesGrid(services) {
     let tr = panel.querySelector('.archive-toggle-row');
     if (!tr) { tr = document.createElement('div'); tr.className = 'archive-toggle-row'; panel.querySelector('.panel-head').after(tr); }
     tr.innerHTML = `
-      <label class="toggle-label"><input type="checkbox" onchange="toggleArchived('services', this.checked)" ${showArchived ? 'checked' : ''}>Show archived</label>
       <button class="mini-btn add-btn" type="button" onclick="openAddModal('service')">+ Add Service</button>`;
   }
 
@@ -640,9 +660,9 @@ function renderServicesGrid(services) {
       <div class="catalog-item-name">${esc(s.name)}</div>
       <div class="catalog-item-meta">${esc(s.price)} · ${s.dailySlots} slots/day · ${esc(s.category)}</div>
       <div class="catalog-item-status"><span class="status-pill pill-${s.status||'available'}">${statusLabel(s.status||'available')}</span></div>
-      <div class="catalog-item-actions">
+      <div class="catalog-item-actions catalog-management-actions">
         <select class="status-select status-${s.status||'available'}" onchange="changeServiceStatus(${s.id}, this.value, this)" data-current="${s.status||'available'}">
-          ${catalogStatusOptions(s.status||'available')}
+          ${availabilityStatusOptions(s.status||'available')}
         </select>
         <button class="mini-btn edit-btn" type="button" onclick="openEditModal('service', ${s.id})">Edit Service</button>
       </div>
@@ -660,7 +680,6 @@ function renderDentistList(dentists) {
     let tr = panel.querySelector('.archive-toggle-row');
     if (!tr) { tr = document.createElement('div'); tr.className = 'archive-toggle-row'; panel.querySelector('.panel-head').after(tr); }
     tr.innerHTML = `
-      <label class="toggle-label"><input type="checkbox" onchange="toggleArchived('dentists', this.checked)" ${showArchived ? 'checked' : ''}>Show archived</label>
       <button class="mini-btn add-btn" type="button" onclick="openAddModal('dentist')">+ Add Dentist</button>`;
   }
 
@@ -671,22 +690,22 @@ function renderDentistList(dentists) {
       <div class="catalog-item-status"><span class="status-pill pill-${d.status||'available'}">${statusLabel(d.status||'available')}</span></div>
       <div class="catalog-item-actions">
         <select class="status-select status-${d.status||'available'}" onchange="changeDentistStatus(${d.id}, this.value, this)" data-current="${d.status||'available'}">
-          ${dentistStatusOptions(d.status||'available')}
+          ${availabilityStatusOptions(d.status||'available')}
         </select>
         <button class="mini-btn edit-btn" type="button" onclick="openEditModal('dentist', ${d.id})">Edit Dentist</button>
       </div>
     </div>`).join('') || '<p class="empty-row">No dentists.</p>';
 }
 
-function catalogStatusOptions(current) {
-  return ['available','unavailable','archived']
-    .map(s => `<option value="${s}" ${s === current ? 'selected' : ''}>${capitalize(s)}</option>`)
+function productStatusOptions(current) {
+  return ['available','sold_out']
+    .map(s => `<option value="${s}" ${s === current ? 'selected' : ''}>${statusLabel(s)}</option>`)
     .join('');
 }
 
-function dentistStatusOptions(current) {
-  return ['available','unavailable','archived']
-    .map(s => `<option value="${s}" ${s === current ? 'selected' : ''}>${capitalize(s)}</option>`)
+function availabilityStatusOptions(current) {
+  return ['available','unavailable']
+    .map(s => `<option value="${s}" ${s === current ? 'selected' : ''}>${statusLabel(s)}</option>`)
     .join('');
 }
 

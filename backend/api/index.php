@@ -167,9 +167,14 @@ function valid_appointment_status($s)
     return in_array($s, ['pending','confirmed','completed','cancelled','archived'], true);
 }
 
-function valid_catalog_status($s)
+function valid_product_status($s)
 {
-    return in_array($s, ['available','unavailable','archived'], true);
+    return in_array($s, ['available','sold_out'], true);
+}
+
+function valid_availability_status($s)
+{
+    return in_array($s, ['available','unavailable'], true);
 }
 
 function admin_update_order_status()
@@ -264,7 +269,7 @@ function admin_update_product_status()
     $id     = (int)($data['id'] ?? 0);
     $status = trim($data['status'] ?? '');
 
-    if ($id <= 0 || !valid_catalog_status($status)) {
+    if ($id <= 0 || !valid_product_status($status)) {
         json_response(['ok' => false, 'message' => 'Invalid product ID or status.'], 422);
     }
     if (!fetch_one('SELECT product_id FROM products WHERE product_id = ?', [$id])) {
@@ -282,7 +287,7 @@ function admin_update_service_status()
     $id     = (int)($data['id'] ?? 0);
     $status = trim($data['status'] ?? '');
 
-    if ($id <= 0 || !valid_catalog_status($status)) {
+    if ($id <= 0 || !valid_availability_status($status)) {
         json_response(['ok' => false, 'message' => 'Invalid service ID or status.'], 422);
     }
     if (!fetch_one('SELECT service_id FROM services WHERE service_id = ?', [$id])) {
@@ -300,7 +305,7 @@ function admin_update_dentist_status()
     $id     = (int)($data['id'] ?? 0);
     $status = trim($data['status'] ?? '');
 
-    if ($id <= 0 || !valid_catalog_status($status)) {
+    if ($id <= 0 || !valid_availability_status($status)) {
         json_response(['ok' => false, 'message' => 'Invalid dentist ID or status.'], 422);
     }
     if (!fetch_one('SELECT dentist_id FROM dentists WHERE dentist_id = ?', [$id])) {
