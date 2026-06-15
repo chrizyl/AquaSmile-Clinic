@@ -20,7 +20,7 @@ if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
     href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&amp;family=DM+Sans:wght@300;400;500&amp;display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="css/style.css?v=20260524">
-  <link rel="stylesheet" href="css/admin.css?v=20260616k">
+  <link rel="stylesheet" href="css/admin.css?v=20260616m">
 </head>
 
 <body class="admin-body">
@@ -248,7 +248,7 @@ if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
             <div class="section-label">Admin Notifications</div>
             <h2>Appointment and Order Alerts</h2>
           </div>
-          <span class="admin-badge">latest updates</span>
+          <button class="admin-badge admin-mark-read-btn" type="button" onclick="markAllAdminNotificationsRead()">Mark All as Read</button>
         </div>
         <div class="admin-activity-feed" id="notifications-feed"></div>
       </article>
@@ -257,8 +257,8 @@ if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
     </section>
   </main>
 
-  <script src="js/main.js?v=20260614b"></script>
-  <script src="js/admin.js?v=20260616l"></script>
+  <script src="js/main.js?v=20260616a"></script>
+  <script src="js/admin.js?v=20260616m"></script>
 </body>
 
 </html>

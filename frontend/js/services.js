@@ -21,27 +21,6 @@ const SERVICE_IMAGES_PG = {
 };
 
 // ── SERVICE CATEGORIES  ──
-const SVC_PAGE_CATEGORIES = {
-  1: 'Preventive',
-  2: 'Diagnostic',
-  3: 'Restorative',
-  4: 'Cosmetic',
-  5: 'Orthodontic',
-  6: 'Restorative',
-  7: 'Restorative',
-  8: 'Cosmetic',
-  9: 'Preventive',
-  S1: 'Preventive',
-  S2: 'Diagnostic',
-  S3: 'Restorative',
-  S4: 'Cosmetic',
-  S5: 'Orthodontic',
-  S6: 'Restorative',
-  S7: 'Restorative',
-  S8: 'Cosmetic',
-  S9: 'Preventive',
-};
-
 // Unique category list in display order
 const CATEGORY_ORDER = ['All', 'Preventive', 'Diagnostic', 'Restorative', 'Cosmetic', 'Orthodontic'];
 
@@ -82,23 +61,23 @@ function renderServiceCards() {
 
   grid.innerHTML = SERVICES.map(s => {
     const imgSrc   = s.imagePath || SERVICE_IMAGES_PG[s.id] || 'images/services/placeholder.jpg';
-    const category = SVC_PAGE_CATEGORIES[s.id] || 'General';
+    const category = serviceCategory(s);
 
     return `
       <div
         class="service-card-full"
         id="svc-card-${s.id}"
-        data-category="${category}"
+        data-category="${escHtml(category)}"
       >
         <div class="service-img-wrap">
-          <img src="${imgSrc}" alt="${s.name}">
-          <div class="service-category-tag">${category}</div>
+          <img src="${escHtml(imgSrc)}" alt="${escHtml(s.name)}">
+          ${category ? `<div class="service-category-tag">${escHtml(category)}</div>` : ''}
         </div>
         <div class="service-card-body">
-          <div class="service-card-name">${s.name}</div>
-          <div class="service-card-desc">${s.desc}</div>
+          <div class="service-card-name">${escHtml(s.name)}</div>
+          <div class="service-card-desc">${escHtml(s.desc)}</div>
           <div class="service-card-footer">
-            <div class="service-card-price">${s.price}</div>
+            <div class="service-card-price">${escHtml(s.price)}</div>
           </div>
           <div class="service-card-actions">
             <button
@@ -119,23 +98,23 @@ function renderServiceCards() {
 function openServiceModal(sid) {
   const service  = SERVICES.find(s => s.id === sid);
   const imgSrc   = service?.imagePath || SERVICE_IMAGES_PG[sid] || 'dental_logo.png';
-  const category = SVC_PAGE_CATEGORIES[sid] || 'General';
-
   if (!service) return;
+
+  const category = serviceCategory(service);
 
   document.getElementById('modal-body').innerHTML = `
     <img
-      src="${imgSrc}"
-      alt="${service.name}"
+      src="${escHtml(imgSrc)}"
+      alt="${escHtml(service.name)}"
       class="modal-service-img"
     >
     <div class="modal-info">
-      <div class="modal-service-name">${service.name}</div>
-      <div class="modal-service-category">${category}</div>
-      <div class="modal-service-desc">${service.desc}</div>
+      <div class="modal-service-name">${escHtml(service.name)}</div>
+      ${category ? `<div class="modal-service-category">${escHtml(category)}</div>` : ''}
+      <div class="modal-service-desc">${escHtml(service.desc)}</div>
       <div class="modal-service-price-row">
         <span class="modal-price-label">Starting Price</span>
-        <span class="modal-price-value">${service.price}</span>
+        <span class="modal-price-value">${escHtml(service.price)}</span>
       </div>
       <button class="modal-book-btn ${isAdmin() ? 'admin-disabled' : ''}" onclick="${isAdmin() ? 'return false;' : `bookService('${sid}')`}" ${isAdmin() ? 'disabled' : ''}>
         Book This Service
@@ -144,6 +123,19 @@ function openServiceModal(sid) {
 
   document.getElementById('modal-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
+}
+
+function serviceCategory(service) {
+  return String(service?.category || '').trim();
+}
+
+function escHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 function closeServiceModal() {

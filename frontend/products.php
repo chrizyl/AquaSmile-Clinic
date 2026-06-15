@@ -17,7 +17,7 @@ if (isAdmin()) {
   <title>AquaSmile — Shop</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/products.css?v=20260523">
-  <link rel="stylesheet" href="css/notifications.css?v=20260523">
+  <link rel="stylesheet" href="css/notifications.css?v=20260616a">
   <link rel="stylesheet" href="css/auth-nav.css?v=20260614">
   <link rel="stylesheet" href="css/admin-restrictions.css">
 </head>

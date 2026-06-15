@@ -357,7 +357,7 @@ function renderNotificationPanel() {
 
   const notificationHtml = notifications.length
     ? notifications.map(n => `
-      <div class="notify-item ${n.read ? '' : 'unread'}">
+      <div class="notify-item ${n.read ? '' : 'unread'}" role="button" tabindex="0" onclick="openUserNotification('${n.id}')">
         <div class="notify-message">${n.message}</div>
         <div class="notify-meta">${n.createdAt || ''}</div>
       </div>`).join('')
@@ -366,10 +366,39 @@ function renderNotificationPanel() {
   panel.innerHTML = `
     <div class="notify-panel-head">
       <div class="notify-panel-title">Notifications</div>
-      <button class="notify-mark-btn" type="button" onclick="markNotificationsRead()">Mark read</button>
+      <button class="notify-mark-btn" type="button" onclick="markNotificationsRead()">Mark All as Read</button>
     </div>
     <div class="notify-section-label">Updates</div>
     ${notificationHtml}`;
+}
+
+function openUserNotification(id) {
+  const all = DB.get('notifications') || [];
+  const note = all.find(n => String(n.id) === String(id) && (n.audience || 'user') === 'user' && isForCurrentUser(n));
+  if (!note) return;
+
+  note.read = true;
+  DB.set('notifications', all);
+  apiRequest('mark_notification_read', { id }).catch(err => {
+    console.warn('Notification read sync failed:', err.message);
+  });
+  renderNotificationPanel();
+
+  const target = {
+    notificationId: note.id,
+    appointmentId: note.appointmentId || null,
+    orderId: note.orderId || null,
+  };
+
+  if (typeof window.openUserNotificationTarget === 'function') {
+    window.openUserNotificationTarget(note.id);
+    return;
+  }
+
+  if (target.appointmentId || target.orderId) {
+    sessionStorage.setItem('aqsmile_notification_target', JSON.stringify(target));
+    window.location.href = `user.php#${target.appointmentId ? 'appointments' : 'orders'}`;
+  }
 }
 
 function markNotificationsRead() {

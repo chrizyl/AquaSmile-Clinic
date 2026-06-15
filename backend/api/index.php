@@ -80,6 +80,9 @@ try {
         case 'mark_admin_notifications_read':
             mark_admin_notifications_read();
             break;
+        case 'mark_admin_notification_read':
+            mark_admin_notification_read();
+            break;
         case 'update_stock':
             update_stock();
             break;
@@ -1455,6 +1458,24 @@ function mark_admin_notifications_read()
     require_admin();
 
     execute_sql("UPDATE notifications SET is_read = 1 WHERE audience = 'admin'");
+    json_response(['ok' => true]);
+}
+
+function mark_admin_notification_read()
+{
+    require_admin();
+    $data = request_json();
+    $notificationId = (int) ($data['id'] ?? 0);
+
+    if ($notificationId <= 0) {
+        json_response(['ok' => false, 'message' => 'Invalid notification.'], 422);
+    }
+
+    execute_sql(
+        "UPDATE notifications SET is_read = 1 WHERE notification_id = ? AND audience = 'admin'",
+        [$notificationId]
+    );
+
     json_response(['ok' => true]);
 }
 

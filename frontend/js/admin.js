@@ -7,6 +7,8 @@ let _showArchived = { appointments: false, orders: false, products: false, servi
 let _appointmentFilter = 'all';
 let _selectedAppointmentId = null;
 let _selectedOrderId = null;
+let _adminRouteHandled = false;
+const SERVICE_CATEGORY_OPTIONS = ['Preventive', 'Diagnostic', 'Restorative', 'Cosmetic', 'Orthodontic'];
 
 function showToast(msg, ok = true) {
   const t = document.getElementById('toast');
@@ -52,6 +54,7 @@ async function adminRefresh() {
     renderCatalog(d.products || [], d.services || [], d.dentists || []);
     renderNotifications(d.notifications || []);
     updateNotifyBadge(d.notifications || []);
+    applyAdminRouteTarget();
   } catch (e) {
     showToast('Network error. Could not refresh dashboard.', false);
   }
@@ -64,19 +67,6 @@ async function showAdminView(view) {
   if (section) section.classList.add('active');
   const btn = document.querySelector('[data-view="' + view + '"]');
   if (btn) btn.classList.add('active');
-
-  if (view === 'notifications' && (_adminData.notifications || []).some(item => !item.is_read)) {
-    try {
-      const result = await adminApi('mark_admin_notifications_read', {});
-      if (result.ok) {
-        (_adminData.notifications || []).forEach(item => { item.is_read = true; });
-        renderNotifications(_adminData.notifications || []);
-        updateNotifyBadge(_adminData.notifications || []);
-      }
-    } catch {
-      showToast('Could not mark notifications as read.', false);
-    }
-  }
 }
 
 function toggleCatalogPanel(button) {
@@ -278,13 +268,28 @@ function appointmentActionButtons(appointment) {
   }
   if (appointment.status === 'confirmed') {
     return `
-      <button class="appointment-action complete" type="button" onclick="updateAppointmentStatus('${esc(appointment.id)}', 'completed')">Mark as Completed</button>
+      <button class="appointment-action complete" type="button" onclick="confirmAppointmentStatus('${esc(appointment.id)}', 'completed')">Mark as Completed</button>
       <button class="appointment-action cancel" type="button" onclick="openAppointmentCancelModal('${esc(appointment.id)}')">Cancel</button>`;
   }
   if (['completed', 'cancelled'].includes(appointment.status)) {
-    return `<button class="appointment-action archive" type="button" onclick="updateAppointmentStatus('${esc(appointment.id)}', 'archived')">Archive</button>`;
+    return `<button class="appointment-action archive" type="button" onclick="confirmAppointmentStatus('${esc(appointment.id)}', 'archived')">Archive</button>`;
   }
   return '<span class="appointment-archived-label">This appointment is archived.</span>';
+}
+
+function confirmAppointmentStatus(id, status) {
+  const appointment = (_adminData.appointments || []).find(item => String(item.id) === String(id));
+  const isArchive = status === 'archived';
+  confirmAdminAction({
+    title: isArchive ? 'Confirm Archive' : 'Confirm Completion',
+    message: isArchive
+      ? `Are you sure you want to archive Appointment #${id}?`
+      : `Mark Appointment #${id} as completed?`,
+    confirmText: isArchive ? 'Yes, Archive' : 'Yes, Complete',
+    loadingText: isArchive ? 'Archiving...' : 'Completing...',
+    confirmClass: isArchive ? 'archive' : 'complete',
+    onConfirm: () => updateAppointmentStatus(appointment?.id || id, status),
+  });
 }
 
 async function updateAppointmentStatus(id, status, reason = '') {
@@ -581,14 +586,31 @@ function orderActionButtons(order) {
       <button class="order-action delivery" type="button" onclick="updateOrderStatus('${id}', 'out_for_delivery')">Mark as Out for Delivery</button>
       <button class="order-action cancel" type="button" onclick="openOrderCancelModal('${id}')">Cancel Order</button>`,
     out_for_delivery: `
-      <button class="order-action delivered" type="button" onclick="updateOrderStatus('${id}', 'delivered')">Mark as Delivered</button>
+      <button class="order-action delivered" type="button" onclick="confirmOrderStatus('${id}', 'delivered')">Mark as Delivered</button>
       <button class="order-action cancel" type="button" onclick="openOrderCancelModal('${id}')">Cancel Order</button>`,
-    delivered: `<button class="order-action complete" type="button" onclick="updateOrderStatus('${id}', 'completed')">Mark as Completed</button>`,
-    completed: `<button class="order-action archive" type="button" onclick="updateOrderStatus('${id}', 'archived')">Archive</button>`,
-    cancelled: `<button class="order-action archive" type="button" onclick="updateOrderStatus('${id}', 'archived')">Archive</button>`,
+    delivered: `<button class="order-action complete" type="button" onclick="confirmOrderStatus('${id}', 'completed')">Mark as Completed</button>`,
+    completed: `<button class="order-action archive" type="button" onclick="confirmOrderStatus('${id}', 'archived')">Archive</button>`,
+    cancelled: `<button class="order-action archive" type="button" onclick="confirmOrderStatus('${id}', 'archived')">Archive</button>`,
     archived: '<span class="order-archived-label">Archived</span>',
   };
   return actions[order.status] || '';
+}
+
+function confirmOrderStatus(id, status) {
+  const copy = {
+    delivered: ['Confirm Delivery', `Mark Order #${id} as delivered?`, 'Yes, Delivered', 'Marking...'],
+    completed: ['Confirm Completion', `Mark Order #${id} as completed?`, 'Yes, Complete', 'Completing...'],
+    archived: ['Confirm Archive', `Are you sure you want to archive Order #${id}?`, 'Yes, Archive', 'Archiving...'],
+  }[status] || ['Confirm Action', `Update Order #${id}?`, 'Yes, Continue', 'Updating...'];
+
+  confirmAdminAction({
+    title: copy[0],
+    message: copy[1],
+    confirmText: copy[2],
+    loadingText: copy[3],
+    confirmClass: status === 'archived' ? 'archive' : 'complete',
+    onConfirm: () => updateOrderStatus(id, status),
+  });
 }
 
 async function updateOrderStatus(id, status) {
@@ -761,7 +783,9 @@ function renderNotifications(notifications) {
       ? `Order #${notification.order_id}`
       : (notification.appointment_id ? `Appointment #${notification.appointment_id}` : 'General update');
     return `
-      <article class="admin-activity-item ${notification.is_read ? '' : 'unread'}">
+      <article class="admin-activity-item ${notification.is_read ? '' : 'unread'}" role="button" tabindex="0"
+        onclick="openAdminNotification('${esc(notification.id)}')"
+        onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openAdminNotification('${esc(notification.id)}');}">
         <div class="activity-icon ${isOrder ? 'order' : 'appointment'}" aria-hidden="true">
           ${isOrder ? 'OR' : 'AP'}
         </div>
@@ -769,7 +793,7 @@ function renderNotifications(notifications) {
           <div class="activity-heading">
             <div>
               <strong>${esc(notification.user_name || 'AquaSmile User')}</strong>
-              <span>${esc(reference)}</span>
+              <span>${notification.is_read ? '' : '<i class="unread-dot" aria-hidden="true"></i>'}${esc(reference)}</span>
             </div>
             <span class="notification-read-badge ${notification.is_read ? 'read' : 'unread'}">${notification.is_read ? 'Read' : 'Unread'}</span>
           </div>
@@ -780,12 +804,129 @@ function renderNotifications(notifications) {
   }).join('') || '<div class="empty-state-card">No notifications yet.</div>';
 }
 
+async function openAdminNotification(notificationId) {
+  const notification = (_adminData.notifications || []).find(item => String(item.id) === String(notificationId));
+  if (!notification) return;
+
+  if (!notification.is_read) {
+    try {
+      const result = await adminApi('mark_admin_notification_read', { id: notificationId });
+      if (result.ok) {
+        notification.is_read = true;
+        renderNotifications(_adminData.notifications || []);
+        updateNotifyBadge(_adminData.notifications || []);
+      }
+    } catch {
+      showToast('Could not mark notification as read.', false);
+    }
+  }
+
+  if (notification.appointment_id) {
+    openAdminAppointment(notification.appointment_id, true);
+    return;
+  }
+  if (notification.order_id) {
+    openAdminOrder(notification.order_id, true);
+  }
+}
+
+async function markAllAdminNotificationsRead() {
+  try {
+    const result = await adminApi('mark_admin_notifications_read', {});
+    if (result.ok) {
+      (_adminData.notifications || []).forEach(item => { item.is_read = true; });
+      renderNotifications(_adminData.notifications || []);
+      updateNotifyBadge(_adminData.notifications || []);
+      showToast('All admin notifications marked as read.');
+    }
+  } catch {
+    showToast('Could not mark notifications as read.', false);
+  }
+}
+
+function openAdminAppointment(appointmentId, updateUrl = false) {
+  const appointment = (_adminData.appointments || []).find(item => String(item.id) === String(appointmentId));
+  if (appointment?.status === 'archived') {
+    _showArchived.appointments = true;
+    _appointmentFilter = 'archived';
+  } else {
+    _appointmentFilter = 'all';
+  }
+  _selectedAppointmentId = appointmentId;
+  showAdminView('appointments');
+  renderAppointmentsManage(_adminData.appointments || []);
+  if (updateUrl) history.replaceState(null, '', `admin.php?section=appointments&id=${encodeURIComponent(appointmentId)}`);
+  document.getElementById('appointment-detail-panel')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function openAdminOrder(orderId, updateUrl = false) {
+  const order = (_adminData.orders || []).find(item => String(item.id) === String(orderId));
+  if (order?.status === 'archived') _showArchived.orders = true;
+  _selectedOrderId = orderId;
+  showAdminView('orders');
+  renderOrders(_adminData.orders || [], _adminData.orderItems || []);
+  if (updateUrl) history.replaceState(null, '', `admin.php?section=orders&id=${encodeURIComponent(orderId)}`);
+  document.getElementById('order-detail-panel')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function applyAdminRouteTarget() {
+  if (_adminRouteHandled) return;
+  _adminRouteHandled = true;
+
+  const params = new URLSearchParams(window.location.search);
+  const section = params.get('section');
+  const id = params.get('id');
+  if (section === 'appointments' && id) {
+    openAdminAppointment(id);
+  } else if (section === 'orders' && id) {
+    openAdminOrder(id);
+  } else if (section && document.getElementById('view-' + section)) {
+    showAdminView(section);
+  }
+}
+
 function updateNotifyBadge(notifications) {
   const badge = document.getElementById('admin-notify-badge');
   if (!badge) return;
   const unread = notifications.filter(n => !n.is_read).length;
   badge.textContent = unread;
   badge.style.display = unread > 0 ? 'inline-flex' : 'none';
+}
+
+function confirmAdminAction({ title, message, confirmText, loadingText = 'Saving...', confirmClass = 'archive', onConfirm }) {
+  removeModal();
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'admin-modal';
+  overlay.onclick = event => { if (event.target === overlay) removeModal(); };
+  overlay.innerHTML = `
+    <div class="modal-box confirmation-modal" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+      <div class="modal-head">
+        <div><span class="modal-kicker">Please confirm</span><h3>${esc(title)}</h3></div>
+        <button class="modal-close" type="button" onclick="removeModal()" aria-label="Close">&#x2715;</button>
+      </div>
+      <div class="modal-body">
+        <div class="order-cancel-icon">!</div>
+        <p class="order-cancel-message">${esc(message)}</p>
+      </div>
+      <div class="modal-foot">
+        <button class="btn-secondary" type="button" onclick="removeModal()">Cancel</button>
+        <button class="appointment-action ${esc(confirmClass)}" type="button" id="confirm-admin-action">${esc(confirmText)}</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+  document.getElementById('confirm-admin-action').addEventListener('click', async event => {
+    event.currentTarget.disabled = true;
+    event.currentTarget.textContent = loadingText;
+    const ok = await onConfirm();
+    if (ok) removeModal();
+    else {
+      event.currentTarget.disabled = false;
+      event.currentTarget.textContent = confirmText;
+    }
+  });
+  requestAnimationFrame(() => overlay.classList.add('modal-visible'));
 }
 
 function openOrderCancelModal(orderId) {
@@ -879,7 +1020,7 @@ function modalConfig(type, record) {
         { id:'name',        label:'Service Name *',    type:'text',    value: record?.name     || '' },
         { id:'description', label:'Description',       type:'textarea',value: record?.desc      || '' },
         { id:'price',       label:'Price (PHP) *',     type:'number',  value: record?.rawPrice || record?.price || '' },
-        { id:'category',    label:'Category',          type:'text',    value: record?.category || '' },
+        { id:'category',    label:'Category',          type:'select',  value: record?.category || '', options: SERVICE_CATEGORY_OPTIONS },
         { id:'daily_slots', label:'Daily Slots',       type:'number',  value: record?.dailySlots || 8 },
         { id:'image',       label:'Service Image',     type:'file',    currentPreview: record?.imagePath || '' },
       ],
@@ -969,6 +1110,11 @@ function openModal(title, fields, onSave) {
                   <label for="mf-${f.id}">${esc(f.label)}</label>
                   ${f.type === 'textarea'
                     ? `<textarea id="mf-${f.id}" name="${f.id}" rows="3">${esc(f.value)}</textarea>`
+                    : f.type === 'select'
+                      ? `<select id="mf-${f.id}" name="${f.id}">
+                          <option value="">Select category</option>
+                          ${(f.options || []).map(option => `<option value="${esc(option)}" ${option === f.value ? 'selected' : ''}>${esc(option)}</option>`).join('')}
+                        </select>`
                     : `<input id="mf-${f.id}" name="${f.id}" type="${f.type}" value="${esc(String(f.value))}">`}
                 </div>`).join('')}
             </div>

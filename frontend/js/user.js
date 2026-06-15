@@ -166,6 +166,7 @@ function renderAppointments() {
           </div>
           <div class="history-side">
             ${statusBadge(item.status)}
+            <button class="history-action-btn" type="button" data-appointment-details="${escapeHtml(item.id)}">View Details</button>
             ${item.status === 'pending'
               ? `<button class="history-action-btn cancel" type="button" data-cancel-appointment="${escapeHtml(item.id)}">Cancel Appointment</button>`
               : ''}
@@ -263,6 +264,38 @@ function openOrderDetails(orderId) {
   openModal('order-modal');
 }
 
+function detailInfo(label, value, allowHtml = false) {
+  const content = allowHtml ? value : escapeHtml(value || '-');
+  return `<div class="order-info"><span>${escapeHtml(label)}</span><strong>${content}</strong></div>`;
+}
+
+function openAppointmentDetails(appointmentId) {
+  const appointment = accountData.appointments.find(item => String(item.id) === String(appointmentId));
+  if (!appointment) {
+    accountMessage('Appointment details could not be found.');
+    return;
+  }
+
+  document.getElementById('appointment-modal-title').textContent = `Appointment #${appointment.id}`;
+  const cancelledDetails = appointment.status === 'cancelled'
+    ? `${appointment.cancellationReason ? detailInfo('Cancellation Reason', appointment.cancellationReason) : ''}${appointment.cancelledBy ? detailInfo('Cancelled By', appointment.cancelledBy) : ''}`
+    : '';
+
+  document.getElementById('appointment-detail-content').innerHTML = `
+    <div class="order-info-grid">
+      ${detailInfo('Appointment ID', `#${appointment.id}`)}
+      ${detailInfo('Service Name', appointment.serviceName || 'Dental Service')}
+      ${detailInfo('Dentist Name', appointment.dentistName || 'Dentist to be assigned')}
+      ${detailInfo('Appointment Date', formatAccountDate(appointment.date))}
+      ${detailInfo('Appointment Time', formatAppointmentTime(appointment.time))}
+      ${detailInfo('Status', statusBadge(appointment.status), true)}
+      ${detailInfo('Notes', appointment.notes || 'None')}
+      ${cancelledDetails}
+      ${detailInfo('Created Date', formatAccountDate(appointment.createdAt || appointment.created_at, true))}
+    </div>`;
+  openModal('appointment-modal');
+}
+
 function updateNotificationCounts() {
   const unread = accountData.notifications.filter(item => !item.is_read).length;
   const badge = document.getElementById('sidebar-unread');
@@ -297,9 +330,68 @@ function notificationReference(item) {
 function renderNotifications() {
   const list = document.getElementById('notification-list');
   list.innerHTML = accountData.notifications.length
-    ? accountData.notifications.map(item => `<article class="notification-item ${item.is_read ? '' : 'unread'}"><div><div class="notification-message">${escapeHtml(item.message)}</div><div class="notification-meta">${escapeHtml(notificationReference(item))} &middot; ${escapeHtml(formatAccountDate(item.created_at,true))}</div></div><div class="notification-actions"><span class="read-badge ${item.is_read ? 'read' : 'unread'}">${item.is_read ? 'Read' : 'Unread'}</span>${item.is_read ? '' : `<button class="mark-read-btn" type="button" data-notification-id="${escapeHtml(item.id)}">Mark as Read</button>`}</div></article>`).join('')
+    ? accountData.notifications.map(item => `<article class="notification-item ${item.is_read ? '' : 'unread'}" role="button" tabindex="0" data-notification-id="${escapeHtml(item.id)}"><div><div class="notification-message">${escapeHtml(item.message)}</div><div class="notification-meta">${escapeHtml(notificationReference(item))} &middot; ${escapeHtml(formatAccountDate(item.created_at,true))}</div></div><div class="notification-actions"><span class="read-badge ${item.is_read ? 'read' : 'unread'}">${item.is_read ? 'Read' : 'Unread'}</span>${item.is_read ? '' : `<button class="mark-read-btn" type="button" data-notification-id="${escapeHtml(item.id)}">Mark as Read</button>`}</div></article>`).join('')
     : emptyState('No notifications yet.');
   updateNotificationCounts();
+}
+
+async function markSingleNotificationRead(notificationId) {
+  const notification = accountData.notifications.find(item => String(item.id) === String(notificationId));
+  if (!notification) return null;
+  if (!notification.is_read) {
+    const wasRead = notification.is_read;
+    notification.is_read = true;
+    syncNotificationCache(notificationId);
+    renderNotifications();
+    renderOverview();
+    window.AquaNotify?.render();
+    try {
+      await apiRequest('mark_notification_read', { id: notificationId });
+    } catch (error) {
+      notification.is_read = wasRead;
+      renderNotifications();
+      renderOverview();
+      window.AquaNotify?.render();
+      throw error;
+    }
+  }
+  return notification;
+}
+
+function openNotificationTarget(notification) {
+  if (!notification) return;
+  if (notification.appointment_id) {
+    switchSection('appointments');
+    openAppointmentDetails(notification.appointment_id);
+  } else if (notification.order_id) {
+    switchSection('orders');
+    openOrderDetails(notification.order_id);
+  }
+}
+
+window.openUserNotificationTarget = async function openUserNotificationTarget(notificationId) {
+  const notification = await markSingleNotificationRead(notificationId);
+  openNotificationTarget(notification);
+};
+
+function handleStoredNotificationTarget() {
+  try {
+    const raw = sessionStorage.getItem('aqsmile_notification_target');
+    if (!raw) return;
+    sessionStorage.removeItem('aqsmile_notification_target');
+    const target = JSON.parse(raw);
+    if (target.notificationId) {
+      window.openUserNotificationTarget(target.notificationId);
+    } else if (target.appointmentId) {
+      switchSection('appointments');
+      openAppointmentDetails(target.appointmentId);
+    } else if (target.orderId) {
+      switchSection('orders');
+      openOrderDetails(target.orderId);
+    }
+  } catch (error) {
+    console.warn('Notification target could not be opened:', error.message);
+  }
 }
 
 function renderOverview() {
@@ -365,6 +457,7 @@ async function loadAccount() {
     document.getElementById('account-content').hidden = false;
     const requested = location.hash.slice(1);
     switchSection(document.querySelector(`[data-section="${requested}"]`) ? requested : 'overview');
+    handleStoredNotificationTarget();
   } catch (error) {
     document.getElementById('account-loading').hidden = true;
     const alert = document.getElementById('account-alert');
@@ -386,8 +479,13 @@ document.getElementById('cancel-profile-btn').addEventListener('click', () => {
 });
 
 document.getElementById('appointment-list').addEventListener('click', event => {
-  const button = event.target.closest('[data-cancel-appointment]');
-  if (button) openCancellationModal(button.dataset.cancelAppointment);
+  const detailButton = event.target.closest('[data-appointment-details]');
+  if (detailButton) {
+    openAppointmentDetails(detailButton.dataset.appointmentDetails);
+    return;
+  }
+  const cancelButton = event.target.closest('[data-cancel-appointment]');
+  if (cancelButton) openCancellationModal(cancelButton.dataset.cancelAppointment);
 });
 
 document.getElementById('order-list').addEventListener('click', event => {
@@ -505,18 +603,25 @@ document.getElementById('profile-form').addEventListener('submit', async event =
 });
 
 document.getElementById('notification-list').addEventListener('click', async event => {
-  const button = event.target.closest('[data-notification-id]');
-  if (!button) return;
-  button.disabled = true;
+  const target = event.target.closest('[data-notification-id]');
+  if (!target) return;
+  const notificationId = target.dataset.notificationId;
+  if (target.matches('button')) target.disabled = true;
   try {
-    await apiRequest('mark_notification_read', { id: button.dataset.notificationId });
-    const notification = accountData.notifications.find(item => String(item.id) === button.dataset.notificationId);
-    if (notification) notification.is_read = true;
-    syncNotificationCache(button.dataset.notificationId);
-    renderNotifications();
-    renderOverview();
-    window.AquaNotify?.render();
-  } catch (error) { accountMessage(error.message); button.disabled = false; }
+    const notification = await markSingleNotificationRead(notificationId);
+    openNotificationTarget(notification);
+  } catch (error) {
+    accountMessage(error.message);
+    if (target.matches('button')) target.disabled = false;
+  }
+});
+
+document.getElementById('notification-list').addEventListener('keydown', event => {
+  if (!['Enter', ' '].includes(event.key)) return;
+  const target = event.target.closest('[data-notification-id]');
+  if (!target) return;
+  event.preventDefault();
+  target.click();
 });
 
 document.getElementById('mark-all-read-btn').addEventListener('click', async () => {

@@ -16,7 +16,7 @@ if (isAdmin()) {
   <title>AquaSmile — Checkout</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css?v=20260523" />
-  <link rel="stylesheet" href="css/notifications.css?v=20260523" />
+  <link rel="stylesheet" href="css/notifications.css?v=20260616a" />
 
   <style>
     :root {
@@ -964,7 +964,7 @@ if (isAdmin()) {
     </div>
   </div>
 
-  <script src="js/main.js?v=20260614b"></script>
+  <script src="js/main.js?v=20260616a"></script>
 
   <script>
     function selectPayment(el) {

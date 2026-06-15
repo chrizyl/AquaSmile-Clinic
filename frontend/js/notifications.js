@@ -177,7 +177,9 @@
 
     const updatesHtml = notifications.length
       ? notifications.map(item => `
-        <div class="notify-item ${item.read ? '' : 'unread'}">
+        <div class="notify-item ${item.read ? '' : 'unread'}" role="button" tabindex="0"
+          onclick="AquaNotify.openNotification('${escapeHtml(item.id)}')"
+          onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();AquaNotify.openNotification('${escapeHtml(item.id)}');}">
           <div class="notify-message">${escapeHtml(item.message)}</div>
           <div class="notify-meta">${notificationReference(item)} &middot; ${escapeHtml(item.createdAt || '')}</div>
         </div>`).join('')
@@ -186,10 +188,56 @@
     panel.innerHTML = `
       <div class="notify-panel-head">
         <div class="notify-panel-title">Notifications</div>
-        <button class="notify-mark-btn" type="button" onclick="AquaNotify.markRead()">Mark read</button>
+        <button class="notify-mark-btn" type="button" onclick="AquaNotify.markRead()">Mark All as Read</button>
       </div>
       <div class="notify-section-label">Updates</div>
       ${updatesHtml}`;
+  }
+
+  async function markOneRead(notificationId) {
+    const user = getCurrentUser();
+    const all = readStorage('notifications') || [];
+    const item = all.find(note =>
+      String(note.id) === String(notificationId) &&
+      (note.audience || 'user') === 'user' &&
+      userMatches(user, note)
+    );
+
+    if (!item) return null;
+    item.read = true;
+    writeStorage('notifications', all);
+    render();
+
+    try {
+      await apiPost('mark_notification_read', { id: notificationId });
+      await syncFromApi();
+      render();
+    } catch (err) {
+      console.warn('Notification read sync failed:', err.message);
+    }
+
+    return item;
+  }
+
+  async function openNotification(notificationId) {
+    const item = await markOneRead(notificationId);
+    if (!item) return;
+
+    const target = {
+      notificationId: item.id,
+      appointmentId: item.appointmentId || null,
+      orderId: item.orderId || null,
+    };
+
+    if (typeof window.openUserNotificationTarget === 'function') {
+      window.openUserNotificationTarget(item.id);
+      return;
+    }
+
+    if (target.appointmentId || target.orderId) {
+      sessionStorage.setItem('aqsmile_notification_target', JSON.stringify(target));
+      window.location.href = `user.php#${target.appointmentId ? 'appointments' : 'orders'}`;
+    }
   }
 
   async function markRead() {
@@ -260,7 +308,7 @@
     render();
   }
 
-  window.AquaNotify = { render, toggle, markRead, cancelBooking };
+  window.AquaNotify = { render, toggle, markRead, openNotification, cancelBooking };
 
   document.addEventListener('DOMContentLoaded', async () => {
     await syncFromApi();
