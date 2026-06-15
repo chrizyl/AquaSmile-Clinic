@@ -200,6 +200,7 @@ if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
                 <tr>
                   <th>Order ID</th>
                   <th>Customer</th>
+                  <th>Delivery Address</th>
                   <th>Total</th>
                   <th>Status</th>
                 </tr>
@@ -331,15 +332,15 @@ if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
           <span class="admin-badge">schema-ready UI</span>
         </div>
         <div class="schema-grid">
-          <div class="schema-card"><strong>appointments</strong><span>id, user_id, service_id, dentist_id, date, time, notes, status, cancellation_reason</span></div>
-          <div class="schema-card"><strong>users</strong><span>id, name, email, contact, password, role, created_at</span></div>
-          <div class="schema-card"><strong>cart_items</strong><span>id, user_id, product_id, quantity, created_at</span></div>
-          <div class="schema-card"><strong>dentists</strong><span>id, name, credentials, specialization, photo, status</span></div>
-          <div class="schema-card"><strong>orders</strong><span>id, user_id, first_name, last_name, total, payment_method, status</span></div>
-          <div class="schema-card"><strong>order_items</strong><span>id, order_id, product_id, quantity, unit_price</span></div>
-          <div class="schema-card"><strong>products</strong><span>id, name, description, price, image, stock, category</span></div>
-          <div class="schema-card"><strong>services</strong><span>id, name, description, price, image, daily_slots, category</span></div>
-          <div class="schema-card"><strong>notifications</strong><span>id, user_id, appointment_id, audience, message, is_read, created_at</span></div>
+          <div class="schema-card"><strong>appointments</strong><span>appointment_id, user_id, service_id, dentist_id, appointment_date, appointment_time, notes, status, cancellation_reason</span></div>
+          <div class="schema-card"><strong>users</strong><span>user_id, first_name, last_name, email, phone, password_hash, role, created_at</span></div>
+          <div class="schema-card"><strong>cart_items</strong><span>cart_item_id, user_id, product_id, quantity, added_at</span></div>
+          <div class="schema-card"><strong>dentists</strong><span>dentist_id, first_name, last_name, credentials, specialization, bio, status</span></div>
+          <div class="schema-card"><strong>orders</strong><span>order_id, user_id, first_name, last_name, email, phone, house_no, street, barangay, city, province, zip, notes, payment_method, total_amount, status</span></div>
+          <div class="schema-card"><strong>order_items</strong><span>order_item_id, order_id, product_id, quantity, unit_price</span></div>
+          <div class="schema-card"><strong>products</strong><span>product_id, product_name, description, price, stock_quantity, status</span></div>
+          <div class="schema-card"><strong>services</strong><span>service_id, service_name, description, price, daily_slots, category, status</span></div>
+          <div class="schema-card"><strong>notifications</strong><span>notification_id, user_id, appointment_id, audience, message, is_read, created_at</span></div>
           <div class="schema-card"><strong>inventory_logs</strong><span>id, item_type, item_id, quantity, action, admin_id</span></div>
         </div>
       </article>

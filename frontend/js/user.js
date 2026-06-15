@@ -92,6 +92,17 @@ function formatMoney(value) {
   return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(Number(value) || 0);
 }
 
+function formatDeliveryAddress(order) {
+  return [
+    order.house_no,
+    order.street,
+    order.barangay,
+    order.city,
+    order.province,
+    order.zip,
+  ].map(part => String(part || '').trim()).filter(Boolean).join(', ') || '-';
+}
+
 function statusBadge(status) {
   const allowed = ['pending','confirmed','completed','cancelled','archived','processing','out_for_delivery','delivered'];
   const safe = allowed.includes(status) ? status : 'pending';
@@ -243,9 +254,7 @@ function openOrderDetails(orderId) {
       <div class="order-info"><span>Payment Method</span><strong>${escapeHtml((order.payment_method || 'Not specified').replaceAll('_',' ').toUpperCase())}</strong></div>
       <div class="order-info"><span>Status</span><strong>${statusBadge(order.status)}</strong></div>
       <div class="order-info"><span>Total Amount</span><strong>${escapeHtml(formatMoney(order.total))}</strong></div>
-      <div class="order-info"><span>Delivery Address</span><strong>${escapeHtml(order.address || '-')}</strong></div>
-      <div class="order-info"><span>City</span><strong>${escapeHtml(order.city || '-')}</strong></div>
-      <div class="order-info"><span>ZIP Code</span><strong>${escapeHtml(order.zip || '-')}</strong></div>
+      <div class="order-info"><span>Delivery Address</span><strong>${escapeHtml(formatDeliveryAddress(order))}</strong></div>
       <div class="order-info"><span>Notes</span><strong>${escapeHtml(order.notes || 'None')}</strong></div>
     </div>
     <h3 class="order-products-title">Ordered Products</h3>

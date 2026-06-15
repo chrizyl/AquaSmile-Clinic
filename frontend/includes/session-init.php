@@ -19,7 +19,7 @@ if (!isset($_SESSION['role']) && isset($_COOKIE['aqsmile_currentUser'])) {
 // Alternative: If you have a database connection, you can also fetch from DB
 // $user_id = $_SESSION['user_id'] ?? null;
 // if ($user_id) {
-//     $user = fetch_one('SELECT role FROM users WHERE id = ?', [$user_id]);
+//     $user = fetch_one('SELECT role FROM users WHERE user_id = ?', [$user_id]);
 //     if ($user) {
 //         $_SESSION['role'] = $user['role'];
 //     }

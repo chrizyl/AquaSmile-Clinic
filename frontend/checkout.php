@@ -745,19 +745,36 @@ if (isAdmin()) {
           <h2 class="co-section-title">Delivery Address</h2>
           <p class="co-section-sub">Where should we deliver your order?</p>
 
-          <div class="form-field">
-            <label class="form-label" for="address">Street Address</label>
-            <input class="form-input" type="text" id="address" name="address" placeholder="123 Mabini St., Brgy. Example" autocomplete="street-address" />
+          <div class="form-row">
+            <div class="form-field">
+              <label class="form-label" for="house-no">House No. / Unit No.</label>
+              <input class="form-input" type="text" id="house-no" name="house_no" placeholder="1" autocomplete="address-line1" maxlength="50" />
+            </div>
+            <div class="form-field">
+              <label class="form-label" for="street">Street</label>
+              <input class="form-input" type="text" id="street" name="street" placeholder="Purok" autocomplete="address-line2" maxlength="150" />
+            </div>
           </div>
 
           <div class="form-row">
             <div class="form-field">
+              <label class="form-label" for="barangay">Barangay</label>
+              <input class="form-input" type="text" id="barangay" name="barangay" placeholder="Makiling" maxlength="100" />
+            </div>
+            <div class="form-field">
               <label class="form-label" for="city">City / Municipality</label>
-              <input class="form-input" type="text" id="city" name="city" placeholder="Quezon City" autocomplete="address-level2" />
+              <input class="form-input" type="text" id="city" name="city" placeholder="Calamba" autocomplete="address-level2" maxlength="100" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-field">
+              <label class="form-label" for="province">Province / Region</label>
+              <input class="form-input" type="text" id="province" name="province" placeholder="Laguna" autocomplete="address-level1" maxlength="100" />
             </div>
             <div class="form-field">
               <label class="form-label" for="zip">ZIP Code</label>
-              <input class="form-input" type="text" id="zip" name="zip" placeholder="1100" autocomplete="postal-code" />
+              <input class="form-input" type="text" id="zip" name="zip" placeholder="4027" autocomplete="postal-code" maxlength="10" />
             </div>
           </div>
 
@@ -991,13 +1008,6 @@ if (isAdmin()) {
 
     /* ── LOGIN + EMPTY CART GUARD ── */
     (function() {
-      const Cookie = {
-        get(name) {
-          const match = document.cookie.match(new RegExp('(?:^|; )aqsmile_' + name + '=([^;]*)'));
-          try { return match ? JSON.parse(decodeURIComponent(match[1])) : null; }
-          catch { return null; }
-        }
-      };
       if (!Cookie.get('currentUser')) {
         window.location.href = 'login.php';
         return;
@@ -1007,6 +1017,34 @@ if (isAdmin()) {
         return;
       }
     })();
+
+    async function autofillCheckoutProfile() {
+      try {
+        const data = await apiGet('user_account');
+        const user = data.user || {};
+        const fields = {
+          'first-name': user.first_name,
+          'last-name': user.last_name,
+          email: user.email,
+          phone: user.phone,
+          'house-no': user.house_no,
+          street: user.street,
+          barangay: user.barangay,
+          city: user.city,
+          province: user.province,
+          zip: user.zip_code,
+        };
+
+        Object.entries(fields).forEach(([id, value]) => {
+          const input = document.getElementById(id);
+          if (input && !input.value && value) input.value = value;
+        });
+      } catch (err) {
+        console.warn('Unable to auto-fill checkout profile:', err.message);
+      }
+    }
+
+    autofillCheckoutProfile();
 
     /* ── RENDER ORDER SUMMARY SIDEBAR ── */
     function renderOrderSummary() {
@@ -1059,8 +1097,11 @@ if (isAdmin()) {
       const lastName  = document.getElementById('last-name').value.trim();
       const email     = document.getElementById('email').value.trim();
       const phone     = document.getElementById('phone').value.trim();
-      const address   = document.getElementById('address').value.trim();
+      const houseNo   = document.getElementById('house-no').value.trim();
+      const street    = document.getElementById('street').value.trim();
+      const barangay  = document.getElementById('barangay').value.trim();
       const city      = document.getElementById('city').value.trim();
+      const province  = document.getElementById('province').value.trim();
       const zip       = document.getElementById('zip').value.trim();
       const notes     = document.getElementById('notes').value.trim();
       const payment   = document.querySelector('input[name="payment_method"]:checked')?.value || 'cod';
@@ -1084,9 +1125,12 @@ if (isAdmin()) {
         return null;
       }
 
-      if (!address || !city || !zip) {
+      if (!houseNo || !street || !barangay || !city || !province || !zip) {
         alert('Please complete your delivery address.');
-        document.getElementById('address').focus();
+        const firstEmpty = ['house-no', 'street', 'barangay', 'city', 'province', 'zip']
+          .map(id => document.getElementById(id))
+          .find(input => !input.value.trim());
+        firstEmpty?.focus();
         return null;
       }
 
@@ -1124,8 +1168,11 @@ if (isAdmin()) {
         last_name:      lastName,
         email:          email,
         phone:          phone,
-        address:        address,
+        house_no:       houseNo,
+        street:         street,
+        barangay:       barangay,
         city:           city,
+        province:       province,
         zip:            zip,
         notes:          notes,
         payment_method: payment,
@@ -1149,8 +1196,11 @@ if (isAdmin()) {
           last_name: formData.last_name,
           email: formData.email,
           phone: formData.phone,
-          address: formData.address,
+          house_no: formData.house_no,
+          street: formData.street,
+          barangay: formData.barangay,
           city: formData.city,
+          province: formData.province,
           zip: formData.zip,
           notes: formData.notes,
           paymentMethod: formData.payment_method,
@@ -1164,7 +1214,8 @@ if (isAdmin()) {
           total: formData.total,
         });
       } catch (err) {
-        console.warn('Order saved locally only because API failed:', err.message);
+        alert(err.message || 'Unable to place your order. Please try again.');
+        return;
       }
       showSuccessPopup();
     }

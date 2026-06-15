@@ -14,6 +14,17 @@ function showToast(msg, ok = true) {
   t._tid = setTimeout(() => t.classList.remove('show'), 3800);
 }
 
+function formatOrderAddress(order) {
+  return [
+    order.house_no,
+    order.street,
+    order.barangay,
+    order.city,
+    order.province,
+    order.zip,
+  ].map(part => String(part || '').trim()).filter(Boolean).join(', ') || '-';
+}
+
 async function adminApi(action, body = null) {
   const opts = { method: body ? 'POST' : 'GET', headers: { 'Content-Type': 'application/json' } };
   if (body) opts.body = JSON.stringify(body);
@@ -255,13 +266,14 @@ function renderOrders(orders, orderItems) {
       <tr class="${o.status === 'archived' ? 'row-archived' : ''}">
         <td>#${o.id}</td>
         <td>${esc(o.customer)}</td>
+        <td>${esc(formatOrderAddress(o))}</td>
         <td>PHP ${parseFloat(o.total).toLocaleString('en-PH', {minimumFractionDigits: 2})}</td>
         <td>
           <select class="status-select" onchange="changeOrderStatus(${o.id}, this.value, this)" data-current="${o.status}">
             ${orderStatusOptions(o.status)}
           </select>
         </td>
-      </tr>`).join('') || '<tr><td colspan="4" class="empty-row">No orders yet.</td></tr>';
+      </tr>`).join('') || '<tr><td colspan="5" class="empty-row">No orders yet.</td></tr>';
   }
 
   const itbody = document.getElementById('order-items-table');
@@ -552,7 +564,8 @@ function modalConfig(type, record) {
     return {
       title: isEdit ? 'Edit Dentist' : 'Add New Dentist',
       fields: [
-        { id:'name',           label:'Full Name *',      type:'text',    value: record?.name  || '' },
+        { id:'first_name',     label:'First Name *',     type:'text',    value: record?.firstName || '' },
+        { id:'last_name',      label:'Last Name *',      type:'text',    value: record?.lastName  || '' },
         { id:'specialization', label:'Specialization',   type:'text',    value: record?.spec  || '' },
         { id:'credentials',    label:'Credentials',      type:'text',    value: record?.cred  || '' },
         { id:'bio',            label:'Bio / Description',type:'textarea',value: record?.desc  || '' },

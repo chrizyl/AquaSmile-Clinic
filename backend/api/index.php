@@ -34,10 +34,6 @@ if (!in_array($action, $sessionWriteActions, true) && session_status() === PHP_S
 }
 
 try {
-    ensure_notifications_table();
-    ensure_otp_verifications_table();
-    ensure_optional_columns();
-
     switch ($action) {
         case 'health':
             json_response(array('ok' => true, 'database' => DB_NAME));
@@ -146,133 +142,19 @@ try {
     }
 } catch (Throwable $e) {
     error_log('AquaSmile API error: ' . $e->getMessage());
-    json_response(['ok' => false, 'message' => 'Something went wrong. Please try again.'], 500);
+    $message = is_local_request()
+        ? get_class($e) . ': ' . $e->getMessage()
+        : 'Something went wrong. Please try again.';
+    json_response(['ok' => false, 'message' => $message], 500);
 }
 
-function ensure_notifications_table()
+function is_local_request()
 {
-    execute_sql(
-        "CREATE TABLE IF NOT EXISTS notifications (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            user_id INT NOT NULL,
-            appointment_id INT NULL,
-            audience ENUM('user','admin') NOT NULL DEFAULT 'user',
-            message TEXT NOT NULL,
-            is_read TINYINT(1) NOT NULL DEFAULT 0,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-        )"
-    );
-}
-
-function ensure_otp_verifications_table()
-{
-    execute_sql(
-        "CREATE TABLE IF NOT EXISTS otp_verifications (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            email VARCHAR(120) NOT NULL UNIQUE,
-            first_name VARCHAR(100) NOT NULL,
-            last_name VARCHAR(100) NOT NULL,
-            phone VARCHAR(20) NOT NULL,
-            password_hash VARCHAR(255) NOT NULL,
-            otp_code VARCHAR(6) NOT NULL,
-            expires_at DATETIME NOT NULL,
-            attempts TINYINT UNSIGNED NOT NULL DEFAULT 0,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            INDEX idx_expires_at (expires_at)
-        )"
-    );
-
-    if (!column_exists('otp_verifications', 'first_name')) {
-        execute_sql('ALTER TABLE otp_verifications ADD COLUMN first_name VARCHAR(100) NULL AFTER email');
-    }
-
-    if (!column_exists('otp_verifications', 'last_name')) {
-        execute_sql('ALTER TABLE otp_verifications ADD COLUMN last_name VARCHAR(100) NULL AFTER first_name');
-    }
-
-    if (!column_exists('otp_verifications', 'phone')) {
-        execute_sql('ALTER TABLE otp_verifications ADD COLUMN phone VARCHAR(20) NULL AFTER last_name');
-    }
-
-    if (!column_exists('otp_verifications', 'password_hash')) {
-        execute_sql('ALTER TABLE otp_verifications ADD COLUMN password_hash VARCHAR(255) NULL AFTER phone');
-    }
-
-    if (!column_exists('otp_verifications', 'attempts')) {
-        execute_sql('ALTER TABLE otp_verifications ADD COLUMN attempts TINYINT UNSIGNED NOT NULL DEFAULT 0 AFTER expires_at');
-    }
-
-    if (!column_exists('otp_verifications', 'updated_at')) {
-        execute_sql('ALTER TABLE otp_verifications ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER created_at');
-    }
-
-    if (!column_exists('otp_verifications', 'last_otp_sent_at')) {
-        execute_sql('ALTER TABLE otp_verifications ADD COLUMN last_otp_sent_at DATETIME NULL AFTER updated_at');
-    }
-}
-
-function column_exists($table, $column)
-{
-    $row = fetch_one(
-        'SELECT COUNT(*) AS total FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?',
-        [$table, $column]
-    );
-    return (int) ($row['total'] ?? 0) > 0;
-}
-
-function ensure_optional_columns()
-{
-    try { 
-        ensure_status_columns(); }  
-        catch (Throwable $e) { error_log('AquaSmile status columns: ' . $e->getMessage()); }
-    if (!column_exists('services', 'daily_slots')) {
-        execute_sql('ALTER TABLE services ADD COLUMN daily_slots INT NOT NULL DEFAULT 0');
-        execute_sql('UPDATE services SET daily_slots = 8 WHERE daily_slots = 0');
-    }
-
-    if (!column_exists('appointments', 'cancellation_reason')) {
-        execute_sql('ALTER TABLE appointments ADD COLUMN cancellation_reason TEXT NULL');
-    }
-
-    if (!column_exists('appointments', 'cancelled_by')) {
-        execute_sql("ALTER TABLE appointments ADD COLUMN cancelled_by ENUM('admin','user') NULL");
-    }
-
-    if (!column_exists('notifications', 'audience')) {
-        execute_sql("ALTER TABLE notifications ADD COLUMN audience ENUM('user','admin') NOT NULL DEFAULT 'user' AFTER appointment_id");
-    }
-}
-
-function ensure_status_columns()
-{
-    if (!column_exists('products', 'status')) {
-        execute_sql("ALTER TABLE products ADD COLUMN status ENUM('available','unavailable','archived') NOT NULL DEFAULT 'available'");
-    }
-
-    if (!column_exists('services', 'status')) {
-        execute_sql("ALTER TABLE services ADD COLUMN status ENUM('available','unavailable','archived') NOT NULL DEFAULT 'available'");
-    }
-
-    if (!column_exists('dentists', 'status')) {
-        execute_sql("ALTER TABLE dentists ADD COLUMN status ENUM('available','unavailable','archived') NOT NULL DEFAULT 'available'");
-    }
-
-    $orderCol = fetch_one("SELECT COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND COLUMN_NAME = 'status'");
-    if ($orderCol) {
-        $orderColType = strtolower((string)($orderCol['COLUMN_TYPE'] ?? $orderCol['column_type'] ?? ''));
-        if ($orderColType !== '' && strpos($orderColType, 'processing') === false) {
-            execute_sql("ALTER TABLE orders MODIFY COLUMN status ENUM('pending','processing','out_for_delivery','delivered','completed','cancelled','archived') NOT NULL DEFAULT 'pending'");
-        }
-    }
-
-    $apptCol = fetch_one("SELECT COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'appointments' AND COLUMN_NAME = 'status'");
-    if ($apptCol) {
-        $apptColType = strtolower((string)($apptCol['COLUMN_TYPE'] ?? $apptCol['column_type'] ?? ''));
-        if ($apptColType !== '' && strpos($apptColType, 'archived') === false) {
-            execute_sql("ALTER TABLE appointments MODIFY COLUMN status ENUM('pending','confirmed','completed','cancelled','archived') NOT NULL DEFAULT 'pending'");
-        }
-    }
+    $host = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
+    $remoteAddress = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+    return strpos($host, 'localhost') !== false
+        || strpos($host, '127.0.0.1') !== false
+        || in_array($remoteAddress, ['127.0.0.1', '::1'], true);
 }
 
 function valid_order_status($s)
@@ -300,11 +182,11 @@ function admin_update_order_status()
     if ($id <= 0 || !valid_order_status($status)) {
         json_response(['ok' => false, 'message' => 'Invalid order ID or status.'], 422);
     }
-    if (!fetch_one('SELECT id FROM orders WHERE id = ?', [$id])) {
+    if (!fetch_one('SELECT order_id FROM orders WHERE order_id = ?', [$id])) {
         json_response(['ok' => false, 'message' => 'Order not found.'], 404);
     }
 
-    execute_sql('UPDATE orders SET status = ? WHERE id = ?', [$status, $id]);
+    execute_sql('UPDATE orders SET status = ? WHERE order_id = ?', [$status, $id]);
     json_response(['ok' => true, 'message' => 'Order status updated to ' . $status . '.']);
 }
 
@@ -320,14 +202,14 @@ function admin_update_appointment_status()
         json_response(['ok' => false, 'message' => 'Invalid appointment ID or status.'], 422);
     }
 
-    $appt = fetch_one(appointment_sql() . ' WHERE a.id = ?', [$id]);
+    $appt = fetch_one(appointment_sql() . ' WHERE a.appointment_id = ?', [$id]);
     if (!$appt) {
         json_response(['ok' => false, 'message' => 'Appointment not found.'], 404);
     }
 
     $cancelledBy = ($status === 'cancelled') ? 'admin' : null;
     execute_sql(
-        'UPDATE appointments SET status = ?, cancellation_reason = ?, cancelled_by = ? WHERE id = ?',
+        'UPDATE appointments SET status = ?, cancellation_reason = ?, cancelled_by = ? WHERE appointment_id = ?',
         [$status, $reason ?: null, $cancelledBy, $id]
     );
 
@@ -340,7 +222,7 @@ function admin_update_appointment_status()
         create_notification((int)$appt['user_id'], $id, $msg, 'user');
     }
 
-    $updated = fetch_one(appointment_sql() . ' WHERE a.id = ?', [$id]);
+    $updated = fetch_one(appointment_sql() . ' WHERE a.appointment_id = ?', [$id]);
     json_response(['ok' => true, 'message' => 'Appointment updated to ' . $status . '.', 'appointment' => normalize_appointment($updated)]);
 }
 
@@ -354,11 +236,11 @@ function admin_update_product_status()
     if ($id <= 0 || !valid_catalog_status($status)) {
         json_response(['ok' => false, 'message' => 'Invalid product ID or status.'], 422);
     }
-    if (!fetch_one('SELECT id FROM products WHERE id = ?', [$id])) {
+    if (!fetch_one('SELECT product_id FROM products WHERE product_id = ?', [$id])) {
         json_response(['ok' => false, 'message' => 'Product not found.'], 404);
     }
 
-    execute_sql('UPDATE products SET status = ? WHERE id = ?', [$status, $id]);
+    execute_sql('UPDATE products SET status = ? WHERE product_id = ?', [$status, $id]);
     json_response(['ok' => true, 'message' => 'Product status updated to ' . $status . '.']);
 }
 
@@ -372,11 +254,11 @@ function admin_update_service_status()
     if ($id <= 0 || !valid_catalog_status($status)) {
         json_response(['ok' => false, 'message' => 'Invalid service ID or status.'], 422);
     }
-    if (!fetch_one('SELECT id FROM services WHERE id = ?', [$id])) {
+    if (!fetch_one('SELECT service_id FROM services WHERE service_id = ?', [$id])) {
         json_response(['ok' => false, 'message' => 'Service not found.'], 404);
     }
 
-    execute_sql('UPDATE services SET status = ? WHERE id = ?', [$status, $id]);
+    execute_sql('UPDATE services SET status = ? WHERE service_id = ?', [$status, $id]);
     json_response(['ok' => true, 'message' => 'Service status updated to ' . $status . '.']);
 }
 
@@ -390,11 +272,11 @@ function admin_update_dentist_status()
     if ($id <= 0 || !valid_catalog_status($status)) {
         json_response(['ok' => false, 'message' => 'Invalid dentist ID or status.'], 422);
     }
-    if (!fetch_one('SELECT id FROM dentists WHERE id = ?', [$id])) {
+    if (!fetch_one('SELECT dentist_id FROM dentists WHERE dentist_id = ?', [$id])) {
         json_response(['ok' => false, 'message' => 'Dentist not found.'], 404);
     }
 
-    execute_sql('UPDATE dentists SET status = ? WHERE id = ?', [$status, $id]);
+    execute_sql('UPDATE dentists SET status = ? WHERE dentist_id = ?', [$status, $id]);
     json_response(['ok' => true, 'message' => 'Dentist status updated to ' . $status . '.']);
 }
 
@@ -415,11 +297,11 @@ function admin_add_product()
     }
 
     execute_sql(
-        "INSERT INTO products (name, description, price, stock_quantity, status) VALUES (?, ?, ?, ?, 'available')",
+        "INSERT INTO products (product_name, description, price, stock_quantity, status) VALUES (?, ?, ?, ?, 'available')",
         [$name, $description, $price, $stock]
     );
     $id  = (int)db()->lastInsertId();
-    $row = fetch_one('SELECT * FROM products WHERE id = ?', [$id]);
+    $row = fetch_one('SELECT * FROM products WHERE product_id = ?', [$id]);
     json_response(['ok' => true, 'message' => 'Product added successfully.', 'product' => normalize_product($row)]);
 }
 
@@ -440,15 +322,15 @@ function admin_edit_product()
     if ($errors) {
         json_response(['ok' => false, 'message' => implode(' ', $errors), 'errors' => $errors], 422);
     }
-    if (!fetch_one('SELECT id FROM products WHERE id = ?', [$id])) {
+    if (!fetch_one('SELECT product_id FROM products WHERE product_id = ?', [$id])) {
         json_response(['ok' => false, 'message' => 'Product not found.'], 404);
     }
 
     execute_sql(
-        'UPDATE products SET name = ?, description = ?, price = ?, stock_quantity = ? WHERE id = ?',
+        'UPDATE products SET product_name = ?, description = ?, price = ?, stock_quantity = ? WHERE product_id = ?',
         [$name, $description, $price, $stock, $id]
     );
-    $row = fetch_one('SELECT * FROM products WHERE id = ?', [$id]);
+    $row = fetch_one('SELECT * FROM products WHERE product_id = ?', [$id]);
     json_response(['ok' => true, 'message' => 'Product updated successfully.', 'product' => normalize_product($row)]);
 }
 
@@ -470,11 +352,11 @@ function admin_add_service()
     }
 
     execute_sql(
-        "INSERT INTO services (name, description, price, category, daily_slots, status) VALUES (?, ?, ?, ?, ?, 'available')",
+        "INSERT INTO services (service_name, description, price, category, daily_slots, status) VALUES (?, ?, ?, ?, ?, 'available')",
         [$name, $description, $price, $category, $dailySlots]
     );
     $id  = (int)db()->lastInsertId();
-    $row = fetch_one('SELECT * FROM services WHERE id = ?', [$id]);
+    $row = fetch_one('SELECT * FROM services WHERE service_id = ?', [$id]);
     json_response(['ok' => true, 'message' => 'Service added successfully.', 'service' => normalize_service($row)]);
 }
 
@@ -496,15 +378,15 @@ function admin_edit_service()
     if ($errors) {
         json_response(['ok' => false, 'message' => implode(' ', $errors), 'errors' => $errors], 422);
     }
-    if (!fetch_one('SELECT id FROM services WHERE id = ?', [$id])) {
+    if (!fetch_one('SELECT service_id FROM services WHERE service_id = ?', [$id])) {
         json_response(['ok' => false, 'message' => 'Service not found.'], 404);
     }
 
     execute_sql(
-        'UPDATE services SET name = ?, description = ?, price = ?, category = ?, daily_slots = ? WHERE id = ?',
+        'UPDATE services SET service_name = ?, description = ?, price = ?, category = ?, daily_slots = ? WHERE service_id = ?',
         [$name, $description, $price, $category, $dailySlots, $id]
     );
-    $row = fetch_one('SELECT * FROM services WHERE id = ?', [$id]);
+    $row = fetch_one('SELECT * FROM services WHERE service_id = ?', [$id]);
     json_response(['ok' => true, 'message' => 'Service updated successfully.', 'service' => normalize_service($row)]);
 }
 
@@ -512,23 +394,24 @@ function admin_add_dentist()
 {
     require_admin();
     $data           = request_json();
-    $name           = trim($data['name'] ?? '');
+    [$firstName, $lastName] = dentist_name_parts($data);
     $specialization = trim($data['specialization'] ?? '');
     $credentials    = trim($data['credentials'] ?? '');
     $bio            = trim($data['bio'] ?? '');
     $errors         = [];
 
-    if ($name === '') $errors[] = 'Dentist name is required.';
+    if ($firstName === '') $errors[] = 'Dentist first name is required.';
+    if ($lastName === '') $errors[] = 'Dentist last name is required.';
     if ($errors) {
         json_response(['ok' => false, 'message' => implode(' ', $errors), 'errors' => $errors], 422);
     }
 
     execute_sql(
-        "INSERT INTO dentists (name, specialization, credentials, bio, status) VALUES (?, ?, ?, ?, 'available')",
-        [$name, $specialization, $credentials, $bio]
+        "INSERT INTO dentists (first_name, last_name, specialization, credentials, bio, status) VALUES (?, ?, ?, ?, ?, 'available')",
+        [$firstName, $lastName, $specialization, $credentials, $bio]
     );
     $id  = (int)db()->lastInsertId();
-    $row = fetch_one('SELECT * FROM dentists WHERE id = ?', [$id]);
+    $row = fetch_one('SELECT * FROM dentists WHERE dentist_id = ?', [$id]);
     json_response(['ok' => true, 'message' => 'Dentist added successfully.', 'dentist' => normalize_dentist($row)]);
 }
 
@@ -537,27 +420,41 @@ function admin_edit_dentist()
     require_admin();
     $data           = request_json();
     $id             = (int)($data['id'] ?? 0);
-    $name           = trim($data['name'] ?? '');
+    [$firstName, $lastName] = dentist_name_parts($data);
     $specialization = trim($data['specialization'] ?? '');
     $credentials    = trim($data['credentials'] ?? '');
     $bio            = trim($data['bio'] ?? '');
     $errors         = [];
 
     if ($id <= 0)     $errors[] = 'Invalid dentist ID.';
-    if ($name === '') $errors[] = 'Dentist name is required.';
+    if ($firstName === '') $errors[] = 'Dentist first name is required.';
+    if ($lastName === '') $errors[] = 'Dentist last name is required.';
     if ($errors) {
         json_response(['ok' => false, 'message' => implode(' ', $errors), 'errors' => $errors], 422);
     }
-    if (!fetch_one('SELECT id FROM dentists WHERE id = ?', [$id])) {
+    if (!fetch_one('SELECT dentist_id FROM dentists WHERE dentist_id = ?', [$id])) {
         json_response(['ok' => false, 'message' => 'Dentist not found.'], 404);
     }
 
     execute_sql(
-        'UPDATE dentists SET name = ?, specialization = ?, credentials = ?, bio = ? WHERE id = ?',
-        [$name, $specialization, $credentials, $bio, $id]
+        'UPDATE dentists SET first_name = ?, last_name = ?, specialization = ?, credentials = ?, bio = ? WHERE dentist_id = ?',
+        [$firstName, $lastName, $specialization, $credentials, $bio, $id]
     );
-    $row = fetch_one('SELECT * FROM dentists WHERE id = ?', [$id]);
+    $row = fetch_one('SELECT * FROM dentists WHERE dentist_id = ?', [$id]);
     json_response(['ok' => true, 'message' => 'Dentist updated successfully.', 'dentist' => normalize_dentist($row)]);
+}
+
+function dentist_name_parts($data)
+{
+    $firstName = trim((string) ($data['first_name'] ?? ''));
+    $lastName = trim((string) ($data['last_name'] ?? ''));
+    if ($firstName !== '' || $lastName !== '') {
+        return [$firstName, $lastName];
+    }
+
+    $fullName = preg_replace('/^Dr\.\s*/i', '', trim((string) ($data['name'] ?? '')));
+    $parts = preg_split('/\s+/', $fullName, 2);
+    return [trim((string) ($parts[0] ?? '')), trim((string) ($parts[1] ?? ''))];
 }
 
 
@@ -565,7 +462,7 @@ function normalize_user($row)
 {
     $name = trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? ''));
     return [
-        'id' => (string) $row['id'],
+        'id' => (string) $row['user_id'],
         'name' => $name,
         'first_name' => $row['first_name'] ?? '',
         'last_name' => $row['last_name'] ?? '',
@@ -611,13 +508,18 @@ function normalize_dentist($row)
         3 => 'images/dentist_doctorg2.jpg',
     ];
 
+    $firstName = trim((string) ($row['first_name'] ?? ''));
+    $lastName = trim((string) ($row['last_name'] ?? ''));
+
     return [
-        'id' => (string) $row['id'],
-        'name' => $row['name'],
+        'id' => (string) $row['dentist_id'],
+        'name' => trim('Dr. ' . $firstName . ' ' . $lastName),
+        'firstName' => $firstName,
+        'lastName' => $lastName,
         'cred' => $row['credentials'] ?? '',
         'spec' => $row['specialization'] ?? '',
         'desc' => $row['bio'] ?? '',
-        'photo' => $photos[(int) $row['id']] ?? '',
+        'photo' => $photos[(int) $row['dentist_id']] ?? '',
         'status' => $row['status'] ?? 'available',
     ];
 }
@@ -637,12 +539,12 @@ function normalize_service($row)
     ];
 
     return [
-        'id' => (string) $row['id'],
-        'name' => $row['name'],
+        'id' => (string) $row['service_id'],
+        'name' => $row['service_name'],
         'desc' => $row['description'] ?? '',
         'price' => 'PHP ' . number_format((float) $row['price'], 0),
         'rawPrice' => (float) $row['price'],
-        'photo' => $photos[(int) $row['id']] ?? '',
+        'photo' => $photos[(int) $row['service_id']] ?? '',
         'category' => $row['category'] ?? '',
         'dailySlots' => (int) ($row['daily_slots'] ?? 0),
         'status' => $row['status'] ?? 'available',
@@ -662,11 +564,11 @@ function normalize_product($row)
         8 => 'images/bamboo toothbrush.webp',
     ];
 
-    $photo = $photos[(int) $row['id']] ?? '';
+    $photo = $photos[(int) $row['product_id']] ?? '';
 
     return [
-        'id' => (string) $row['id'],
-        'name' => $row['name'],
+        'id' => (string) $row['product_id'],
+        'name' => $row['product_name'],
         'desc' => $row['description'] ?? '',
         'price' => (float) $row['price'],
         'photo' => $photo,
@@ -680,7 +582,7 @@ function normalize_product($row)
 function normalize_appointment($row)
 {
     return [
-        'id' => (string) $row['id'],
+        'id' => (string) $row['appointment_id'],
         'userId' => (string) $row['user_id'],
         'userName' => trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? '')),
         'userEmail' => $row['email'] ?? '',
@@ -713,20 +615,21 @@ function normalize_time_for_mysql($time)
 function appointment_sql()
 {
     return "SELECT a.*, u.first_name, u.last_name, u.email, u.phone,
-            s.name AS service_name, d.name AS dentist_name
+            s.service_name,
+            CONCAT('Dr. ', TRIM(d.first_name), ' ', TRIM(d.last_name)) AS dentist_name
             FROM appointments a
-            LEFT JOIN users u ON u.id = a.user_id
-            LEFT JOIN services s ON s.id = a.service_id
-            LEFT JOIN dentists d ON d.id = a.dentist_id";
+            LEFT JOIN users u ON u.user_id = a.user_id
+            LEFT JOIN services s ON s.service_id = a.service_id
+            LEFT JOIN dentists d ON d.dentist_id = a.dentist_id";
 }
 
 function catalog()
 {
     json_response([
         'ok' => true,
-        'services' => array_map('normalize_service', fetch_all("SELECT * FROM services WHERE status != 'archived' ORDER BY name")),
-        'products' => array_map('normalize_product', fetch_all("SELECT * FROM products WHERE status != 'archived' ORDER BY name")),
-        'dentists' => array_map('normalize_dentist', fetch_all("SELECT * FROM dentists WHERE status != 'archived' ORDER BY name")),
+        'services' => array_map('normalize_service', fetch_all("SELECT * FROM services WHERE status != 'archived' ORDER BY service_name")),
+        'products' => array_map('normalize_product', fetch_all("SELECT * FROM products WHERE status != 'archived' ORDER BY product_name")),
+        'dentists' => array_map('normalize_dentist', fetch_all("SELECT * FROM dentists WHERE status != 'archived' ORDER BY first_name, last_name")),
     ]);
 }
 
@@ -737,17 +640,20 @@ function dashboard()
     $orders = fetch_all(
         "SELECT o.*, TRIM(CONCAT(o.first_name, ' ', o.last_name)) AS customer_name
          FROM orders o
-         LEFT JOIN users u ON u.id = o.user_id
+         LEFT JOIN users u ON u.user_id = o.user_id
          ORDER BY o.created_at DESC"
     );
     $orders = array_map(function ($row) {
         return array(
-            'id' => (string) $row['id'],
+            'id' => (string) $row['order_id'],
             'customer' => $row['customer_name'] ?: 'Customer',
             'email' => $row['email'] ?? '',
             'phone' => $row['phone'] ?? '',
-            'address' => $row['address'] ?? '',
+            'house_no' => $row['house_no'] ?? '',
+            'street' => $row['street'] ?? '',
+            'barangay' => $row['barangay'] ?? '',
             'city' => $row['city'] ?? '',
+            'province' => $row['province'] ?? '',
             'zip' => $row['zip'] ?? '',
             'notes' => $row['notes'] ?? '',
             'paymentMethod' => $row['payment_method'] ?? 'cod',
@@ -758,16 +664,16 @@ function dashboard()
     }, $orders);
 
     $orderItems = fetch_all(
-        "SELECT oi.*, p.name AS product_name
+        "SELECT oi.*, p.product_name
          FROM order_items oi
-         LEFT JOIN products p ON p.id = oi.product_id
+         LEFT JOIN products p ON p.product_id = oi.product_id
          ORDER BY oi.created_at DESC"
     );
 
     $notifications = fetch_all(
         "SELECT n.*, CONCAT(u.first_name, ' ', u.last_name) AS user_name
          FROM notifications n
-         JOIN users u ON u.id = n.user_id
+         JOIN users u ON u.user_id = n.user_id
          WHERE n.audience = 'admin'
          ORDER BY n.created_at DESC"
     );
@@ -776,14 +682,14 @@ function dashboard()
         'ok' => true,
         'users' => array_map('normalize_user', fetch_all('SELECT * FROM users ORDER BY created_at DESC')),
         'appointments' => array_map('normalize_appointment', fetch_all(appointment_sql() . ' ORDER BY a.created_at DESC')),
-        'dentists' => array_map('normalize_dentist', fetch_all('SELECT * FROM dentists ORDER BY name')),
-        'services' => array_map('normalize_service', fetch_all('SELECT * FROM services ORDER BY name')),
-        'products' => array_map('normalize_product', fetch_all('SELECT * FROM products ORDER BY name')),
+        'dentists' => array_map('normalize_dentist', fetch_all('SELECT * FROM dentists ORDER BY first_name, last_name')),
+        'services' => array_map('normalize_service', fetch_all('SELECT * FROM services ORDER BY service_name')),
+        'products' => array_map('normalize_product', fetch_all('SELECT * FROM products ORDER BY product_name')),
         'cartItems' => fetch_all(
-            "SELECT ci.*, CONCAT(u.first_name, ' ', u.last_name) AS user_name, p.name AS product_name, p.price
+            "SELECT ci.*, CONCAT(u.first_name, ' ', u.last_name) AS user_name, p.product_name, p.price
              FROM cart_items ci
-             JOIN users u ON u.id = ci.user_id
-             JOIN products p ON p.id = ci.product_id
+             JOIN users u ON u.user_id = ci.user_id
+             JOIN products p ON p.product_id = ci.product_id
              ORDER BY ci.added_at DESC"
         ),
         'orders' => $orders,
@@ -834,7 +740,7 @@ function register_user()
         ], 422);
     }
 
-    if (fetch_one('SELECT id FROM users WHERE email = ?', [$email])) {
+    if (fetch_one('SELECT user_id FROM users WHERE email = ?', [$email])) {
         json_response([
             'ok' => false,
             'message' => 'An account with this email already exists.',
@@ -882,7 +788,7 @@ function verify_registration_otp()
         ], 422);
     }
 
-    if (fetch_one('SELECT id FROM users WHERE email = ?', [$email])) {
+    if (fetch_one('SELECT user_id FROM users WHERE email = ?', [$email])) {
         execute_sql('DELETE FROM otp_verifications WHERE email = ?', [$email]);
         json_response([
             'ok' => false,
@@ -945,7 +851,7 @@ function verify_registration_otp()
 
     $user = fetch_one('SELECT * FROM users WHERE email = ?', [$email]);
     session_regenerate_id(true);
-    $_SESSION['user_id'] = (int) $user['id'];
+    $_SESSION['user_id'] = (int) $user['user_id'];
     $_SESSION['user_name'] = trim($user['first_name'] . ' ' . $user['last_name']);
     $_SESSION['user_email'] = $user['email'];
     $_SESSION['role'] = $user['role'] ?? 'patient';
@@ -1230,7 +1136,7 @@ function login_user()
     }
 
     session_regenerate_id(true);
-    $_SESSION['user_id'] = (int) $user['id'];
+    $_SESSION['user_id'] = (int) $user['user_id'];
     $_SESSION['user_name'] = trim($user['first_name'] . ' ' . $user['last_name']);
     $_SESSION['user_email'] = $user['email'];
     $_SESSION['role'] = $user['role'] ?? 'patient';
@@ -1271,15 +1177,15 @@ function create_appointment()
         json_response(['ok' => false, 'message' => 'Invalid appointment details. Please log in again and retry.'], 422);
     }
 
-    if (!fetch_one('SELECT id FROM users WHERE id = ?', [$userId])) {
+    if (!fetch_one('SELECT user_id FROM users WHERE user_id = ?', [$userId])) {
         json_response(['ok' => false, 'message' => 'Your account was not found in the database. Please log in again.'], 422);
     }
 
-    if (!fetch_one('SELECT id FROM dentists WHERE id = ?', [$dentistId])) {
+    if (!fetch_one('SELECT dentist_id FROM dentists WHERE dentist_id = ?', [$dentistId])) {
         json_response(['ok' => false, 'message' => 'Selected dentist was not found. Please refresh and try again.'], 422);
     }
 
-    if (!fetch_one('SELECT id FROM services WHERE id = ?', [$serviceId])) {
+    if (!fetch_one('SELECT service_id FROM services WHERE service_id = ?', [$serviceId])) {
         json_response(['ok' => false, 'message' => 'Selected service was not found. Please refresh and try again.'], 422);
     }
 
@@ -1298,7 +1204,7 @@ function create_appointment()
     );
 
     $id = (string) db()->lastInsertId();
-    $row = fetch_one(appointment_sql() . ' WHERE a.id = ?', [$id]);
+    $row = fetch_one(appointment_sql() . ' WHERE a.appointment_id = ?', [$id]);
     json_response(['ok' => true, 'appointment' => normalize_appointment($row)]);
 }
 
@@ -1323,13 +1229,13 @@ function update_appointment()
         $status = 'cancelled';
     }
 
-    $appt = fetch_one(appointment_sql() . ' WHERE a.id = ?', [$id]);
+    $appt = fetch_one(appointment_sql() . ' WHERE a.appointment_id = ?', [$id]);
     if (!$appt) {
         json_response(['ok' => false, 'message' => 'Appointment not found.'], 404);
     }
 
     execute_sql(
-        'UPDATE appointments SET status = ?, cancellation_reason = ?, cancelled_by = ? WHERE id = ?',
+        'UPDATE appointments SET status = ?, cancellation_reason = ?, cancelled_by = ? WHERE appointment_id = ?',
         [$status, $reason ?: null, $status === 'cancelled' ? 'admin' : null, $id]
     );
 
@@ -1341,7 +1247,7 @@ function update_appointment()
         create_notification((int) $appt['user_id'], $id, $message, 'user');
     }
 
-    $updated = fetch_one(appointment_sql() . ' WHERE a.id = ?', [$id]);
+    $updated = fetch_one(appointment_sql() . ' WHERE a.appointment_id = ?', [$id]);
     json_response(['ok' => true, 'appointment' => normalize_appointment($updated)]);
 }
 
@@ -1356,7 +1262,7 @@ function cancel_appointment()
         json_response(['ok' => false, 'message' => 'Please provide a cancellation reason.'], 422);
     }
 
-    $appt = fetch_one(appointment_sql() . ' WHERE a.id = ? AND a.user_id = ?', [$id, $userId]);
+    $appt = fetch_one(appointment_sql() . ' WHERE a.appointment_id = ? AND a.user_id = ?', [$id, $userId]);
 
     if (!$appt) {
         json_response(['ok' => false, 'message' => 'Appointment not found.'], 404);
@@ -1366,7 +1272,7 @@ function cancel_appointment()
     }
 
     execute_sql(
-        'UPDATE appointments SET status = ?, cancellation_reason = ?, cancelled_by = ? WHERE id = ?',
+        'UPDATE appointments SET status = ?, cancellation_reason = ?, cancelled_by = ? WHERE appointment_id = ?',
         ['cancelled', $reason, 'user', $id]
     );
     create_notification(
@@ -1376,7 +1282,7 @@ function cancel_appointment()
         'admin'
     );
 
-    $updated = fetch_one(appointment_sql() . ' WHERE a.id = ?', [$id]);
+    $updated = fetch_one(appointment_sql() . ' WHERE a.appointment_id = ?', [$id]);
     json_response([
         'ok' => true,
         'message' => 'Appointment cancelled successfully.',
@@ -1389,7 +1295,7 @@ function notifications()
     $userId = (int) ($_GET['user_id'] ?? 0);
     json_response([
         'ok' => true,
-        'notifications' => fetch_all("SELECT * FROM notifications WHERE user_id = ? AND audience = 'user' ORDER BY created_at DESC", [$userId]),
+        'notifications' => fetch_all("SELECT notification_id AS id, user_id, appointment_id, audience, message, is_read, created_at FROM notifications WHERE user_id = ? AND audience = 'user' ORDER BY created_at DESC", [$userId]),
     ]);
 }
 
@@ -1411,7 +1317,7 @@ function mark_notification_read()
     }
 
     execute_sql(
-        "UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ? AND audience = 'user'",
+        "UPDATE notifications SET is_read = 1 WHERE notification_id = ? AND user_id = ? AND audience = 'user'",
         [$notificationId, $userId]
     );
 
@@ -1436,9 +1342,9 @@ function update_stock()
     $quantity = max(0, (int) ($data['quantity'] ?? 0));
 
     if ($type === 'service') {
-        execute_sql('UPDATE services SET daily_slots = ? WHERE id = ?', [$quantity, $id]);
+        execute_sql('UPDATE services SET daily_slots = ? WHERE service_id = ?', [$quantity, $id]);
     } else {
-        execute_sql('UPDATE products SET stock_quantity = ? WHERE id = ?', [$quantity, $id]);
+        execute_sql('UPDATE products SET stock_quantity = ? WHERE product_id = ?', [$quantity, $id]);
     }
     json_response(['ok' => true]);
 }
@@ -1451,11 +1357,11 @@ function cart_items()
     }
 
     $rows = fetch_all(
-        'SELECT ci.product_id, SUM(ci.quantity) AS quantity, MAX(ci.added_at) AS added_at, p.name, p.price
+        'SELECT ci.product_id, SUM(ci.quantity) AS quantity, MAX(ci.added_at) AS added_at, p.product_name AS name, p.price
          FROM cart_items ci
-         JOIN products p ON p.id = ci.product_id
+         JOIN products p ON p.product_id = ci.product_id
          WHERE ci.user_id = ?
-         GROUP BY ci.product_id, p.name, p.price
+         GROUP BY ci.product_id, p.product_name, p.price
          ORDER BY added_at DESC',
         [$userId]
     );
@@ -1473,11 +1379,11 @@ function save_cart_item()
         json_response(['ok' => false, 'message' => 'Invalid cart item details.'], 422);
     }
 
-    if (!fetch_one('SELECT id FROM users WHERE id = ?', [$userId])) {
+    if (!fetch_one('SELECT user_id FROM users WHERE user_id = ?', [$userId])) {
         json_response(['ok' => false, 'message' => 'User not found. Please log in again.'], 422);
     }
 
-    if (!fetch_one('SELECT id FROM products WHERE id = ?', [$productId])) {
+    if (!fetch_one('SELECT product_id FROM products WHERE product_id = ?', [$productId])) {
         json_response(['ok' => false, 'message' => 'Product not found. Please refresh and try again.'], 422);
     }
 
@@ -1515,18 +1421,36 @@ function create_order()
     $total = (float) ($data['total'] ?? 0);
     $firstName = trim($data['first_name'] ?? '');
     $lastName = trim($data['last_name'] ?? '');
-    $email = $data['email'] ?? '';
-    $phone = $data['phone'] ?? '';
-    $address = $data['address'] ?? '';
-    $city = $data['city'] ?? '';
-    $zip = $data['zip'] ?? '';
-    $notes = $data['notes'] ?? '';
+    $email = trim((string) ($data['email'] ?? ''));
+    $phone = trim((string) ($data['phone'] ?? ''));
+    $houseNo = trim((string) ($data['house_no'] ?? ''));
+    $street = trim((string) ($data['street'] ?? ''));
+    $barangay = trim((string) ($data['barangay'] ?? ''));
+    $city = trim((string) ($data['city'] ?? ''));
+    $province = trim((string) ($data['province'] ?? ''));
+    $zip = trim((string) ($data['zip'] ?? ''));
+    $notes = trim((string) ($data['notes'] ?? ''));
     $paymentMethod = $data['paymentMethod'] ?? $data['payment_method'] ?? 'cod';
     $gcashNumber = $data['gcash_number'] ?? '';
 
+    if (
+        $userId <= 0 || $firstName === '' || $lastName === '' || $email === '' || $phone === ''
+        || $houseNo === '' || $street === '' || $barangay === '' || $city === ''
+        || $province === '' || $zip === '' || !$items
+    ) {
+        json_response(['ok' => false, 'message' => 'Please complete your contact, delivery, and order details.'], 422);
+    }
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        json_response(['ok' => false, 'message' => 'Please enter a valid email address.'], 422);
+    }
+    if (!preg_match('/^\d+$/', $zip)) {
+        json_response(['ok' => false, 'message' => 'ZIP Code must contain numbers only.'], 422);
+    }
+
     execute_sql(
-        'INSERT INTO orders (user_id, first_name, last_name, email, phone, address, city, zip, notes, payment_method, gcash_number, total_amount, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [$userId ?: null, $firstName, $lastName, $email, $phone, $address, $city, $zip, $notes, $paymentMethod, $gcashNumber, $total, 'pending']
+        'INSERT INTO orders (user_id, first_name, last_name, email, phone, house_no, street, barangay, city, province, zip, notes, payment_method, gcash_number, total_amount, status, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())',
+        [$userId ?: null, $firstName, $lastName, $email, $phone, $houseNo, $street, $barangay, $city, $province, $zip, $notes, $paymentMethod, $gcashNumber, $total, 'pending']
     );
 
     $orderId = (string) db()->lastInsertId();
@@ -1553,11 +1477,11 @@ function user_account()
 {
     $userId = require_patient();
     $user = fetch_one(
-        'SELECT id, first_name, last_name, email, phone, birthdate, gender, emergency_contact_name,
+        'SELECT user_id, first_name, last_name, email, phone, birthdate, gender, emergency_contact_name,
                 emergency_contact_number, house_no, street, barangay, city, province, zip_code,
                 role, created_at
          FROM users
-         WHERE id = ?',
+         WHERE user_id = ?',
         [$userId]
     );
 
@@ -1571,7 +1495,8 @@ function user_account()
     );
 
     $orders = fetch_all(
-        'SELECT id, total_amount, payment_method, status, created_at, address, city, zip, notes
+        'SELECT order_id, total_amount, payment_method, status, created_at,
+                house_no, street, barangay, city, province, zip, notes
          FROM orders
          WHERE user_id = ?
          ORDER BY created_at DESC',
@@ -1579,12 +1504,12 @@ function user_account()
     );
 
     $orderItems = fetch_all(
-        'SELECT oi.order_id, oi.quantity, oi.unit_price, p.name AS product_name
+        'SELECT oi.order_id, oi.quantity, oi.unit_price, p.product_name
          FROM order_items oi
-         LEFT JOIN products p ON p.id = oi.product_id
-         JOIN orders o ON o.id = oi.order_id
+         LEFT JOIN products p ON p.product_id = oi.product_id
+         JOIN orders o ON o.order_id = oi.order_id
          WHERE o.user_id = ?
-         ORDER BY oi.order_id DESC, oi.id ASC',
+         ORDER BY oi.order_id DESC, oi.order_item_id ASC',
         [$userId]
     );
     $itemsByOrder = [];
@@ -1601,7 +1526,7 @@ function user_account()
     }
 
     $notifications = fetch_all(
-        "SELECT id, message, is_read, created_at
+        "SELECT notification_id, message, is_read, created_at
          FROM notifications
          WHERE user_id = ? AND audience = 'user'
          ORDER BY created_at DESC",
@@ -1611,7 +1536,7 @@ function user_account()
     json_response([
         'ok' => true,
         'user' => [
-            'id' => (string) $user['id'],
+            'id' => (string) $user['user_id'],
             'first_name' => $user['first_name'] ?? '',
             'last_name' => $user['last_name'] ?? '',
             'name' => trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')),
@@ -1632,15 +1557,18 @@ function user_account()
         ],
         'appointments' => array_map('normalize_appointment', $appointments),
         'orders' => array_map(function ($order) use ($itemsByOrder) {
-            $orderId = (string) $order['id'];
+            $orderId = (string) $order['order_id'];
             return [
                 'id' => $orderId,
                 'total' => (float) $order['total_amount'],
                 'payment_method' => $order['payment_method'] ?? '',
                 'status' => $order['status'] ?? 'pending',
                 'created_at' => $order['created_at'] ?? '',
-                'address' => $order['address'] ?? '',
+                'house_no' => $order['house_no'] ?? '',
+                'street' => $order['street'] ?? '',
+                'barangay' => $order['barangay'] ?? '',
                 'city' => $order['city'] ?? '',
+                'province' => $order['province'] ?? '',
                 'zip' => $order['zip'] ?? '',
                 'notes' => $order['notes'] ?? '',
                 'items' => $itemsByOrder[$orderId] ?? [],
@@ -1648,7 +1576,7 @@ function user_account()
         }, $orders),
         'notifications' => array_map(function ($notification) {
             return [
-                'id' => (string) $notification['id'],
+                'id' => (string) $notification['notification_id'],
                 'message' => $notification['message'] ?? '',
                 'is_read' => (int) ($notification['is_read'] ?? 0) === 1,
                 'created_at' => $notification['created_at'] ?? '',
@@ -1727,7 +1655,7 @@ function update_profile()
          SET first_name = ?, last_name = ?, phone = ?, birthdate = ?, gender = ?,
              emergency_contact_name = ?, emergency_contact_number = ?, house_no = ?, street = ?,
              barangay = ?, city = ?, province = ?, zip_code = ?
-         WHERE id = ?',
+         WHERE user_id = ?',
         [
             $firstName,
             $lastName,
@@ -1746,7 +1674,7 @@ function update_profile()
         ]
     );
 
-    $user = fetch_one('SELECT * FROM users WHERE id = ?', [$userId]);
+    $user = fetch_one('SELECT * FROM users WHERE user_id = ?', [$userId]);
     $_SESSION['user_name'] = trim($firstName . ' ' . $lastName);
 
     json_response(['ok' => true, 'message' => 'Profile updated successfully.', 'user' => normalize_user($user)]);
@@ -1776,7 +1704,7 @@ function change_password()
         json_response(['ok' => false, 'message' => 'Please correct the password fields.', 'errors' => $errors], 422);
     }
 
-    $user = fetch_one('SELECT password_hash FROM users WHERE id = ?', [$userId]);
+    $user = fetch_one('SELECT password_hash FROM users WHERE user_id = ?', [$userId]);
     if (!$user || !password_verify($currentPassword, $user['password_hash'])) {
         json_response(['ok' => false, 'message' => 'Current password is incorrect.'], 422);
     }
@@ -1785,7 +1713,7 @@ function change_password()
     }
 
     execute_sql(
-        'UPDATE users SET password_hash = ? WHERE id = ?',
+        'UPDATE users SET password_hash = ? WHERE user_id = ?',
         [password_hash($newPassword, PASSWORD_DEFAULT), $userId]
     );
 
