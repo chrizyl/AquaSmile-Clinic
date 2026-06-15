@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 15, 2026 at 05:48 PM
+-- Generation Time: Jun 15, 2026 at 11:07 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -30,8 +30,8 @@ USE `aquasmile_db`;
 --
 
 DROP TABLE IF EXISTS `appointments`;
-CREATE TABLE `appointments` (
-  `appointment_id` int(11) NOT NULL,
+CREATE TABLE IF NOT EXISTS `appointments` (
+  `appointment_id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
   `dentist_id` int(11) DEFAULT NULL,
   `service_id` int(11) DEFAULT NULL,
@@ -41,8 +41,12 @@ CREATE TABLE `appointments` (
   `status` enum('pending','confirmed','completed','cancelled','archived') NOT NULL DEFAULT 'pending',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `cancellation_reason` text DEFAULT NULL,
-  `cancelled_by` enum('admin','user') DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `cancelled_by` enum('admin','user') DEFAULT NULL,
+  PRIMARY KEY (`appointment_id`),
+  KEY `user_id` (`user_id`),
+  KEY `dentist_id` (`dentist_id`),
+  KEY `service_id` (`service_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `appointments`
@@ -62,9 +66,10 @@ INSERT INTO `appointments` (`appointment_id`, `user_id`, `dentist_id`, `service_
 (19, 6, 2, 8, '2026-05-26', '15:00:00', '', 'cancelled', '2026-05-26 08:21:57', 'Cancelled by patient before admin approval.', 'user'),
 (20, 5, 2, 4, '2026-05-27', '08:00:00', '', 'pending', '2026-05-26 08:41:45', NULL, NULL),
 (21, 8, 2, 5, '2026-06-17', '11:00:00', 'allergic sa dust', 'completed', '2026-06-14 09:33:08', NULL, NULL),
-(22, 8, 1, 1, '2026-06-27', '09:00:00', '', 'cancelled', '2026-06-14 09:57:04', 'had another schedule', 'user'),
+(22, 8, 1, 1, '2026-06-27', '09:00:00', '', 'archived', '2026-06-14 09:57:04', NULL, NULL),
 (23, 8, 3, 6, '2026-08-07', '08:00:00', '', 'pending', '2026-06-15 09:00:19', NULL, NULL),
-(24, 8, 2, 8, '2026-08-06', '15:00:00', '', 'pending', '2026-06-15 09:57:00', NULL, NULL);
+(24, 8, 2, 8, '2026-08-06', '15:00:00', '', 'pending', '2026-06-15 09:57:00', NULL, NULL),
+(25, 8, 3, 2, '2026-08-22', '11:00:00', '', 'confirmed', '2026-06-15 20:58:56', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -73,13 +78,16 @@ INSERT INTO `appointments` (`appointment_id`, `user_id`, `dentist_id`, `service_
 --
 
 DROP TABLE IF EXISTS `cart_items`;
-CREATE TABLE `cart_items` (
-  `cart_item_id` int(11) NOT NULL,
+CREATE TABLE IF NOT EXISTS `cart_items` (
+  `cart_item_id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
   `product_id` int(11) NOT NULL,
   `quantity` int(11) NOT NULL DEFAULT 1,
-  `added_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `added_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`cart_item_id`),
+  KEY `user_id` (`user_id`),
+  KEY `product_id` (`product_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=24 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `cart_items`
@@ -96,25 +104,27 @@ INSERT INTO `cart_items` (`cart_item_id`, `user_id`, `product_id`, `quantity`, `
 --
 
 DROP TABLE IF EXISTS `dentists`;
-CREATE TABLE `dentists` (
-  `dentist_id` int(11) NOT NULL,
+CREATE TABLE IF NOT EXISTS `dentists` (
+  `dentist_id` int(11) NOT NULL AUTO_INCREMENT,
   `first_name` varchar(100) DEFAULT NULL,
   `last_name` varchar(100) DEFAULT NULL,
   `specialization` varchar(100) DEFAULT NULL,
   `credentials` text DEFAULT NULL,
   `bio` text DEFAULT NULL,
+  `image_path` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `status` enum('available','unavailable') NOT NULL DEFAULT 'available'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `status` enum('available','unavailable') NOT NULL DEFAULT 'available',
+  PRIMARY KEY (`dentist_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `dentists`
 --
 
-INSERT INTO `dentists` (`dentist_id`, `first_name`, `last_name`, `specialization`, `credentials`, `bio`, `created_at`, `status`) VALUES
-(1, 'Sophia ', 'Reyes', 'General & Cosmetic Dentistry', 'DMD - 12 years experience', 'Smile transformations and preventive care.', '2026-05-23 01:55:18', 'available'),
-(2, 'Marcus', 'Tan', 'Orthodontics & Oral Surgery', 'DMD, MScD - 9 years experience', 'Complex cases with precision and care.', '2026-05-23 01:55:18', 'available'),
-(3, 'Leila', 'Varon', 'Pediatric & Family Dentistry', 'DMD, PedDent - 7 years experience', 'Warm care for families and younger patients.', '2026-05-23 01:55:18', 'available');
+INSERT INTO `dentists` (`dentist_id`, `first_name`, `last_name`, `specialization`, `credentials`, `bio`, `image_path`, `created_at`, `status`) VALUES
+(1, 'Sophia ', 'Reyes', 'General & Cosmetic Dentistry', 'DMD - 12 years experience', 'Smile transformations and preventive care.', NULL, '2026-05-23 01:55:18', 'available'),
+(2, 'Marcus', 'Tan', 'Orthodontics & Oral Surgery', 'DMD, MScD - 9 years experience', 'Complex cases with precision and care.', NULL, '2026-05-23 01:55:18', 'available'),
+(3, 'Leila', 'Varon', 'Pediatric & Family Dentistry', 'DMD, PedDent - 7 years experience', 'Warm care for families and younger patients.', NULL, '2026-05-23 01:55:18', 'available');
 
 -- --------------------------------------------------------
 
@@ -123,16 +133,18 @@ INSERT INTO `dentists` (`dentist_id`, `first_name`, `last_name`, `specialization
 --
 
 DROP TABLE IF EXISTS `notifications`;
-CREATE TABLE `notifications` (
-  `notification_id` int(11) NOT NULL,
+CREATE TABLE IF NOT EXISTS `notifications` (
+  `notification_id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
   `appointment_id` int(11) DEFAULT NULL,
   `order_id` int(11) DEFAULT NULL,
   `audience` enum('user','admin') NOT NULL DEFAULT 'user',
   `message` text NOT NULL,
   `is_read` tinyint(1) NOT NULL DEFAULT 0,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`notification_id`),
+  KEY `notifications_order_fk` (`order_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `notifications`
@@ -152,7 +164,9 @@ INSERT INTO `notifications` (`notification_id`, `user_id`, `appointment_id`, `or
 (11, 5, 18, NULL, 'admin', 'Jeonghan Jeon cancelled the appointment for Dental X-Ray on 2026-05-27 at 15:00.', 1, '2026-05-26 07:17:35'),
 (12, 6, 19, NULL, 'admin', 'System Admin cancelled the appointment for Porcelain Veneers on 2026-05-26 at 15:00.', 1, '2026-05-27 04:59:58'),
 (13, 8, 21, NULL, 'user', 'Your appointment for Dental Braces Consult on 2026-06-17 at 11:00 has been confirmed.', 1, '2026-06-14 09:34:18'),
-(14, 8, 22, NULL, 'admin', 'Mary Josephine Magboo cancelled the appointment for Dental Cleaning on 2026-06-27 at 09:00. Reason: had another schedule', 1, '2026-06-14 10:34:03');
+(14, 8, 22, NULL, 'admin', 'Mary Josephine Magboo cancelled the appointment for Dental Cleaning on 2026-06-27 at 09:00. Reason: had another schedule', 1, '2026-06-14 10:34:03'),
+(15, 8, 25, NULL, 'admin', 'Mary Josephine Magboo booked an appointment for Dental X-Ray on 2026-08-22 at 11:00.', 1, '2026-06-15 20:58:56'),
+(16, 8, 25, NULL, 'user', 'Your appointment for Dental X-Ray on 2026-08-22 at 11:00 has been confirmed.', 1, '2026-06-15 20:59:41');
 
 -- --------------------------------------------------------
 
@@ -161,8 +175,8 @@ INSERT INTO `notifications` (`notification_id`, `user_id`, `appointment_id`, `or
 --
 
 DROP TABLE IF EXISTS `orders`;
-CREATE TABLE `orders` (
-  `order_id` int(11) NOT NULL,
+CREATE TABLE IF NOT EXISTS `orders` (
+  `order_id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
   `first_name` varchar(100) DEFAULT NULL,
   `last_name` varchar(100) DEFAULT NULL,
@@ -179,8 +193,10 @@ CREATE TABLE `orders` (
   `gcash_number` varchar(20) DEFAULT NULL,
   `total_amount` decimal(10,2) DEFAULT NULL,
   `status` enum('pending','processing','out_for_delivery','delivered','completed','cancelled','archived') NOT NULL DEFAULT 'pending',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`order_id`),
+  KEY `user_id` (`user_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `orders`
@@ -203,14 +219,17 @@ INSERT INTO `orders` (`order_id`, `user_id`, `first_name`, `last_name`, `email`,
 --
 
 DROP TABLE IF EXISTS `order_items`;
-CREATE TABLE `order_items` (
-  `order_item_id` int(11) NOT NULL,
+CREATE TABLE IF NOT EXISTS `order_items` (
+  `order_item_id` int(11) NOT NULL AUTO_INCREMENT,
   `order_id` int(11) NOT NULL,
   `product_id` int(11) NOT NULL,
   `quantity` int(11) NOT NULL,
   `unit_price` decimal(10,2) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`order_item_id`),
+  KEY `order_id` (`order_id`),
+  KEY `product_id` (`product_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `order_items`
@@ -244,8 +263,8 @@ INSERT INTO `order_items` (`order_item_id`, `order_id`, `product_id`, `quantity`
 --
 
 DROP TABLE IF EXISTS `otp_verifications`;
-CREATE TABLE `otp_verifications` (
-  `otp_id` int(11) NOT NULL,
+CREATE TABLE IF NOT EXISTS `otp_verifications` (
+  `otp_id` int(11) NOT NULL AUTO_INCREMENT,
   `email` varchar(120) NOT NULL,
   `first_name` varchar(100) NOT NULL,
   `last_name` varchar(100) NOT NULL,
@@ -256,8 +275,11 @@ CREATE TABLE `otp_verifications` (
   `attempts` tinyint(3) UNSIGNED NOT NULL DEFAULT 0,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `last_otp_sent_at` datetime DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `last_otp_sent_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`otp_id`),
+  UNIQUE KEY `email` (`email`),
+  KEY `idx_expires_at` (`expires_at`)
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `otp_verifications`
@@ -273,29 +295,31 @@ INSERT INTO `otp_verifications` (`otp_id`, `email`, `first_name`, `last_name`, `
 --
 
 DROP TABLE IF EXISTS `products`;
-CREATE TABLE `products` (
-  `product_id` int(11) NOT NULL,
+CREATE TABLE IF NOT EXISTS `products` (
+  `product_id` int(11) NOT NULL AUTO_INCREMENT,
   `product_name` varchar(150) NOT NULL,
   `description` text DEFAULT NULL,
+  `image_path` varchar(255) DEFAULT NULL,
   `price` decimal(10,2) DEFAULT NULL,
   `stock_quantity` int(11) DEFAULT 0,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `status` enum('available','sold_out') NOT NULL DEFAULT 'available'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `status` enum('available','sold_out') NOT NULL DEFAULT 'available',
+  PRIMARY KEY (`product_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `products`
 --
 
-INSERT INTO `products` (`product_id`, `product_name`, `description`, `price`, `stock_quantity`, `created_at`, `status`) VALUES
-(1, 'Sonic Pro Toothbrush', 'Rechargeable electric toothbrush with 3 modes.', 1299.00, 12, '2026-05-23 01:55:18', 'available'),
-(2, 'WhiteGlow Toothpaste', 'Enamel-strengthening whitening paste.', 299.00, 30, '2026-05-23 01:55:18', 'available'),
-(3, 'Silk Dental Floss', 'Natural silk floss with wax coating.', 189.00, 24, '2026-05-23 01:55:18', 'available'),
-(4, 'AquaFresh Mouthwash', 'Antibacterial alcohol-free rinse.', 349.00, 18, '2026-05-23 01:55:18', 'available'),
-(5, 'Teeth Whitening Strips', '14-day whitening kit.', 899.00, 16, '2026-05-23 01:55:18', 'available'),
-(6, 'Tongue Scraper Set', 'Stainless steel scrapers.', 249.00, 20, '2026-05-23 01:55:18', 'available'),
-(7, 'Sensitive Gum Gel', 'Soothing gel for gum sensitivity.', 399.00, 15, '2026-05-23 01:55:18', 'available'),
-(8, 'Natural Bamboo Brush Set', '4-pack biodegradable bamboo toothbrushes.', 549.00, 10, '2026-05-23 01:55:18', 'available');
+INSERT INTO `products` (`product_id`, `product_name`, `description`, `image_path`, `price`, `stock_quantity`, `created_at`, `status`) VALUES
+(1, 'Sonic Pro Toothbrush', 'Rechargeable electric toothbrush with 3 modes.', NULL, 1299.00, 12, '2026-05-23 01:55:18', 'available'),
+(2, 'WhiteGlow Toothpaste', 'Enamel-strengthening whitening paste.', NULL, 299.00, 30, '2026-05-23 01:55:18', 'available'),
+(3, 'Silk Dental Floss', 'Natural silk floss with wax coating.', NULL, 189.00, 24, '2026-05-23 01:55:18', 'available'),
+(4, 'AquaFresh Mouthwash', 'Antibacterial alcohol-free rinse.', NULL, 349.00, 18, '2026-05-23 01:55:18', 'available'),
+(5, 'Teeth Whitening Strips', '14-day whitening kit.', NULL, 899.00, 16, '2026-05-23 01:55:18', 'available'),
+(6, 'Tongue Scraper Set', 'Stainless steel scrapers.', NULL, 249.00, 20, '2026-05-23 01:55:18', 'available'),
+(7, 'Sensitive Gum Gel', 'Soothing gel for gum sensitivity.', NULL, 399.00, 15, '2026-05-23 01:55:18', 'available'),
+(8, 'Natural Bamboo Brush Set', '4-pack biodegradable bamboo toothbrushes.', NULL, 549.00, 10, '2026-05-23 01:55:18', 'available');
 
 -- --------------------------------------------------------
 
@@ -304,31 +328,33 @@ INSERT INTO `products` (`product_id`, `product_name`, `description`, `price`, `s
 --
 
 DROP TABLE IF EXISTS `services`;
-CREATE TABLE `services` (
-  `service_id` int(11) NOT NULL,
+CREATE TABLE IF NOT EXISTS `services` (
+  `service_id` int(11) NOT NULL AUTO_INCREMENT,
   `service_name` varchar(150) NOT NULL,
   `description` text DEFAULT NULL,
+  `image_path` varchar(255) DEFAULT NULL,
   `price` decimal(10,2) DEFAULT NULL,
   `category` varchar(50) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `daily_slots` int(11) NOT NULL DEFAULT 0,
-  `status` enum('available','unavailable') NOT NULL DEFAULT 'available'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `status` enum('available','unavailable') NOT NULL DEFAULT 'available',
+  PRIMARY KEY (`service_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `services`
 --
 
-INSERT INTO `services` (`service_id`, `service_name`, `description`, `price`, `category`, `created_at`, `daily_slots`, `status`) VALUES
-(1, 'Dental Cleaning', 'Professional prophylaxis to remove plaque and tartar.', 800.00, 'Preventive', '2026-05-23 01:55:18', 8, 'available'),
-(2, 'Dental X-Ray', 'Digital X-rays for accurate diagnosis.', 450.00, 'Diagnostic', '2026-05-23 01:55:18', 8, 'available'),
-(3, 'Tooth Extraction', 'Safe removal of damaged or problematic teeth.', 1200.00, 'Restorative', '2026-05-23 01:55:18', 8, 'available'),
-(4, 'Teeth Whitening', 'Professional-grade whitening treatment.', 3500.00, 'Cosmetic', '2026-05-23 01:55:18', 19, 'available'),
-(5, 'Dental Braces Consult', 'Orthodontic evaluation and treatment planning.', 500.00, 'Orthodontic', '2026-05-23 01:55:18', 8, 'available'),
-(6, 'Root Canal Treatment', 'Precision endodontic therapy.', 6000.00, 'Restorative', '2026-05-23 01:55:18', 8, 'available'),
-(7, 'Dental Crown', 'Custom-fitted porcelain crowns.', 8000.00, 'Restorative', '2026-05-23 01:55:18', 16, 'available'),
-(8, 'Porcelain Veneers', 'Custom shells for aesthetic results.', 12000.00, 'Cosmetic', '2026-05-23 01:55:18', 11, 'available'),
-(9, 'Pediatric Check-Up', 'Gentle dental visits for children.', 600.00, 'Preventive', '2026-05-23 01:55:18', 8, 'available');
+INSERT INTO `services` (`service_id`, `service_name`, `description`, `image_path`, `price`, `category`, `created_at`, `daily_slots`, `status`) VALUES
+(1, 'Dental Cleaning', 'Professional prophylaxis to remove plaque and tartar.', NULL, 800.00, 'Preventive', '2026-05-23 01:55:18', 8, 'available'),
+(2, 'Dental X-Ray', 'Digital X-rays for accurate diagnosis.', NULL, 450.00, 'Diagnostic', '2026-05-23 01:55:18', 8, 'available'),
+(3, 'Tooth Extraction', 'Safe removal of damaged or problematic teeth.', NULL, 1200.00, 'Restorative', '2026-05-23 01:55:18', 8, 'available'),
+(4, 'Teeth Whitening', 'Professional-grade whitening treatment.', NULL, 3500.00, 'Cosmetic', '2026-05-23 01:55:18', 19, 'available'),
+(5, 'Dental Braces Consult', 'Orthodontic evaluation and treatment planning.', NULL, 500.00, 'Orthodontic', '2026-05-23 01:55:18', 8, 'available'),
+(6, 'Root Canal Treatment', 'Precision endodontic therapy.', NULL, 6000.00, 'Restorative', '2026-05-23 01:55:18', 8, 'available'),
+(7, 'Dental Crown', 'Custom-fitted porcelain crowns.', NULL, 8000.00, 'Restorative', '2026-05-23 01:55:18', 16, 'available'),
+(8, 'Porcelain Veneers', 'Custom shells for aesthetic results.', NULL, 12000.00, 'Cosmetic', '2026-05-23 01:55:18', 11, 'available'),
+(9, 'Pediatric Check-Up', 'Gentle dental visits for children.', NULL, 600.00, 'Preventive', '2026-05-23 01:55:18', 8, 'available');
 
 -- --------------------------------------------------------
 
@@ -337,8 +363,8 @@ INSERT INTO `services` (`service_id`, `service_name`, `description`, `price`, `c
 --
 
 DROP TABLE IF EXISTS `users`;
-CREATE TABLE `users` (
-  `user_id` int(11) NOT NULL,
+CREATE TABLE IF NOT EXISTS `users` (
+  `user_id` int(11) NOT NULL AUTO_INCREMENT,
   `first_name` varchar(100) NOT NULL,
   `last_name` varchar(100) NOT NULL,
   `email` varchar(120) NOT NULL,
@@ -355,8 +381,10 @@ CREATE TABLE `users` (
   `barangay` varchar(100) DEFAULT NULL,
   `city` varchar(100) DEFAULT NULL,
   `province` varchar(100) DEFAULT NULL,
-  `zip_code` varchar(10) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `zip_code` varchar(10) DEFAULT NULL,
+  PRIMARY KEY (`user_id`),
+  UNIQUE KEY `email` (`email`)
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `users`
@@ -368,146 +396,6 @@ INSERT INTO `users` (`user_id`, `first_name`, `last_name`, `email`, `phone`, `pa
 (5, 'Jeonghan', 'Jeon', 'jeon@gmail.com', '123456789', '$2y$10$y9L78.r11pQ/WOUq3psuKuw40hrIwyCiilbZqn0m.u9Q8kEKf676O', 'patient', '2026-05-24 03:40:13', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (6, 'System', 'Admin', 'admin@aquasmile.com', '0000000000', '$2y$10$qnT4XmT6G85rtdowvE8eYuy0eBNaMX69YlUDnqYqNlQljmIpLqJNG', 'admin', '2026-05-26 07:27:15', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (8, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '$2y$10$cqxtAEZuyPQtRSWolFgJye618tHSODbybdCeylU1iD2PFgoTcakE.', 'patient', '2026-06-14 06:33:02', NULL, 'Female', NULL, NULL, '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027');
-
---
--- Indexes for dumped tables
---
-
---
--- Indexes for table `appointments`
---
-ALTER TABLE `appointments`
-  ADD PRIMARY KEY (`appointment_id`),
-  ADD KEY `user_id` (`user_id`),
-  ADD KEY `dentist_id` (`dentist_id`),
-  ADD KEY `service_id` (`service_id`);
-
---
--- Indexes for table `cart_items`
---
-ALTER TABLE `cart_items`
-  ADD PRIMARY KEY (`cart_item_id`),
-  ADD KEY `user_id` (`user_id`),
-  ADD KEY `product_id` (`product_id`);
-
---
--- Indexes for table `dentists`
---
-ALTER TABLE `dentists`
-  ADD PRIMARY KEY (`dentist_id`);
-
---
--- Indexes for table `notifications`
---
-ALTER TABLE `notifications`
-  ADD PRIMARY KEY (`notification_id`),
-  ADD KEY `notifications_order_fk` (`order_id`);
-
---
--- Indexes for table `orders`
---
-ALTER TABLE `orders`
-  ADD PRIMARY KEY (`order_id`),
-  ADD KEY `user_id` (`user_id`);
-
---
--- Indexes for table `order_items`
---
-ALTER TABLE `order_items`
-  ADD PRIMARY KEY (`order_item_id`),
-  ADD KEY `order_id` (`order_id`),
-  ADD KEY `product_id` (`product_id`);
-
---
--- Indexes for table `otp_verifications`
---
-ALTER TABLE `otp_verifications`
-  ADD PRIMARY KEY (`otp_id`),
-  ADD UNIQUE KEY `email` (`email`),
-  ADD KEY `idx_expires_at` (`expires_at`);
-
---
--- Indexes for table `products`
---
-ALTER TABLE `products`
-  ADD PRIMARY KEY (`product_id`);
-
---
--- Indexes for table `services`
---
-ALTER TABLE `services`
-  ADD PRIMARY KEY (`service_id`);
-
---
--- Indexes for table `users`
---
-ALTER TABLE `users`
-  ADD PRIMARY KEY (`user_id`),
-  ADD UNIQUE KEY `email` (`email`);
-
---
--- AUTO_INCREMENT for dumped tables
---
-
---
--- AUTO_INCREMENT for table `appointments`
---
-ALTER TABLE `appointments`
-  MODIFY `appointment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
-
---
--- AUTO_INCREMENT for table `cart_items`
---
-ALTER TABLE `cart_items`
-  MODIFY `cart_item_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
-
---
--- AUTO_INCREMENT for table `dentists`
---
-ALTER TABLE `dentists`
-  MODIFY `dentist_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
-
---
--- AUTO_INCREMENT for table `notifications`
---
-ALTER TABLE `notifications`
-  MODIFY `notification_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
-
---
--- AUTO_INCREMENT for table `orders`
---
-ALTER TABLE `orders`
-  MODIFY `order_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
-
---
--- AUTO_INCREMENT for table `order_items`
---
-ALTER TABLE `order_items`
-  MODIFY `order_item_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
-
---
--- AUTO_INCREMENT for table `otp_verifications`
---
-ALTER TABLE `otp_verifications`
-  MODIFY `otp_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
-
---
--- AUTO_INCREMENT for table `products`
---
-ALTER TABLE `products`
-  MODIFY `product_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
-
---
--- AUTO_INCREMENT for table `services`
---
-ALTER TABLE `services`
-  MODIFY `service_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
-
---
--- AUTO_INCREMENT for table `users`
---
-ALTER TABLE `users`
-  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- Constraints for dumped tables
