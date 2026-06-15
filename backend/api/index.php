@@ -182,11 +182,39 @@ function admin_update_order_status()
     if ($id <= 0 || !valid_order_status($status)) {
         json_response(['ok' => false, 'message' => 'Invalid order ID or status.'], 422);
     }
-    if (!fetch_one('SELECT order_id FROM orders WHERE order_id = ?', [$id])) {
+    $order = fetch_one('SELECT order_id, user_id, status FROM orders WHERE order_id = ?', [$id]);
+    if (!$order) {
         json_response(['ok' => false, 'message' => 'Order not found.'], 404);
     }
 
+    $allowedTransitions = [
+        'pending' => ['processing', 'cancelled'],
+        'processing' => ['out_for_delivery', 'cancelled'],
+        'out_for_delivery' => ['delivered', 'cancelled'],
+        'delivered' => ['completed'],
+        'completed' => ['archived'],
+        'cancelled' => ['archived'],
+        'archived' => [],
+    ];
+    if ($order['status'] !== $status && !in_array($status, $allowedTransitions[$order['status']] ?? [], true)) {
+        json_response(['ok' => false, 'message' => 'That order status change is not allowed.'], 409);
+    }
+
     execute_sql('UPDATE orders SET status = ? WHERE order_id = ?', [$status, $id]);
+
+    if ($order['status'] !== $status && (int) $order['user_id'] > 0) {
+        $messages = [
+            'processing' => 'Your order #' . $id . ' is now being processed.',
+            'out_for_delivery' => 'Your order #' . $id . ' is out for delivery.',
+            'delivered' => 'Your order #' . $id . ' has been delivered.',
+            'completed' => 'Your order #' . $id . ' has been completed.',
+            'cancelled' => 'Your order #' . $id . ' has been cancelled.',
+        ];
+        if (isset($messages[$status])) {
+            create_notification((int) $order['user_id'], $messages[$status], 'user', null, $id);
+        }
+    }
+
     json_response(['ok' => true, 'message' => 'Order status updated to ' . $status . '.']);
 }
 
@@ -201,6 +229,9 @@ function admin_update_appointment_status()
     if ($id <= 0 || !valid_appointment_status($status)) {
         json_response(['ok' => false, 'message' => 'Invalid appointment ID or status.'], 422);
     }
+    if ($status === 'cancelled' && $reason === '') {
+        json_response(['ok' => false, 'message' => 'Cancellation reason is required.'], 422);
+    }
 
     $appt = fetch_one(appointment_sql() . ' WHERE a.appointment_id = ?', [$id]);
     if (!$appt) {
@@ -213,13 +244,13 @@ function admin_update_appointment_status()
         [$status, $reason ?: null, $cancelledBy, $id]
     );
 
-    if (in_array($status, ['confirmed', 'cancelled'], true)) {
+    if ($appt['status'] !== $status && in_array($status, ['pending', 'confirmed', 'completed', 'cancelled'], true)) {
         $msg = 'Your appointment for ' . $appt['service_name'] . ' on ' . $appt['appointment_date']
              . ' at ' . substr((string)$appt['appointment_time'], 0, 5) . ' has been ' . $status . '.';
         if ($reason !== '') {
             $msg .= ' Reason: ' . $reason;
         }
-        create_notification((int)$appt['user_id'], $id, $msg, 'user');
+        create_notification((int) $appt['user_id'], $msg, 'user', $id);
     }
 
     $updated = fetch_one(appointment_sql() . ' WHERE a.appointment_id = ?', [$id]);
@@ -657,6 +688,7 @@ function dashboard()
             'zip' => $row['zip'] ?? '',
             'notes' => $row['notes'] ?? '',
             'paymentMethod' => $row['payment_method'] ?? 'cod',
+            'gcashNumber' => $row['gcash_number'] ?? '',
             'total' => (float) $row['total_amount'],
             'status' => $row['status'],
             'created_at' => $row['created_at'],
@@ -1205,14 +1237,21 @@ function create_appointment()
 
     $id = (string) db()->lastInsertId();
     $row = fetch_one(appointment_sql() . ' WHERE a.appointment_id = ?', [$id]);
+    create_notification(
+        $userId,
+        trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? '')) . ' booked an appointment for '
+            . ($row['service_name'] ?? 'a dental service') . ' on ' . $date . ' at ' . substr($time, 0, 5) . '.',
+        'admin',
+        (int) $id
+    );
     json_response(['ok' => true, 'appointment' => normalize_appointment($row)]);
 }
 
-function create_notification($userId, $appointmentId, $message, $audience = 'user')
+function create_notification($userId, $message, $audience = 'user', $appointmentId = null, $orderId = null)
 {
     execute_sql(
-        'INSERT INTO notifications (user_id, appointment_id, audience, message) VALUES (?, ?, ?, ?)',
-        [$userId, $appointmentId, $audience, $message]
+        'INSERT INTO notifications (user_id, appointment_id, order_id, audience, message) VALUES (?, ?, ?, ?, ?)',
+        [$userId, $appointmentId, $orderId, $audience, $message]
     );
 }
 
@@ -1239,12 +1278,12 @@ function update_appointment()
         [$status, $reason ?: null, $status === 'cancelled' ? 'admin' : null, $id]
     );
 
-    if (in_array($status, ['confirmed', 'cancelled'], true)) {
+    if ($appt['status'] !== $status && in_array($status, ['pending', 'confirmed', 'completed', 'cancelled'], true)) {
         $message = 'Your appointment for ' . $appt['service_name'] . ' on ' . $appt['appointment_date'] . ' at ' . substr((string) $appt['appointment_time'], 0, 5) . ' has been ' . $status . '.';
         if ($reason !== '') {
             $message .= ' Reason: ' . $reason;
         }
-        create_notification((int) $appt['user_id'], $id, $message, 'user');
+        create_notification((int) $appt['user_id'], $message, 'user', $id);
     }
 
     $updated = fetch_one(appointment_sql() . ' WHERE a.appointment_id = ?', [$id]);
@@ -1277,9 +1316,9 @@ function cancel_appointment()
     );
     create_notification(
         $userId,
-        $id,
         trim(($appt['first_name'] ?? '') . ' ' . ($appt['last_name'] ?? '')) . ' cancelled the appointment for ' . $appt['service_name'] . ' on ' . $appt['appointment_date'] . ' at ' . substr((string) $appt['appointment_time'], 0, 5) . '. Reason: ' . $reason,
-        'admin'
+        'admin',
+        $id
     );
 
     $updated = fetch_one(appointment_sql() . ' WHERE a.appointment_id = ?', [$id]);
@@ -1292,17 +1331,17 @@ function cancel_appointment()
 
 function notifications()
 {
-    $userId = (int) ($_GET['user_id'] ?? 0);
+    $userId = require_patient();
     json_response([
         'ok' => true,
-        'notifications' => fetch_all("SELECT notification_id AS id, user_id, appointment_id, audience, message, is_read, created_at FROM notifications WHERE user_id = ? AND audience = 'user' ORDER BY created_at DESC", [$userId]),
+        'notifications' => fetch_all("SELECT notification_id AS id, user_id, appointment_id, order_id, audience, message, is_read, created_at FROM notifications WHERE user_id = ? AND audience = 'user' ORDER BY created_at DESC", [$userId]),
     ]);
 }
 
 function mark_notifications_read()
 {
-    $data = request_json();
-    execute_sql("UPDATE notifications SET is_read = 1 WHERE user_id = ? AND audience = 'user'", [(int) ($data['userId'] ?? $data['user_id'] ?? 0)]);
+    $userId = require_patient();
+    execute_sql("UPDATE notifications SET is_read = 1 WHERE user_id = ? AND audience = 'user'", [$userId]);
     json_response(['ok' => true]);
 }
 
@@ -1470,6 +1509,16 @@ function create_order()
         execute_sql('DELETE FROM cart_items WHERE user_id = ?', [$userId]);
     }
 
+    $orderingUser = fetch_one('SELECT first_name, last_name FROM users WHERE user_id = ?', [$userId]);
+    $orderingUserName = trim(($orderingUser['first_name'] ?? $firstName) . ' ' . ($orderingUser['last_name'] ?? $lastName));
+    create_notification(
+        $userId,
+        'New order #' . $orderId . ' has been placed by ' . $orderingUserName . '.',
+        'admin',
+        null,
+        (int) $orderId
+    );
+
     json_response(['ok' => true, 'orderId' => $orderId]);
 }
 
@@ -1526,7 +1575,7 @@ function user_account()
     }
 
     $notifications = fetch_all(
-        "SELECT notification_id, message, is_read, created_at
+        "SELECT notification_id, appointment_id, order_id, message, is_read, created_at
          FROM notifications
          WHERE user_id = ? AND audience = 'user'
          ORDER BY created_at DESC",
@@ -1577,6 +1626,8 @@ function user_account()
         'notifications' => array_map(function ($notification) {
             return [
                 'id' => (string) $notification['notification_id'],
+                'appointment_id' => $notification['appointment_id'] !== null ? (string) $notification['appointment_id'] : null,
+                'order_id' => $notification['order_id'] !== null ? (string) $notification['order_id'] : null,
                 'message' => $notification['message'] ?? '',
                 'is_read' => (int) ($notification['is_read'] ?? 0) === 1,
                 'created_at' => $notification['created_at'] ?? '',

@@ -1303,7 +1303,7 @@ if (isAdmin()) {
     }
   </script>
 
-<script src="js/notifications.js?v=20260614b"></script>
+<script src="js/notifications.js?v=20260615"></script>
 </script>
 
   <div id="site-footer-root"></div>

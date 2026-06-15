@@ -498,7 +498,7 @@ if (isAdmin()) {
 
   <script src="js/main.js?v=20260614b"></script>
   <script src="js/booking.js?v=20260523"></script>
-  <script src="js/notifications.js?v=20260614b"></script>
+  <script src="js/notifications.js?v=20260615"></script>
 
   <div id="site-footer-root"></div>
   <script src="js/footer.js?v=20260523"></script>

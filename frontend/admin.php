@@ -16,10 +16,10 @@ if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AquaSmile - Admin Dashboard</title>
   <link
-    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&amp;family=DM+Sans:wght@300;400;500&amp;display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="css/style.css?v=20260524">
-  <link rel="stylesheet" href="css/admin.css?v=20260524">
+  <link rel="stylesheet" href="css/admin.css?v=20260616e">
 </head>
 
 <body class="admin-body">
@@ -42,11 +42,11 @@ if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
       <button class="admin-side-link" type="button" data-view="appointments" onclick="showAdminView('appointments')">Appointments</button>
       <button class="admin-side-link" type="button" data-view="dentists" onclick="showAdminView('dentists')">Dentist Calendar</button>
       <button class="admin-side-link" type="button" data-view="orders" onclick="showAdminView('orders')">Orders</button>
-      <button class="admin-side-link" type="button" data-view="catalog" onclick="showAdminView('catalog')">Products & Services</button>
+      <button class="admin-side-link" type="button" data-view="catalog" onclick="showAdminView('catalog')">Products &amp; Services</button>
+      <button class="admin-side-link" type="button" data-view="users" onclick="showAdminView('users')">Users</button>
       <button class="admin-side-link" type="button" data-view="notifications" onclick="showAdminView('notifications')">
         Notifications <span class="admin-notify-badge" id="admin-notify-badge">0</span>
       </button>
-      <button class="admin-side-link" type="button" data-view="database" onclick="showAdminView('database')">Database Tables</button>
     </aside>
 
     <section class="admin-content">
@@ -55,11 +55,11 @@ if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
         <div>
           <div class="section-label">AquaSmile Control Center</div>
           <h1>Admin Dashboard</h1>
-          <p>Appointments, users, cart items, dentists, orders, order items, products, and services.</p>
+          <p>Manage appointments, orders, patients, services, products, dentists, and clinic updates.</p>
         </div>
         <div class="admin-hero-actions">
           <button class="btn-secondary" type="button" onclick="adminRefresh()">Refresh</button>
-          <button class="btn-primary" type="button" onclick="showAdminView('database')">View Schema</button>
+          <button class="btn-primary" type="button" onclick="showAdminView('appointments')">Manage Appointments</button>
         </div>
       </header>
 
@@ -75,9 +75,9 @@ if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
           <small>registered patients</small>
         </article>
         <article class="admin-stat-card">
-          <span class="stat-kicker">Cart Items</span>
-          <strong id="stat-cart">0</strong>
-          <small>active shop items</small>
+          <span class="stat-kicker">Orders</span>
+          <strong id="stat-orders">0</strong>
+          <small id="stat-pending-orders">0 pending orders</small>
         </article>
         <article class="admin-stat-card">
           <span class="stat-kicker">Revenue</span>
@@ -87,80 +87,53 @@ if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
       </section>
 
       <section class="admin-grid-two">
-        <article class="admin-panel" id="appointments">
+        <article class="admin-panel overview-preview-panel" id="appointments">
           <div class="panel-head">
             <div>
               <div class="section-label">Appointments</div>
               <h2>Recent Bookings</h2>
             </div>
-            <span class="admin-badge">appointments</span>
+            <button class="panel-link-btn" type="button" onclick="showAdminView('appointments')">View More Appointments</button>
           </div>
-          <div class="table-wrap">
-            <table class="admin-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Patient</th>
-                  <th>Service</th>
-                  <th>Dentist</th>
-                  <th>Schedule</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody id="appointments-table"></tbody>
-            </table>
-          </div>
+          <div class="overview-list" id="appointments-preview"></div>
         </article>
 
-        <article class="admin-panel">
+        <article class="admin-panel overview-preview-panel">
           <div class="panel-head">
             <div>
               <div class="section-label">Users</div>
               <h2>Patient Accounts</h2>
             </div>
-            <span class="admin-badge">users</span>
+            <button class="panel-link-btn" type="button" onclick="showAdminView('users')">View More Users</button>
           </div>
-          <div class="table-wrap">
-            <table class="admin-table compact">
-              <thead>
-                <tr>
-                  <th>User ID</th>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Contact</th>
-                </tr>
-              </thead>
-              <tbody id="users-table"></tbody>
-            </table>
-          </div>
+          <div class="overview-list" id="users-preview"></div>
         </article>
       </section>
       </section>
 
       <section class="admin-view" id="view-appointments" data-admin-view="appointments">
-      <article class="admin-panel">
-        <div class="panel-head">
+      <article class="admin-panel appointments-workspace">
+        <div class="panel-head appointments-page-head">
           <div>
-            <div class="section-label">Appointment Approval</div>
-            <h2>Manage Patient Bookings</h2>
+            <div class="section-label">Clinic Booking Management</div>
+            <h2>Appointments</h2>
           </div>
-          <span class="admin-badge">pending / confirmed / cancelled</span>
+          <label class="toggle-label">
+            <input id="appointments-archive-toggle" type="checkbox" onchange="toggleArchived('appointments', this.checked)">
+            Show archived
+          </label>
         </div>
-        <div class="table-wrap">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Patient</th>
-                <th>Service</th>
-                <th>Dentist</th>
-                <th>Schedule</th>
-                <th>Status</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody id="appointments-manage-table"></tbody>
-          </table>
+        <div class="appointment-filter-bar" id="appointment-filter-bar" aria-label="Appointment filters">
+          <button class="appointment-filter-chip active" type="button" data-appointment-filter="all" onclick="setAppointmentFilter('all')">All</button>
+          <button class="appointment-filter-chip" type="button" data-appointment-filter="pending" onclick="setAppointmentFilter('pending')">Pending</button>
+          <button class="appointment-filter-chip" type="button" data-appointment-filter="confirmed" onclick="setAppointmentFilter('confirmed')">Confirmed</button>
+          <button class="appointment-filter-chip" type="button" data-appointment-filter="completed" onclick="setAppointmentFilter('completed')">Completed</button>
+          <button class="appointment-filter-chip" type="button" data-appointment-filter="cancelled" onclick="setAppointmentFilter('cancelled')">Cancelled</button>
+          <button class="appointment-filter-chip" type="button" data-appointment-filter="archived" onclick="setAppointmentFilter('archived')">Archived</button>
+        </div>
+        <div class="appointments-master-detail">
+          <div class="appointment-master-list" id="appointment-master-list"></div>
+          <aside class="appointment-detail-panel" id="appointment-detail-panel" aria-live="polite"></aside>
         </div>
       </article>
       </section>
@@ -185,51 +158,21 @@ if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
       </section>
 
       <section class="admin-view" id="view-orders" data-admin-view="orders">
-      <div class="admin-grid-two" id="orders">
-        <article class="admin-panel">
-          <div class="panel-head">
+      <div id="orders">
+        <article class="admin-panel orders-workspace">
+          <div class="panel-head orders-page-head">
             <div>
-              <div class="section-label">Orders</div>
+              <div class="section-label">Order Management</div>
               <h2>Shop Orders</h2>
             </div>
-            <span class="admin-badge">orders</span>
+            <label class="toggle-label">
+              <input id="orders-archive-toggle" type="checkbox" onchange="toggleArchived('orders', this.checked)">
+              Show archived
+            </label>
           </div>
-          <div class="table-wrap">
-            <table class="admin-table compact">
-              <thead>
-                <tr>
-                  <th>Order ID</th>
-                  <th>Customer</th>
-                  <th>Delivery Address</th>
-                  <th>Total</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody id="orders-table"></tbody>
-            </table>
-          </div>
-        </article>
-
-        <article class="admin-panel">
-          <div class="panel-head">
-            <div>
-              <div class="section-label">Order Items</div>
-              <h2>Line Items</h2>
-            </div>
-            <span class="admin-badge">order_items</span>
-          </div>
-          <div class="table-wrap">
-            <table class="admin-table compact">
-              <thead>
-                <tr>
-                  <th>Item</th>
-                  <th>Order</th>
-                  <th>Qty</th>
-                  <th>Price</th>
-                </tr>
-              </thead>
-              <tbody id="order-items-table"></tbody>
-            </table>
+          <div class="orders-master-detail">
+            <div class="order-master-list" id="orders-list"></div>
+            <aside class="order-detail-panel" id="order-detail-panel" aria-live="polite"></aside>
           </div>
         </article>
       </div>
@@ -243,7 +186,7 @@ if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
               <div class="section-label">Products</div>
               <h2>Product Inventory</h2>
             </div>
-            <span class="admin-badge">quantity only</span>
+            <span class="admin-badge">inventory</span>
           </div>
           <div class="catalog-grid" id="products-grid-admin"></div>
         </article>
@@ -254,36 +197,13 @@ if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
               <div class="section-label">Services</div>
               <h2>Clinic Services</h2>
             </div>
-            <span class="admin-badge">quantity only</span>
+            <span class="admin-badge">clinic care</span>
           </div>
           <div class="catalog-grid" id="services-grid-admin"></div>
         </article>
       </section>
 
-      <section class="admin-grid-two">
-        <article class="admin-panel">
-          <div class="panel-head">
-            <div>
-              <div class="section-label">Cart Items</div>
-              <h2>Current Cart Preview</h2>
-            </div>
-            <span class="admin-badge">cart_items</span>
-          </div>
-          <div class="table-wrap">
-            <table class="admin-table compact">
-              <thead>
-                <tr>
-                  <th>Product</th>
-                  <th>Qty</th>
-                  <th>Unit</th>
-                  <th>Total</th>
-                </tr>
-              </thead>
-              <tbody id="cart-table"></tbody>
-            </table>
-          </div>
-        </article>
-
+      <section class="admin-grid-one">
         <article class="admin-panel">
           <div class="panel-head">
             <div>
@@ -297,59 +217,37 @@ if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
       </section>
       </section>
 
+      <section class="admin-view" id="view-users" data-admin-view="users">
+      <article class="admin-panel">
+        <div class="panel-head">
+          <div>
+            <div class="section-label">Patient Accounts</div>
+            <h2>Users</h2>
+          </div>
+          <span class="admin-badge">registered accounts</span>
+        </div>
+        <div class="admin-users-grid" id="users-manage-list"></div>
+      </article>
+      </section>
+
       <section class="admin-view" id="view-notifications" data-admin-view="notifications">
       <article class="admin-panel">
         <div class="panel-head">
           <div>
             <div class="section-label">Admin Notifications</div>
-            <h2>Client Cancellation Alerts</h2>
+            <h2>Appointment and Order Alerts</h2>
           </div>
-          <span class="admin-badge">database</span>
+          <span class="admin-badge">latest updates</span>
         </div>
-        <div class="table-wrap">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>Patient</th>
-                <th>Appointment</th>
-                <th>Message</th>
-                <th>Date Sent</th>
-              </tr>
-            </thead>
-            <tbody id="notifications-table"></tbody>
-          </table>
-        </div>
+        <div class="admin-activity-feed" id="notifications-feed"></div>
       </article>
       </section>
 
-      <section class="admin-view" id="view-database" data-admin-view="database">
-      <article class="admin-panel" id="database">
-        <div class="panel-head">
-          <div>
-            <div class="section-label">Database Plan</div>
-            <h2>XAMPP / MySQL Tables to Connect Later</h2>
-          </div>
-          <span class="admin-badge">schema-ready UI</span>
-        </div>
-        <div class="schema-grid">
-          <div class="schema-card"><strong>appointments</strong><span>appointment_id, user_id, service_id, dentist_id, appointment_date, appointment_time, notes, status, cancellation_reason</span></div>
-          <div class="schema-card"><strong>users</strong><span>user_id, first_name, last_name, email, phone, password_hash, role, created_at</span></div>
-          <div class="schema-card"><strong>cart_items</strong><span>cart_item_id, user_id, product_id, quantity, added_at</span></div>
-          <div class="schema-card"><strong>dentists</strong><span>dentist_id, first_name, last_name, credentials, specialization, bio, status</span></div>
-          <div class="schema-card"><strong>orders</strong><span>order_id, user_id, first_name, last_name, email, phone, house_no, street, barangay, city, province, zip, notes, payment_method, total_amount, status</span></div>
-          <div class="schema-card"><strong>order_items</strong><span>order_item_id, order_id, product_id, quantity, unit_price</span></div>
-          <div class="schema-card"><strong>products</strong><span>product_id, product_name, description, price, stock_quantity, status</span></div>
-          <div class="schema-card"><strong>services</strong><span>service_id, service_name, description, price, daily_slots, category, status</span></div>
-          <div class="schema-card"><strong>notifications</strong><span>notification_id, user_id, appointment_id, audience, message, is_read, created_at</span></div>
-          <div class="schema-card"><strong>inventory_logs</strong><span>id, item_type, item_id, quantity, action, admin_id</span></div>
-        </div>
-      </article>
-      </section>
     </section>
   </main>
 
   <script src="js/main.js?v=20260614b"></script>
-  <script src="js/admin.js?v=20260615"></script>
+  <script src="js/admin.js?v=20260616g"></script>
 </body>
 
 </html>

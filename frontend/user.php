@@ -197,8 +197,8 @@ $initialFirstName = preg_split('/\s+/', $sessionName)[0] ?? 'Patient';
 
   <div id="site-footer-root"></div>
   <script src="js/main.js?v=20260614b"></script>
-  <script src="js/notifications.js?v=20260614b"></script>
-  <script src="js/user.js?v=20260614h"></script>
+  <script src="js/notifications.js?v=20260615"></script>
+  <script src="js/user.js?v=20260615"></script>
   <script src="js/footer.js?v=20260608"></script>
 </body>
 </html>

@@ -27,6 +27,22 @@
     return (status || 'pending').replace('_', ' ');
   }
 
+  function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, character => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;',
+    })[character]);
+  }
+
+  function notificationReference(item) {
+    if (item.orderId) return `Order #${escapeHtml(item.orderId)}`;
+    if (item.appointmentId) return `Appointment #${escapeHtml(item.appointmentId)}`;
+    return 'General update';
+  }
+
   function showToastMessage(message) {
     if (typeof window.showToast === 'function') {
       window.showToast(message);
@@ -85,6 +101,7 @@
         userName: user.name,
         userEmail: user.email,
         appointmentId: item.appointment_id,
+        orderId: item.order_id,
         message: item.message,
         createdAt: item.created_at,
         read: Number(item.is_read) === 1 || allNotifications.some(local =>
@@ -161,8 +178,8 @@
     const updatesHtml = notifications.length
       ? notifications.map(item => `
         <div class="notify-item ${item.read ? '' : 'unread'}">
-          <div class="notify-message">${item.message}</div>
-          <div class="notify-meta">${item.createdAt || ''}</div>
+          <div class="notify-message">${escapeHtml(item.message)}</div>
+          <div class="notify-meta">${notificationReference(item)} &middot; ${escapeHtml(item.createdAt || '')}</div>
         </div>`).join('')
       : '<div class="notify-empty">No notifications yet.</div>';
 

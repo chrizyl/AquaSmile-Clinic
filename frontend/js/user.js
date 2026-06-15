@@ -276,7 +276,11 @@ function syncNotificationCache(notificationId = null) {
     const key = 'aqsmile_notifications';
     const cached = JSON.parse(localStorage.getItem(key) || '[]');
     cached.forEach(item => {
-      if (notificationId === null || String(item.id) === String(notificationId)) item.read = true;
+      const belongsToUser = String(item.userId || '') === String(accountData.user?.id || '')
+        || item.userEmail === accountData.user?.email;
+      if (belongsToUser && (notificationId === null || String(item.id) === String(notificationId))) {
+        item.read = true;
+      }
     });
     localStorage.setItem(key, JSON.stringify(cached));
   } catch (error) {
@@ -284,10 +288,16 @@ function syncNotificationCache(notificationId = null) {
   }
 }
 
+function notificationReference(item) {
+  if (item.order_id) return `Order #${item.order_id}`;
+  if (item.appointment_id) return `Appointment #${item.appointment_id}`;
+  return 'General update';
+}
+
 function renderNotifications() {
   const list = document.getElementById('notification-list');
   list.innerHTML = accountData.notifications.length
-    ? accountData.notifications.map(item => `<article class="notification-item ${item.is_read ? '' : 'unread'}"><div><div class="notification-message">${escapeHtml(item.message)}</div><div class="notification-meta">${escapeHtml(formatAccountDate(item.created_at,true))}</div></div><div class="notification-actions"><span class="read-badge ${item.is_read ? 'read' : 'unread'}">${item.is_read ? 'Read' : 'Unread'}</span>${item.is_read ? '' : `<button class="mark-read-btn" type="button" data-notification-id="${escapeHtml(item.id)}">Mark as Read</button>`}</div></article>`).join('')
+    ? accountData.notifications.map(item => `<article class="notification-item ${item.is_read ? '' : 'unread'}"><div><div class="notification-message">${escapeHtml(item.message)}</div><div class="notification-meta">${escapeHtml(notificationReference(item))} &middot; ${escapeHtml(formatAccountDate(item.created_at,true))}</div></div><div class="notification-actions"><span class="read-badge ${item.is_read ? 'read' : 'unread'}">${item.is_read ? 'Read' : 'Unread'}</span>${item.is_read ? '' : `<button class="mark-read-btn" type="button" data-notification-id="${escapeHtml(item.id)}">Mark as Read</button>`}</div></article>`).join('')
     : emptyState('No notifications yet.');
   updateNotificationCounts();
 }
@@ -317,7 +327,7 @@ function renderOverview() {
     ? `<div class="overview-detail"><strong>Order #${escapeHtml(latestOrder.id)} - ${escapeHtml(formatMoney(latestOrder.total))}</strong>${escapeHtml(formatAccountDate(latestOrder.created_at,true))}<br>${escapeHtml((latestOrder.payment_method || '').replaceAll('_',' ').toUpperCase())}<br><br>${statusBadge(latestOrder.status)}</div>`
     : emptyState('No orders found yet.');
   document.getElementById('recent-notification').innerHTML = latestNote
-    ? `<div class="overview-detail"><strong>${latestNote.is_read ? 'Read' : 'New notification'}</strong>${escapeHtml(latestNote.message)}<br><br>${escapeHtml(formatAccountDate(latestNote.created_at,true))}</div>`
+    ? `<div class="overview-detail"><strong>${latestNote.is_read ? 'Read' : 'New notification'}</strong>${escapeHtml(latestNote.message)}<br><br>${escapeHtml(notificationReference(latestNote))} &middot; ${escapeHtml(formatAccountDate(latestNote.created_at,true))}</div>`
     : emptyState('No notifications yet.');
 }
 
