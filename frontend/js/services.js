@@ -81,7 +81,7 @@ function renderServiceCards() {
   if (!grid) return;
 
   grid.innerHTML = SERVICES.map(s => {
-    const imgSrc   = SERVICE_IMAGES_PG[s.id] || 'images/services/placeholder.jpg';
+    const imgSrc   = s.imagePath || SERVICE_IMAGES_PG[s.id] || 'images/services/placeholder.jpg';
     const category = SVC_PAGE_CATEGORIES[s.id] || 'General';
 
     return `
@@ -118,7 +118,7 @@ function renderServiceCards() {
 
 function openServiceModal(sid) {
   const service  = SERVICES.find(s => s.id === sid);
-  const imgSrc   = SERVICE_IMAGES_PG[sid] || 'dental_logo.png';
+  const imgSrc   = service?.imagePath || SERVICE_IMAGES_PG[sid] || 'dental_logo.png';
   const category = SVC_PAGE_CATEGORIES[sid] || 'General';
 
   if (!service) return;

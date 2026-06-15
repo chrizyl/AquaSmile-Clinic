@@ -33,6 +33,11 @@ function json_response($payload, $status = 200)
 
 function request_json()
 {
+    $contentType = strtolower((string) ($_SERVER['CONTENT_TYPE'] ?? ''));
+    if (strpos($contentType, 'multipart/form-data') !== false) {
+        return $_POST ?: [];
+    }
+
     $raw = file_get_contents('php://input');
     if (!$raw) {
         return $_POST ?: [];

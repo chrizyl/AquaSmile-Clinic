@@ -332,9 +332,11 @@ function admin_add_product()
         json_response(['ok' => false, 'message' => implode(' ', $errors), 'errors' => $errors], 422);
     }
 
+    $imagePath = upload_catalog_image('products');
+
     execute_sql(
-        "INSERT INTO products (product_name, description, price, stock_quantity, status) VALUES (?, ?, ?, ?, 'available')",
-        [$name, $description, $price, $stock]
+        "INSERT INTO products (product_name, description, price, stock_quantity, image_path, status) VALUES (?, ?, ?, ?, ?, 'available')",
+        [$name, $description, $price, $stock, $imagePath]
     );
     $id  = (int)db()->lastInsertId();
     $row = fetch_one('SELECT * FROM products WHERE product_id = ?', [$id]);
@@ -358,13 +360,16 @@ function admin_edit_product()
     if ($errors) {
         json_response(['ok' => false, 'message' => implode(' ', $errors), 'errors' => $errors], 422);
     }
-    if (!fetch_one('SELECT product_id FROM products WHERE product_id = ?', [$id])) {
+    $existing = fetch_one('SELECT product_id, image_path FROM products WHERE product_id = ?', [$id]);
+    if (!$existing) {
         json_response(['ok' => false, 'message' => 'Product not found.'], 404);
     }
 
+    $imagePath = upload_catalog_image('products', $existing['image_path'] ?? null);
+
     execute_sql(
-        'UPDATE products SET product_name = ?, description = ?, price = ?, stock_quantity = ? WHERE product_id = ?',
-        [$name, $description, $price, $stock, $id]
+        'UPDATE products SET product_name = ?, description = ?, price = ?, stock_quantity = ?, image_path = ? WHERE product_id = ?',
+        [$name, $description, $price, $stock, $imagePath, $id]
     );
     $row = fetch_one('SELECT * FROM products WHERE product_id = ?', [$id]);
     json_response(['ok' => true, 'message' => 'Product updated successfully.', 'product' => normalize_product($row)]);
@@ -387,9 +392,11 @@ function admin_add_service()
         json_response(['ok' => false, 'message' => implode(' ', $errors), 'errors' => $errors], 422);
     }
 
+    $imagePath = upload_catalog_image('services');
+
     execute_sql(
-        "INSERT INTO services (service_name, description, price, category, daily_slots, status) VALUES (?, ?, ?, ?, ?, 'available')",
-        [$name, $description, $price, $category, $dailySlots]
+        "INSERT INTO services (service_name, description, price, category, daily_slots, image_path, status) VALUES (?, ?, ?, ?, ?, ?, 'available')",
+        [$name, $description, $price, $category, $dailySlots, $imagePath]
     );
     $id  = (int)db()->lastInsertId();
     $row = fetch_one('SELECT * FROM services WHERE service_id = ?', [$id]);
@@ -414,13 +421,16 @@ function admin_edit_service()
     if ($errors) {
         json_response(['ok' => false, 'message' => implode(' ', $errors), 'errors' => $errors], 422);
     }
-    if (!fetch_one('SELECT service_id FROM services WHERE service_id = ?', [$id])) {
+    $existing = fetch_one('SELECT service_id, image_path FROM services WHERE service_id = ?', [$id]);
+    if (!$existing) {
         json_response(['ok' => false, 'message' => 'Service not found.'], 404);
     }
 
+    $imagePath = upload_catalog_image('services', $existing['image_path'] ?? null);
+
     execute_sql(
-        'UPDATE services SET service_name = ?, description = ?, price = ?, category = ?, daily_slots = ? WHERE service_id = ?',
-        [$name, $description, $price, $category, $dailySlots, $id]
+        'UPDATE services SET service_name = ?, description = ?, price = ?, category = ?, daily_slots = ?, image_path = ? WHERE service_id = ?',
+        [$name, $description, $price, $category, $dailySlots, $imagePath, $id]
     );
     $row = fetch_one('SELECT * FROM services WHERE service_id = ?', [$id]);
     json_response(['ok' => true, 'message' => 'Service updated successfully.', 'service' => normalize_service($row)]);
@@ -442,9 +452,11 @@ function admin_add_dentist()
         json_response(['ok' => false, 'message' => implode(' ', $errors), 'errors' => $errors], 422);
     }
 
+    $imagePath = upload_catalog_image('dentists');
+
     execute_sql(
-        "INSERT INTO dentists (first_name, last_name, specialization, credentials, bio, status) VALUES (?, ?, ?, ?, ?, 'available')",
-        [$firstName, $lastName, $specialization, $credentials, $bio]
+        "INSERT INTO dentists (first_name, last_name, specialization, credentials, bio, image_path, status) VALUES (?, ?, ?, ?, ?, ?, 'available')",
+        [$firstName, $lastName, $specialization, $credentials, $bio, $imagePath]
     );
     $id  = (int)db()->lastInsertId();
     $row = fetch_one('SELECT * FROM dentists WHERE dentist_id = ?', [$id]);
@@ -468,13 +480,16 @@ function admin_edit_dentist()
     if ($errors) {
         json_response(['ok' => false, 'message' => implode(' ', $errors), 'errors' => $errors], 422);
     }
-    if (!fetch_one('SELECT dentist_id FROM dentists WHERE dentist_id = ?', [$id])) {
+    $existing = fetch_one('SELECT dentist_id, image_path FROM dentists WHERE dentist_id = ?', [$id]);
+    if (!$existing) {
         json_response(['ok' => false, 'message' => 'Dentist not found.'], 404);
     }
 
+    $imagePath = upload_catalog_image('dentists', $existing['image_path'] ?? null);
+
     execute_sql(
-        'UPDATE dentists SET first_name = ?, last_name = ?, specialization = ?, credentials = ?, bio = ? WHERE dentist_id = ?',
-        [$firstName, $lastName, $specialization, $credentials, $bio, $id]
+        'UPDATE dentists SET first_name = ?, last_name = ?, specialization = ?, credentials = ?, bio = ?, image_path = ? WHERE dentist_id = ?',
+        [$firstName, $lastName, $specialization, $credentials, $bio, $imagePath, $id]
     );
     $row = fetch_one('SELECT * FROM dentists WHERE dentist_id = ?', [$id]);
     json_response(['ok' => true, 'message' => 'Dentist updated successfully.', 'dentist' => normalize_dentist($row)]);
@@ -491,6 +506,60 @@ function dentist_name_parts($data)
     $fullName = preg_replace('/^Dr\.\s*/i', '', trim((string) ($data['name'] ?? '')));
     $parts = preg_split('/\s+/', $fullName, 2);
     return [trim((string) ($parts[0] ?? '')), trim((string) ($parts[1] ?? ''))];
+}
+
+function upload_catalog_image($folder, $existingPath = null)
+{
+    $file = $_FILES['image'] ?? null;
+    if (!$file || (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        $existingPath = trim((string) $existingPath);
+        return $existingPath === '' ? null : $existingPath;
+    }
+
+    if ((int) $file['error'] !== UPLOAD_ERR_OK) {
+        json_response(['ok' => false, 'message' => 'The image upload failed. Please try again.'], 422);
+    }
+    if ((int) ($file['size'] ?? 0) > 2 * 1024 * 1024) {
+        json_response(['ok' => false, 'message' => 'Image size must not exceed 2MB.'], 422);
+    }
+
+    $originalName = (string) ($file['name'] ?? '');
+    $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+    $allowedTypes = [
+        'jpg' => ['image/jpeg'],
+        'jpeg' => ['image/jpeg'],
+        'png' => ['image/png'],
+        'webp' => ['image/webp'],
+    ];
+    if (!isset($allowedTypes[$extension])) {
+        json_response(['ok' => false, 'message' => 'Only JPG, JPEG, PNG, and WEBP images are allowed.'], 422);
+    }
+
+    $mimeType = (new finfo(FILEINFO_MIME_TYPE))->file((string) $file['tmp_name']);
+    if (!in_array($mimeType, $allowedTypes[$extension], true)) {
+        json_response(['ok' => false, 'message' => 'The selected file is not a valid image.'], 422);
+    }
+
+    $uploadRoot = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'frontend' . DIRECTORY_SEPARATOR . 'images';
+    $uploadDirectory = $uploadRoot . DIRECTORY_SEPARATOR . $folder;
+    if (!is_dir($uploadDirectory) && !mkdir($uploadDirectory, 0775, true) && !is_dir($uploadDirectory)) {
+        throw new RuntimeException('Unable to create image upload directory.');
+    }
+
+    $baseName = pathinfo($originalName, PATHINFO_FILENAME);
+    $baseName = strtolower((string) preg_replace('/[^a-zA-Z0-9]+/', '-', $baseName));
+    $baseName = trim($baseName, '-');
+    if ($baseName === '') {
+        $baseName = 'image';
+    }
+
+    $fileName = $baseName . '-' . bin2hex(random_bytes(6)) . '.' . $extension;
+    $destination = $uploadDirectory . DIRECTORY_SEPARATOR . $fileName;
+    if (!move_uploaded_file((string) $file['tmp_name'], $destination)) {
+        throw new RuntimeException('Unable to save the uploaded image.');
+    }
+
+    return 'images/' . $folder . '/' . $fileName;
 }
 
 
@@ -546,6 +615,8 @@ function normalize_dentist($row)
 
     $firstName = trim((string) ($row['first_name'] ?? ''));
     $lastName = trim((string) ($row['last_name'] ?? ''));
+    $imagePath = trim((string) ($row['image_path'] ?? ''));
+    $photo = $imagePath !== '' ? $imagePath : ($photos[(int) $row['dentist_id']] ?? '');
 
     return [
         'id' => (string) $row['dentist_id'],
@@ -555,7 +626,8 @@ function normalize_dentist($row)
         'cred' => $row['credentials'] ?? '',
         'spec' => $row['specialization'] ?? '',
         'desc' => $row['bio'] ?? '',
-        'photo' => $photos[(int) $row['dentist_id']] ?? '',
+        'imagePath' => $imagePath,
+        'photo' => $photo,
         'status' => $row['status'] ?? 'available',
     ];
 }
@@ -574,13 +646,17 @@ function normalize_service($row)
         9 => 'images/pediatric check up.jpg',
     ];
 
+    $imagePath = trim((string) ($row['image_path'] ?? ''));
+    $photo = $imagePath !== '' ? $imagePath : ($photos[(int) $row['service_id']] ?? '');
+
     return [
         'id' => (string) $row['service_id'],
         'name' => $row['service_name'],
         'desc' => $row['description'] ?? '',
         'price' => 'PHP ' . number_format((float) $row['price'], 0),
         'rawPrice' => (float) $row['price'],
-        'photo' => $photos[(int) $row['service_id']] ?? '',
+        'imagePath' => $imagePath,
+        'photo' => $photo,
         'category' => $row['category'] ?? '',
         'dailySlots' => (int) ($row['daily_slots'] ?? 0),
         'status' => $row['status'] ?? 'available',
@@ -598,15 +674,21 @@ function normalize_product($row)
         6 => 'images/scraper set.jpg',
         7 => 'images/gum gel.png',
         8 => 'images/bamboo toothbrush.webp',
+        9 => 'images/elite flosser.jpg',
+        10 => 'images/enamel repair.jpg',
+        11 => 'images/charcoal kit.png',
+        12 => 'images/dental kit.jpg',
     ];
 
-    $photo = $photos[(int) $row['product_id']] ?? '';
+    $imagePath = trim((string) ($row['image_path'] ?? ''));
+    $photo = $imagePath !== '' ? $imagePath : ($photos[(int) $row['product_id']] ?? '');
 
     return [
         'id' => (string) $row['product_id'],
         'name' => $row['product_name'],
         'desc' => $row['description'] ?? '',
         'price' => (float) $row['price'],
+        'imagePath' => $imagePath,
         'photo' => $photo,
         'img' => $photo,
         'category' => '',
@@ -1401,11 +1483,12 @@ function cart_items()
     }
 
     $rows = fetch_all(
-        'SELECT ci.product_id, SUM(ci.quantity) AS quantity, MAX(ci.added_at) AS added_at, p.product_name AS name, p.price
+        'SELECT ci.product_id, SUM(ci.quantity) AS quantity, MAX(ci.added_at) AS added_at,
+                p.product_name AS name, p.price, p.image_path
          FROM cart_items ci
          JOIN products p ON p.product_id = ci.product_id
          WHERE ci.user_id = ?
-         GROUP BY ci.product_id, p.product_name, p.price
+         GROUP BY ci.product_id, p.product_name, p.price, p.image_path
          ORDER BY added_at DESC',
         [$userId]
     );

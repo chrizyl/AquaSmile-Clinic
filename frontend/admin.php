@@ -14,12 +14,13 @@ if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="images/AquaSmile_Logo.svg">
   <title>AquaSmile - Admin Dashboard</title>
   <link
     href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&amp;family=DM+Sans:wght@300;400;500&amp;display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="css/style.css?v=20260524">
-  <link rel="stylesheet" href="css/admin.css?v=20260616g">
+  <link rel="stylesheet" href="css/admin.css?v=20260616k">
 </head>
 
 <body class="admin-body">
@@ -28,7 +29,7 @@ if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
   <nav id="main-nav">
     <div class="nav-logo">
       <img src="images/AquaSmile_Logo.svg" alt="AquaSmile" class="nav-logo-img">
-      <span>AquaSmile Admin</span>
+      <span>AquaSmile</span>
     </div>
     <div class="nav-links" id="nav-links">
       <button class="nav-btn pill" onclick="logout()">Logout</button>
@@ -42,7 +43,7 @@ if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
       <button class="admin-side-link" type="button" data-view="appointments" onclick="showAdminView('appointments')">Appointments</button>
       <button class="admin-side-link" type="button" data-view="dentists" onclick="showAdminView('dentists')">Dentist Calendar</button>
       <button class="admin-side-link" type="button" data-view="orders" onclick="showAdminView('orders')">Orders</button>
-      <button class="admin-side-link" type="button" data-view="catalog" onclick="showAdminView('catalog')">Products &amp; Services</button>
+      <button class="admin-side-link" type="button" data-view="catalog" onclick="showAdminView('catalog')">Clinic Management</button>
       <button class="admin-side-link" type="button" data-view="users" onclick="showAdminView('users')">Users</button>
       <button class="admin-side-link" type="button" data-view="notifications" onclick="showAdminView('notifications')">
         Notifications <span class="admin-notify-badge" id="admin-notify-badge">0</span>
@@ -185,6 +186,7 @@ if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
             <div>
               <div class="section-label">Products</div>
               <h2>Product Inventory</h2>
+              <p class="catalog-panel-subtitle">Manage oral care products</p>
             </div>
             <button class="catalog-collapse-toggle" type="button" aria-expanded="false" aria-controls="products-grid-admin" onclick="toggleCatalogPanel(this)">
               <span>Show products</span>
@@ -199,6 +201,7 @@ if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
             <div>
               <div class="section-label">Services</div>
               <h2>Clinic Services</h2>
+              <p class="catalog-panel-subtitle">Manage available dental treatments</p>
             </div>
             <button class="catalog-collapse-toggle" type="button" aria-expanded="false" aria-controls="services-grid-admin" onclick="toggleCatalogPanel(this)">
               <span>Show services</span>
@@ -212,7 +215,8 @@ if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
           <div class="panel-head">
             <div>
               <div class="section-label">Dentists</div>
-              <h2>Dentist Records</h2>
+              <h2>Dentist Directory</h2>
+              <p class="catalog-panel-subtitle">Manage clinic specialists</p>
             </div>
             <button class="catalog-collapse-toggle" type="button" aria-expanded="false" aria-controls="dentist-list" onclick="toggleCatalogPanel(this)">
               <span>Show dentists</span>
@@ -254,7 +258,7 @@ if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
   </main>
 
   <script src="js/main.js?v=20260614b"></script>
-  <script src="js/admin.js?v=20260616i"></script>
+  <script src="js/admin.js?v=20260616l"></script>
 </body>
 
 </html>

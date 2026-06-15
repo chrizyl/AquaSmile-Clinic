@@ -29,8 +29,12 @@ function formatOrderAddress(order) {
 }
 
 async function adminApi(action, body = null) {
-  const opts = { method: body ? 'POST' : 'GET', headers: { 'Content-Type': 'application/json' } };
-  if (body) opts.body = JSON.stringify(body);
+  const isFormData = body instanceof FormData;
+  const opts = { method: body ? 'POST' : 'GET', headers: {} };
+  if (body) {
+    opts.body = isFormData ? body : JSON.stringify(body);
+    if (!isFormData) opts.headers['Content-Type'] = 'application/json';
+  }
   const res  = await fetch('../backend/api/index.php?action=' + action, opts);
   return res.json();
 }
@@ -629,6 +633,7 @@ function renderProductsGrid(products) {
 
   grid.innerHTML = filtered.map(p => `
     <div class="catalog-item ${p.status === 'archived' ? 'item-archived' : ''}">
+      ${catalogImagePreview(p.imagePath, p.name)}
       <div class="catalog-item-name">${esc(p.name)}</div>
       <div class="catalog-item-meta">PHP ${parseFloat(p.price).toLocaleString('en-PH', {minimumFractionDigits:2})} · Stock: ${p.stock}</div>
       <div class="catalog-item-status"><span class="status-pill pill-${p.status||'available'}">${statusLabel(p.status||'available')}</span></div>
@@ -657,6 +662,7 @@ function renderServicesGrid(services) {
 
   grid.innerHTML = filtered.map(s => `
     <div class="catalog-item ${s.status === 'archived' ? 'item-archived' : ''}">
+      ${catalogImagePreview(s.imagePath, s.name)}
       <div class="catalog-item-name">${esc(s.name)}</div>
       <div class="catalog-item-meta">${esc(s.price)} · ${s.dailySlots} slots/day · ${esc(s.category)}</div>
       <div class="catalog-item-status"><span class="status-pill pill-${s.status||'available'}">${statusLabel(s.status||'available')}</span></div>
@@ -685,6 +691,7 @@ function renderDentistList(dentists) {
 
   list.innerHTML = filtered.map(d => `
     <div class="dentist-card ${d.status === 'archived' ? 'item-archived' : ''}">
+      ${catalogImagePreview(d.imagePath, d.name)}
       <div class="dentist-card-name">${esc(d.name)}</div>
       <div class="dentist-card-spec">${esc(d.spec)} · ${esc(d.cred)}</div>
       <div class="catalog-item-status"><span class="status-pill pill-${d.status||'available'}">${statusLabel(d.status||'available')}</span></div>
@@ -707,6 +714,11 @@ function availabilityStatusOptions(current) {
   return ['available','unavailable']
     .map(s => `<option value="${s}" ${s === current ? 'selected' : ''}>${statusLabel(s)}</option>`)
     .join('');
+}
+
+function catalogImagePreview(imagePath, name) {
+  if (!imagePath) return '';
+  return `<img class="catalog-item-preview" src="${esc(imagePath)}" alt="${esc(name)} preview">`;
 }
 
 async function changeProductStatus(id, status, selectEl) {
@@ -838,11 +850,12 @@ function modalConfig(type, record) {
         { id:'description',   label:'Description',     type:'textarea', value: record?.desc       || '' },
         { id:'price',         label:'Price (PHP) *',   type:'number', value: record?.price        || '' },
         { id:'stock_quantity',label:'Stock Quantity',  type:'number', value: record?.stock        || 0  },
+        { id:'image',         label:'Product Image',   type:'file',   currentPreview: record?.imagePath || '' },
       ],
       onSave: async (vals) => {
         const action = isEdit ? 'admin_edit_product' : 'admin_add_product';
         if (isEdit) vals.id = record.id;
-        const d = await adminApi(action, vals);
+        const d = await adminApi(action, catalogFormData(vals));
         if (d.ok) {
           showToast(d.message);
           if (isEdit) {
@@ -868,11 +881,12 @@ function modalConfig(type, record) {
         { id:'price',       label:'Price (PHP) *',     type:'number',  value: record?.rawPrice || record?.price || '' },
         { id:'category',    label:'Category',          type:'text',    value: record?.category || '' },
         { id:'daily_slots', label:'Daily Slots',       type:'number',  value: record?.dailySlots || 8 },
+        { id:'image',       label:'Service Image',     type:'file',    currentPreview: record?.imagePath || '' },
       ],
       onSave: async (vals) => {
         const action = isEdit ? 'admin_edit_service' : 'admin_add_service';
         if (isEdit) vals.id = record.id;
-        const d = await adminApi(action, vals);
+        const d = await adminApi(action, catalogFormData(vals));
         if (d.ok) {
           showToast(d.message);
           if (isEdit) {
@@ -898,11 +912,12 @@ function modalConfig(type, record) {
         { id:'specialization', label:'Specialization',   type:'text',    value: record?.spec  || '' },
         { id:'credentials',    label:'Credentials',      type:'text',    value: record?.cred  || '' },
         { id:'bio',            label:'Bio / Description',type:'textarea',value: record?.desc  || '' },
+        { id:'image',          label:'Dentist Image',    type:'file',    currentPreview: record?.imagePath || '' },
       ],
       onSave: async (vals) => {
         const action = isEdit ? 'admin_edit_dentist' : 'admin_add_dentist';
         if (isEdit) vals.id = record.id;
-        const d = await adminApi(action, vals);
+        const d = await adminApi(action, catalogFormData(vals));
         if (d.ok) {
           showToast(d.message);
           if (isEdit) {
@@ -924,26 +939,60 @@ function modalConfig(type, record) {
 
 function openModal(title, fields, onSave) {
   removeModal();
+  const modalCopy = catalogModalCopy(title);
+  const detailFields = fields.filter(f => f.type !== 'file');
+  const imageFields = fields.filter(f => f.type === 'file');
   const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
+  overlay.className = 'modal-overlay catalog-modal-overlay';
   overlay.id = 'admin-modal';
   overlay.onclick = (e) => { if (e.target === overlay) removeModal(); };
 
   overlay.innerHTML = `
-    <div class="modal-box" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+    <div class="modal-box catalog-form-modal" role="dialog" aria-modal="true" aria-label="${esc(title)}">
       <div class="modal-head">
-        <h3>${esc(title)}</h3>
+        <div class="modal-title-copy">
+          <h3>${esc(title)}</h3>
+          <p>${esc(modalCopy.subtitle)}</p>
+        </div>
         <button class="modal-close" onclick="removeModal()" aria-label="Close">&#x2715;</button>
       </div>
       <div class="modal-body">
         <form id="admin-modal-form" onsubmit="return false">
-          ${fields.map(f => `
-            <div class="form-group">
-              <label for="mf-${f.id}">${esc(f.label)}</label>
-              ${f.type === 'textarea'
-                ? `<textarea id="mf-${f.id}" name="${f.id}" rows="3">${esc(f.value)}</textarea>`
-                : `<input id="mf-${f.id}" name="${f.id}" type="${f.type}" value="${esc(String(f.value))}">`}
-            </div>`).join('')}
+          <section class="catalog-modal-section catalog-details-section">
+            <div class="catalog-section-head">
+              <span>${esc(modalCopy.detailsTitle)}</span>
+              <small>Complete the information below.</small>
+            </div>
+            <div class="catalog-fields-grid">
+              ${detailFields.map(f => `
+                <div class="form-group catalog-field ${f.type === 'textarea' || f.id === 'name' ? 'catalog-field-wide' : ''}">
+                  <label for="mf-${f.id}">${esc(f.label)}</label>
+                  ${f.type === 'textarea'
+                    ? `<textarea id="mf-${f.id}" name="${f.id}" rows="3">${esc(f.value)}</textarea>`
+                    : `<input id="mf-${f.id}" name="${f.id}" type="${f.type}" value="${esc(String(f.value))}">`}
+                </div>`).join('')}
+            </div>
+          </section>
+          ${imageFields.map(f => `
+            <section class="catalog-modal-section catalog-image-section">
+              <div class="catalog-section-head">
+                <span>${esc(f.label)}</span>
+                <small>Add a polished image for this profile.</small>
+              </div>
+              <div class="image-upload-layout">
+                <div class="image-upload-preview ${f.currentPreview ? 'has-image' : ''}" id="preview-${f.id}">
+                  ${f.currentPreview ? `<img src="${esc(f.currentPreview)}" alt="Current image preview">` : imagePreviewEmptyState()}
+                </div>
+                <div class="image-upload-controls">
+                  <input class="image-file-input" id="mf-${f.id}" name="${f.id}" type="file" accept=".jpg,.jpeg,.png,.webp">
+                  <label class="image-upload-button" for="mf-${f.id}">Choose Image</label>
+                  <small class="image-upload-help">
+                    <span>JPG, JPEG, PNG, or WEBP</span>
+                    <span>Maximum 2MB</span>
+                  </small>
+                </div>
+              </div>
+            </section>`).join('')}
           <div class="modal-err" id="modal-err"></div>
         </form>
       </div>
@@ -955,6 +1004,13 @@ function openModal(title, fields, onSave) {
 
   document.body.appendChild(overlay);
 
+  fields.filter(f => f.type === 'file').forEach(f => {
+    const input = document.getElementById(`mf-${f.id}`);
+    input.addEventListener('change', () => {
+      updateImagePreview(input, document.getElementById(`preview-${f.id}`), f.currentPreview || '');
+    });
+  });
+
   document.getElementById('modal-save-btn').addEventListener('click', async () => {
     const form = document.getElementById('admin-modal-form');
     const vals = {};
@@ -964,8 +1020,8 @@ function openModal(title, fields, onSave) {
 
     fields.forEach(f => {
       const el = form.elements[f.id];
-      const val = el ? el.value.trim() : '';
-      vals[f.id] = f.type === 'number' ? parseFloat(val) || 0 : val;
+      const val = f.type === 'file' ? '' : (el ? el.value.trim() : '');
+      vals[f.id] = f.type === 'file' ? (el.files[0] || null) : (f.type === 'number' ? parseFloat(val) || 0 : val);
       if (f.label.includes('*') && val === '') {
         errEl.textContent = f.label.replace(' *','') + ' is required.';
         valid = false;
@@ -982,6 +1038,83 @@ function openModal(title, fields, onSave) {
   });
 
   requestAnimationFrame(() => overlay.classList.add('modal-visible'));
+}
+
+function catalogModalCopy(title) {
+  const isEdit = title.startsWith('Edit');
+  const entity = title.includes('Product') ? 'Product' : title.includes('Service') ? 'Service' : 'Dentist';
+  const descriptions = {
+    Product: isEdit
+      ? 'Update the information and image of this product.'
+      : 'Add a new product to the AquaSmile shop.',
+    Service: isEdit
+      ? 'Update the information and image of this service.'
+      : 'Create a new dental service for the clinic.',
+    Dentist: isEdit
+      ? 'Update the information and image of this dentist profile.'
+      : 'Create a new dentist profile for the clinic.',
+  };
+  return {
+    subtitle: descriptions[entity],
+    detailsTitle: entity + ' Details',
+  };
+}
+
+function catalogFormData(values) {
+  const formData = new FormData();
+  Object.entries(values).forEach(([key, value]) => {
+    if (value instanceof File) formData.append(key, value);
+    else if (value !== null && value !== undefined) formData.append(key, String(value));
+  });
+  return formData;
+}
+
+function updateImagePreview(input, preview, currentPreview = '') {
+  const file = input.files[0];
+  if (!file) return;
+
+  const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+  const extension = file.name.split('.').pop().toLowerCase();
+  const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
+  if (!allowedExtensions.includes(extension) || !allowedMimeTypes.includes(file.type)) {
+    input.value = '';
+    restoreImagePreview(preview, currentPreview);
+    showToast('Only JPG, JPEG, PNG, and WEBP images are allowed.', false);
+    return;
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    input.value = '';
+    restoreImagePreview(preview, currentPreview);
+    showToast('Image size must not exceed 2MB.', false);
+    return;
+  }
+
+  const previewUrl = URL.createObjectURL(file);
+  preview.classList.add('has-image');
+  preview.innerHTML = `<img src="${previewUrl}" alt="Selected image preview">`;
+  preview.querySelector('img').addEventListener('load', () => URL.revokeObjectURL(previewUrl), { once: true });
+}
+
+function restoreImagePreview(preview, currentPreview) {
+  preview.classList.toggle('has-image', !!currentPreview);
+  preview.innerHTML = currentPreview
+    ? `<img src="${esc(currentPreview)}" alt="Current image preview">`
+    : imagePreviewEmptyState();
+}
+
+function imagePreviewEmptyState() {
+  return `
+    <div class="image-preview-empty">
+      <span class="image-preview-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="4" width="18" height="16" rx="3"></rect>
+          <circle cx="8.5" cy="9" r="1.5"></circle>
+          <path d="m5 17 4.5-4.5 3 3 2-2L19 17"></path>
+        </svg>
+      </span>
+      <strong>No image selected</strong>
+      <small>Upload JPG, PNG, or WEBP</small>
+    </div>`;
 }
 
 function removeModal() {

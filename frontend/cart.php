@@ -13,6 +13,7 @@ if (isAdmin()) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="images/AquaSmile_Logo.svg">
   <title>AquaSmile — Cart</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/cart.css?v=20260523">
@@ -225,7 +226,7 @@ if (isAdmin()) {
         id: String(item.product_id),
         name: item.name || product?.name || 'Product',
         price: Number(item.price || product?.price || 0),
-        img: product?.img || '',
+        img: item.image_path || product?.img || '',
         qty: Number(item.quantity || 1),
       };
     }));

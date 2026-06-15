@@ -124,7 +124,7 @@ function renderBookingServices() {
     >
       <div class="booking-service-img-wrap">
         <img
-          src="${SERVICE_IMAGES[s.id] || 'images/icons/service.png'}"
+          src="${s.imagePath || SERVICE_IMAGES[s.id] || 'images/icons/service.png'}"
           alt="${s.name}"
           class="booking-service-img"
           onerror="this.style.opacity='0'"
@@ -287,7 +287,7 @@ function renderDentistAvailability() {
     const busy     = bookedDentistIds.includes(d.id);
     const selected = booking.dentist === d.id;
     const action   = !busy ? `onclick="selectDentist('${d.id}')"` : '';
-    const avatarSrc = DENTIST_AVATARS[d.id] || 'images/icons/user.png';
+    const avatarSrc = d.imagePath || DENTIST_AVATARS[d.id] || 'images/icons/user.png';
 
     return `
       <div class="avail-dentist ${busy ? 'unavail' : ''} ${selected ? 'selected-d' : ''}" ${action}>
@@ -385,10 +385,10 @@ async function confirmBooking() {
     userContact:  user.contact,
     serviceId:    booking.service,
     serviceName:  svc.name,
-    serviceImg:   SERVICE_IMAGES[booking.service] || 'images/icons/service.png',
+    serviceImg:   svc.imagePath || SERVICE_IMAGES[booking.service] || 'images/icons/service.png',
     dentistId:    booking.dentist,
     dentistName:  dent.name,
-    dentistImg:   DENTIST_AVATARS[booking.dentist] || 'images/icons/user.png',
+    dentistImg:   dent.imagePath || DENTIST_AVATARS[booking.dentist] || 'images/icons/user.png',
     date:         booking.date,
     time:         booking.time,
     notes:        notes,

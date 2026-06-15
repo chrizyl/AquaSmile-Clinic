@@ -48,7 +48,7 @@ function renderDentistCards() {
   if (!grid) return;
 
   grid.innerHTML = DENTISTS.map(d => {
-    const imgSrc = DENTIST_IMAGES[d.id] || 'images/dentists/placeholder.jpg';
+    const imgSrc = d.imagePath || DENTIST_IMAGES[d.id] || 'images/dentists/placeholder.jpg';
 
     return `
       <div class="dentist-card-full">
@@ -80,7 +80,7 @@ function renderDentistCards() {
 function openDentistModal(did) {
   const dentist  = DENTISTS.find(d => d.id === did);
   const details  = DENTIST_DETAILS[did] || DENTIST_DETAILS['D' + did] || DENTIST_DETAILS.D1;
-  const imgSrc   = DENTIST_IMAGES[did] || 'images/dentists/placeholder.jpg';
+  const imgSrc   = dentist?.imagePath || DENTIST_IMAGES[did] || 'images/dentists/placeholder.jpg';
 
   if (!dentist) return;
 
