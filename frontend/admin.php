@@ -1,11 +1,10 @@
 <?php
 
-session_start();
+require_once 'includes/session-init.php';
+require_once 'includes/admin-check.php';
+no_cache_headers();
 
-if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
-    header('Location: login.php');
-    exit;
-}
+requireAdminPage();
 
 ?>
 <!DOCTYPE html>

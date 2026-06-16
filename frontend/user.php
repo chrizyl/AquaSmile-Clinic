@@ -1,11 +1,11 @@
 <?php
 require_once 'includes/session-init.php';
+require_once 'includes/admin-check.php';
 require_once 'includes/navbar-auth.php';
 
-if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') === 'admin') {
-    header('Location: login.php');
-    exit;
-}
+no_cache_headers();
+
+requirePatientPage();
 
 $sessionName = trim((string) ($_SESSION['user_name'] ?? 'Patient'));
 $initialFirstName = preg_split('/\s+/', $sessionName)[0] ?? 'Patient';

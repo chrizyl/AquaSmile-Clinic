@@ -1,28 +1,31 @@
 <?php
 
-// Initialize session for admin restriction checking
+// Initialize PHP session before any authentication checks or navbar rendering.
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
-// If using cookies, sync to session (bridge from the client-side login state).
-if (!isset($_SESSION['role']) && isset($_COOKIE['aqsmile_currentUser'])) {
-    $user = json_decode($_COOKIE['aqsmile_currentUser'], true);
-    if (isset($user['role'])) {
-        $_SESSION['role'] = $user['role'];
-        $_SESSION['user_id'] = $user['id'] ?? null;
-        $_SESSION['user_email'] = $user['email'] ?? null;
-        $_SESSION['user_name'] = $user['name'] ?? null;
-    }
+function no_cache_headers()
+{
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    header('Cache-Control: post-check=0, pre-check=0', false);
+    header('Pragma: no-cache');
+    header('Expires: Thu, 01 Jan 1970 00:00:00 GMT');
 }
 
-// Alternative: If you have a database connection, you can also fetch from DB
-// $user_id = $_SESSION['user_id'] ?? null;
-// if ($user_id) {
-//     $user = fetch_one('SELECT role FROM users WHERE user_id = ?', [$user_id]);
-//     if ($user) {
-//         $_SESSION['role'] = $user['role'];
-//     }
-// }
+function session_is_logged_in()
+{
+    return !empty($_SESSION['user_id']);
+}
+
+function session_is_admin()
+{
+    return session_is_logged_in() && ($_SESSION['role'] ?? '') === 'admin';
+}
+
+function session_is_patient()
+{
+    return session_is_logged_in() && ($_SESSION['role'] ?? '') !== 'admin';
+}
 
 ?>

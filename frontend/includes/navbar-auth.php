@@ -1,8 +1,6 @@
 <?php
 
-if (session_status() !== PHP_SESSION_ACTIVE) {
-    session_start();
-}
+require_once __DIR__ . '/session-init.php';
 
 function nav_user_name()
 {
@@ -23,7 +21,7 @@ function nav_user_initials()
 
 function nav_is_patient()
 {
-    return !empty($_SESSION['user_id']) && ($_SESSION['role'] ?? 'patient') !== 'admin';
+    return session_is_patient();
 }
 
 function render_nav_auth()
@@ -51,7 +49,7 @@ function render_nav_auth()
         return;
     }
 
-    if (!empty($_SESSION['user_id'])) {
+    if (session_is_admin()) {
         $name = htmlspecialchars(nav_user_name(), ENT_QUOTES, 'UTF-8');
         ?>
         <span id="nav-auth-state" data-authenticated="admin" hidden></span>

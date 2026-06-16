@@ -523,8 +523,7 @@ if (isAdmin()) {
     localStorage.removeItem('aqCart');          // clear products page cart
     cart = [];                                  // reset in-memory cart
     updateBadges();                             // reset badge to 
-    showToast('You have been signed out.');
-    setTimeout(() => { window.location.href = 'index.php'; }, 500);
+    window.location.href = 'logout.php';
   }
 
   function productCategoryFromName(name) {

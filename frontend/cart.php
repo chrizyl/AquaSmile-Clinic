@@ -3,10 +3,9 @@ require_once 'includes/session-init.php';
 include 'includes/admin-check.php';
 require_once 'includes/navbar-auth.php';
 
-if (isAdmin()) {
-    header('Location: admin.php');
-    exit;
-}
+no_cache_headers();
+
+requirePatientPage();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -512,8 +511,7 @@ if (isAdmin()) {
     Cookie.remove('currentUser');
     Cookie.remove('currentAdmin');
     localStorage.removeItem('aqCart');
-    showToast('You have been signed out.');
-    setTimeout(() => { window.location.href = 'index.php'; }, 500);
+    window.location.href = 'logout.php';
   }
 
   updateNav();

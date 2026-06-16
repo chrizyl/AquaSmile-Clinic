@@ -28,7 +28,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
-$sessionWriteActions = ['login', 'verify_registration_otp', 'update_profile'];
+$sessionWriteActions = ['login', 'verify_registration_otp', 'update_profile', 'logout'];
 if (!in_array($action, $sessionWriteActions, true) && session_status() === PHP_SESSION_ACTIVE) {
     session_write_close();
 }
@@ -55,6 +55,9 @@ try {
             break;
         case 'login':
             login_user();
+            break;
+        case 'logout':
+            logout_user();
             break;
         case 'appointments':
             appointments();
@@ -606,6 +609,23 @@ function require_patient()
     }
 
     return (int) $_SESSION['user_id'];
+}
+
+function logout_user()
+{
+    $_SESSION = [];
+
+    if (ini_get('session.use_cookies')) {
+        $params = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 42000, $params['path'], $params['domain'], $params['secure'], $params['httponly']);
+    }
+
+    session_destroy();
+
+    setcookie('aqsmile_currentUser', '', time() - 3600, '/');
+    setcookie('aqsmile_currentAdmin', '', time() - 3600, '/');
+
+    json_response(['ok' => true]);
 }
 
 function normalize_dentist($row)

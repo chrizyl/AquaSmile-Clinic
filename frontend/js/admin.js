@@ -1312,7 +1312,11 @@ function formatDate(dateStr) {
 }
 
 function logout() {
-  fetch('../backend/api/index.php?action=logout').finally(() => { window.location.href = 'login.php'; });
+  Cookie.remove('currentUser');
+  Cookie.remove('currentAdmin');
+  sessionStorage.removeItem('aqsmile_cart');
+  localStorage.removeItem('aqsmile_cart');
+  window.location.href = 'logout.php';
 }
 
 document.addEventListener('DOMContentLoaded', () => {

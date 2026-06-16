@@ -1,5 +1,7 @@
 let accountData = { user: null, appointments: [], orders: [], notifications: [] };
 let profileSnapshot = null;
+let selectedAppointmentId = null;
+let selectedOrderId = null;
 
 function accountMessage(message) {
   if (typeof showToast === 'function') showToast(message);
@@ -103,6 +105,10 @@ function formatDeliveryAddress(order) {
   ].map(part => String(part || '').trim()).filter(Boolean).join(', ') || '-';
 }
 
+function formatPaymentMethod(value) {
+  return (value || 'Not specified').replaceAll('_',' ').toUpperCase();
+}
+
 function statusBadge(status) {
   const allowed = ['pending','confirmed','completed','cancelled','archived','processing','out_for_delivery','delivered'];
   const safe = allowed.includes(status) ? status : 'pending';
@@ -111,6 +117,11 @@ function statusBadge(status) {
 
 function emptyState(message) {
   return `<div class="empty-history">${escapeHtml(message)}</div>`;
+}
+
+function detailRow(label, value, allowHtml = false) {
+  const content = allowHtml ? value : escapeHtml(value || '-');
+  return `<div class="detail-row"><span>${escapeHtml(label)}</span><strong>${content}</strong></div>`;
 }
 
 function switchSection(section) {
@@ -154,46 +165,109 @@ function renderProfile(user) {
 
 function renderAppointments() {
   document.getElementById('appointment-count').textContent = accountData.appointments.length;
+  if (!selectedAppointmentId || !accountData.appointments.some(item => String(item.id) === String(selectedAppointmentId))) {
+    selectedAppointmentId = accountData.appointments[0]?.id || null;
+  }
+
+  const selected = accountData.appointments.find(item => String(item.id) === String(selectedAppointmentId));
   document.getElementById('appointment-list').innerHTML = accountData.appointments.length
-    ? accountData.appointments.map(item => `
-        <article class="history-item">
-          <div>
-            <div class="history-title">${escapeHtml(item.serviceName || 'Dental Service')}</div>
-            <div class="history-meta">
-              ${escapeHtml(formatAccountDate(item.date))} at ${escapeHtml(formatAppointmentTime(item.time))}<br>
-              ${escapeHtml(item.dentistName || 'Dentist to be assigned')}
-            </div>
-          </div>
-          <div class="history-side">
-            ${statusBadge(item.status)}
-            <button class="history-action-btn" type="button" data-appointment-details="${escapeHtml(item.id)}">View Details</button>
-            ${item.status === 'pending'
-              ? `<button class="history-action-btn cancel" type="button" data-cancel-appointment="${escapeHtml(item.id)}">Cancel Appointment</button>`
-              : ''}
-          </div>
-        </article>`).join('')
+    ? `
+      <div class="history-master-detail">
+        <div class="history-master-list" aria-label="Appointment list">
+          ${accountData.appointments.map(item => `
+            <article class="history-list-card ${String(item.id) === String(selectedAppointmentId) ? 'selected' : ''}" role="button" tabindex="0" data-select-appointment="${escapeHtml(item.id)}">
+              <div class="history-list-top">
+                <div class="history-title">${escapeHtml(item.serviceName || 'Dental Service')}</div>
+                ${statusBadge(item.status)}
+              </div>
+              <div class="history-meta">${escapeHtml(formatAccountDate(item.date))} at ${escapeHtml(formatAppointmentTime(item.time))}</div>
+              <div class="history-meta">${escapeHtml(item.dentistName || 'Dentist to be assigned')}</div>
+            </article>`).join('')}
+        </div>
+        ${renderAppointmentPreview(selected)}
+      </div>`
     : emptyState('No appointments found yet.');
+}
+
+function renderAppointmentPreview(appointment) {
+  if (!appointment) return '';
+  const cancelledDetails = appointment.status === 'cancelled'
+    ? `${appointment.cancellationReason ? detailRow('Cancellation Reason', appointment.cancellationReason) : ''}${appointment.cancelledBy ? detailRow('Cancelled By', appointment.cancelledBy) : ''}`
+    : '';
+
+  return `
+    <aside class="history-detail-panel" aria-live="polite">
+      <div class="history-detail-head">
+        <span class="card-kicker">Appointment #${escapeHtml(appointment.id)}</span>
+        ${statusBadge(appointment.status)}
+      </div>
+      <h3>${escapeHtml(appointment.serviceName || 'Dental Service')}</h3>
+      <div class="history-detail-grid">
+        ${detailRow('Dentist', appointment.dentistName || 'Dentist to be assigned')}
+        ${detailRow('Date', formatAccountDate(appointment.date))}
+        ${detailRow('Time', formatAppointmentTime(appointment.time))}
+        ${detailRow('Status', statusBadge(appointment.status), true)}
+        ${detailRow('Notes', appointment.notes || 'None')}
+        ${cancelledDetails}
+      </div>
+      <div class="history-detail-actions">
+        <button class="history-action-btn" type="button" data-appointment-details="${escapeHtml(appointment.id)}">View Details</button>
+        ${appointment.status === 'pending'
+          ? `<button class="history-action-btn cancel" type="button" data-cancel-appointment="${escapeHtml(appointment.id)}">Cancel Appointment</button>`
+          : ''}
+      </div>
+    </aside>`;
 }
 
 function renderOrders() {
   document.getElementById('order-count').textContent = accountData.orders.length;
+  if (!selectedOrderId || !accountData.orders.some(item => String(item.id) === String(selectedOrderId))) {
+    selectedOrderId = accountData.orders[0]?.id || null;
+  }
+
+  const selected = accountData.orders.find(item => String(item.id) === String(selectedOrderId));
   document.getElementById('order-list').innerHTML = accountData.orders.length
-    ? accountData.orders.map(item => `
-        <article class="history-item">
-          <div>
-            <div class="history-title">Order #${escapeHtml(item.id)}</div>
-            <div class="history-meta">
-              ${escapeHtml(formatAccountDate(item.created_at,true))}<br>
-              ${escapeHtml((item.payment_method || 'Not specified').replaceAll('_',' ').toUpperCase())}
-            </div>
-          </div>
-          <div class="history-side">
-            <div class="history-amount">${escapeHtml(formatMoney(item.total))}</div>
-            ${statusBadge(item.status)}
-            <button class="history-action-btn" type="button" data-order-details="${escapeHtml(item.id)}">View Details</button>
-          </div>
-        </article>`).join('')
+    ? `
+      <div class="history-master-detail">
+        <div class="history-master-list" aria-label="Order list">
+          ${accountData.orders.map(item => `
+            <article class="history-list-card ${String(item.id) === String(selectedOrderId) ? 'selected' : ''}" role="button" tabindex="0" data-select-order="${escapeHtml(item.id)}">
+              <div class="history-list-top">
+                <div class="history-title">Order #${escapeHtml(item.id)}</div>
+                ${statusBadge(item.status)}
+              </div>
+              <div class="history-meta">${escapeHtml(formatAccountDate(item.created_at,true))}</div>
+              <div class="history-list-bottom">
+                <span>${escapeHtml(formatPaymentMethod(item.payment_method))}</span>
+                <strong>${escapeHtml(formatMoney(item.total))}</strong>
+              </div>
+            </article>`).join('')}
+        </div>
+        ${renderOrderPreview(selected)}
+      </div>`
     : emptyState('No orders found yet.');
+}
+
+function renderOrderPreview(order) {
+  if (!order) return '';
+  return `
+    <aside class="history-detail-panel order-preview-panel" aria-live="polite">
+      <div class="history-detail-head">
+        <span class="card-kicker">Order #${escapeHtml(order.id)}</span>
+        ${statusBadge(order.status)}
+      </div>
+      <h3>${escapeHtml(formatMoney(order.total))}</h3>
+      <div class="history-detail-grid">
+        ${detailRow('Order Date', formatAccountDate(order.created_at,true))}
+        ${detailRow('Payment Method', formatPaymentMethod(order.payment_method))}
+        ${detailRow('Status', statusBadge(order.status), true)}
+        ${detailRow('Total Amount', `<span class="detail-total">${escapeHtml(formatMoney(order.total))}</span>`, true)}
+        ${detailRow('Delivery Address', formatDeliveryAddress(order))}
+      </div>
+      <div class="history-detail-actions">
+        <button class="history-action-btn" type="button" data-order-details="${escapeHtml(order.id)}">View Details</button>
+      </div>
+    </aside>`;
 }
 
 function openModal(id) {
@@ -252,7 +326,7 @@ function openOrderDetails(orderId) {
   document.getElementById('order-detail-content').innerHTML = `
     <div class="order-info-grid">
       <div class="order-info"><span>Order Date</span><strong>${escapeHtml(formatAccountDate(order.created_at,true))}</strong></div>
-      <div class="order-info"><span>Payment Method</span><strong>${escapeHtml((order.payment_method || 'Not specified').replaceAll('_',' ').toUpperCase())}</strong></div>
+      <div class="order-info"><span>Payment Method</span><strong>${escapeHtml(formatPaymentMethod(order.payment_method))}</strong></div>
       <div class="order-info"><span>Status</span><strong>${statusBadge(order.status)}</strong></div>
       <div class="order-info"><span>Total Amount</span><strong>${escapeHtml(formatMoney(order.total))}</strong></div>
       <div class="order-info"><span>Delivery Address</span><strong>${escapeHtml(formatDeliveryAddress(order))}</strong></div>
@@ -416,7 +490,7 @@ function renderOverview() {
     ? `<div class="overview-detail"><strong>${escapeHtml(next.serviceName || 'Dental Service')}</strong>${escapeHtml(formatAccountDate(next.date))} at ${escapeHtml(formatAppointmentTime(next.time))}<br>${escapeHtml(next.dentistName || 'Dentist to be assigned')}<br><br>${statusBadge(next.status)}</div>`
     : emptyState('No upcoming appointments.');
   document.getElementById('latest-order').innerHTML = latestOrder
-    ? `<div class="overview-detail"><strong>Order #${escapeHtml(latestOrder.id)} - ${escapeHtml(formatMoney(latestOrder.total))}</strong>${escapeHtml(formatAccountDate(latestOrder.created_at,true))}<br>${escapeHtml((latestOrder.payment_method || '').replaceAll('_',' ').toUpperCase())}<br><br>${statusBadge(latestOrder.status)}</div>`
+    ? `<div class="overview-detail"><strong>Order #${escapeHtml(latestOrder.id)} - ${escapeHtml(formatMoney(latestOrder.total))}</strong>${escapeHtml(formatAccountDate(latestOrder.created_at,true))}<br>${escapeHtml(formatPaymentMethod(latestOrder.payment_method))}<br><br>${statusBadge(latestOrder.status)}</div>`
     : emptyState('No orders found yet.');
   document.getElementById('recent-notification').innerHTML = latestNote
     ? `<div class="overview-detail"><strong>${latestNote.is_read ? 'Read' : 'New notification'}</strong>${escapeHtml(latestNote.message)}<br><br>${escapeHtml(notificationReference(latestNote))} &middot; ${escapeHtml(formatAccountDate(latestNote.created_at,true))}</div>`
@@ -485,12 +559,46 @@ document.getElementById('appointment-list').addEventListener('click', event => {
     return;
   }
   const cancelButton = event.target.closest('[data-cancel-appointment]');
-  if (cancelButton) openCancellationModal(cancelButton.dataset.cancelAppointment);
+  if (cancelButton) {
+    openCancellationModal(cancelButton.dataset.cancelAppointment);
+    return;
+  }
+  const selected = event.target.closest('[data-select-appointment]');
+  if (selected) {
+    selectedAppointmentId = selected.dataset.selectAppointment;
+    renderAppointments();
+  }
+});
+
+document.getElementById('appointment-list').addEventListener('keydown', event => {
+  if (!['Enter', ' '].includes(event.key)) return;
+  const selected = event.target.closest('[data-select-appointment]');
+  if (!selected) return;
+  event.preventDefault();
+  selectedAppointmentId = selected.dataset.selectAppointment;
+  renderAppointments();
 });
 
 document.getElementById('order-list').addEventListener('click', event => {
   const button = event.target.closest('[data-order-details]');
-  if (button) openOrderDetails(button.dataset.orderDetails);
+  if (button) {
+    openOrderDetails(button.dataset.orderDetails);
+    return;
+  }
+  const selected = event.target.closest('[data-select-order]');
+  if (selected) {
+    selectedOrderId = selected.dataset.selectOrder;
+    renderOrders();
+  }
+});
+
+document.getElementById('order-list').addEventListener('keydown', event => {
+  if (!['Enter', ' '].includes(event.key)) return;
+  const selected = event.target.closest('[data-select-order]');
+  if (!selected) return;
+  event.preventDefault();
+  selectedOrderId = selected.dataset.selectOrder;
+  renderOrders();
 });
 
 document.querySelectorAll('[data-close-modal]').forEach(button => {
