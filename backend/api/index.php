@@ -613,6 +613,7 @@ function require_patient()
 
 function logout_user()
 {
+    unset($_SESSION['guest_cart'], $_SESSION['cart'], $_SESSION['cart_user_id']);
     $_SESSION = [];
 
     if (ini_get('session.use_cookies')) {
@@ -1518,10 +1519,7 @@ function update_stock()
 
 function cart_items()
 {
-    $userId = (int) ($_GET['user_id'] ?? 0);
-    if ($userId <= 0) {
-        json_response(['ok' => false, 'message' => 'User is required.'], 422);
-    }
+    $userId = require_patient();
 
     $rows = fetch_all(
         'SELECT ci.product_id, SUM(ci.quantity) AS quantity, MAX(ci.added_at) AS added_at,
@@ -1538,17 +1536,13 @@ function cart_items()
 
 function save_cart_item()
 {
+    $userId = require_patient();
     $data = request_json();
-    $userId = (int) ($data['userId'] ?? 0);
     $productId = (int) ($data['productId'] ?? 0);
     $quantity = max(0, (int) ($data['quantity'] ?? 1));
 
-    if ($userId <= 0 || $productId <= 0) {
+    if ($productId <= 0) {
         json_response(['ok' => false, 'message' => 'Invalid cart item details.'], 422);
-    }
-
-    if (!fetch_one('SELECT user_id FROM users WHERE user_id = ?', [$userId])) {
-        json_response(['ok' => false, 'message' => 'User not found. Please log in again.'], 422);
     }
 
     if (!fetch_one('SELECT product_id FROM products WHERE product_id = ?', [$productId])) {
@@ -1569,11 +1563,11 @@ function save_cart_item()
 
 function remove_cart_item()
 {
+    $userId = require_patient();
     $data = request_json();
-    $userId = (int) ($data['userId'] ?? 0);
     $productId = (int) ($data['productId'] ?? 0);
 
-    if ($userId <= 0 || $productId <= 0) {
+    if ($productId <= 0) {
         json_response(['ok' => false, 'message' => 'Invalid cart item details.'], 422);
     }
 
@@ -1583,9 +1577,9 @@ function remove_cart_item()
 
 function create_order()
 {
+    $userId = require_patient();
     $data = request_json();
     $items = $data['items'] ?? [];
-    $userId = (int) ($data['userId'] ?? 0);
     $total = (float) ($data['total'] ?? 0);
     $firstName = trim($data['first_name'] ?? '');
     $lastName = trim($data['last_name'] ?? '');

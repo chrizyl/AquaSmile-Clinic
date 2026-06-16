@@ -1003,8 +1003,8 @@ requirePatientPage();
       this.value = this.value.replace(/[^0-9]/g, '');
     });
 
-    /* ── CART DATA (from localStorage, same key as cart.php) ── */
-    const checkoutCart = JSON.parse(localStorage.getItem('aqCart') || '[]');
+    /* ── CART DATA (loaded from the logged-in user's server cart) ── */
+    let checkoutCart = [];
 
     /* ── LOGIN + EMPTY CART GUARD ── */
     (function() {
@@ -1012,11 +1012,56 @@ requirePatientPage();
         window.location.href = 'login.php';
         return;
       }
+    })();
+
+    function normalizeProductId(pid) {
+      const text = String(pid || '');
+      const match = text.match(/^P?(\d+)$/i);
+      return match ? match[1] : text;
+    }
+
+    function currentUserCartCacheKey() {
+      const user = Cookie.get('currentUser');
+      return user ? 'aqCart_user_' + user.id : null;
+    }
+
+    async function loadCheckoutCart() {
+      try {
+        const response = await fetch(new URL('../backend/api/index.php', window.location.href).pathname + '?action=cart_items', { cache: 'no-store' });
+        const payload = await response.json();
+        if (!response.ok || !payload.ok) throw new Error(payload.message || 'Cart load failed.');
+
+        checkoutCart = (payload.cartItems || []).map(item => ({
+          id: String(item.product_id),
+          name: item.name || 'Product',
+          price: Number(item.price || 0),
+          img: item.image_path || '',
+          qty: Number(item.quantity || 1),
+        }));
+
+        const key = currentUserCartCacheKey();
+        if (key) localStorage.setItem(key, JSON.stringify(checkoutCart));
+      } catch (err) {
+        console.warn('Checkout cart load failed:', err.message);
+        const key = currentUserCartCacheKey();
+        try { checkoutCart = key ? JSON.parse(localStorage.getItem(key) || '[]') : []; }
+        catch { checkoutCart = []; }
+      }
+
+      checkoutCart = checkoutCart.map(item => ({
+        ...item,
+        id: normalizeProductId(item.id),
+        qty: Math.max(1, Number(item.qty || 1)),
+        price: Number(item.price || 0),
+      }));
+
       if (!checkoutCart.length) {
         window.location.href = 'cart.php';
-        return;
+        return false;
       }
-    })();
+
+      return true;
+    }
 
     async function autofillCheckoutProfile() {
       try {
@@ -1043,8 +1088,6 @@ requirePatientPage();
         console.warn('Unable to auto-fill checkout profile:', err.message);
       }
     }
-
-    autofillCheckoutProfile();
 
     /* ── RENDER ORDER SUMMARY SIDEBAR ── */
     function renderOrderSummary() {
@@ -1090,7 +1133,14 @@ requirePatientPage();
         </div>`;
     }
 
-    renderOrderSummary();
+    async function initCheckout() {
+      const hasCart = await loadCheckoutCart();
+      if (!hasCart) return;
+      renderOrderSummary();
+      autofillCheckoutProfile();
+    }
+
+    initCheckout();
 
     function collectFormData() {
       const firstName = document.getElementById('first-name').value.trim();
@@ -1189,9 +1239,7 @@ requirePatientPage();
       const formData = collectFormData();
       if (!formData) return;
       try {
-        const currentUser = Cookie.get('currentUser');
         await apiRequest('create_order', {
-          userId: currentUser ? currentUser.id : null,
           first_name: formData.first_name,
           last_name: formData.last_name,
           email: formData.email,
@@ -1224,8 +1272,11 @@ requirePatientPage();
       const overlay = document.getElementById('success-popup');
       const bar     = document.getElementById('progress-bar');
 
-      /* ── CART RESET ── Clear cart using the key defined in cart.html */
-      try { localStorage.removeItem('aqCart'); } catch(e) {}
+      try {
+        localStorage.removeItem('aqCart');
+        const key = currentUserCartCacheKey();
+        if (key) localStorage.removeItem(key);
+      } catch(e) {}
 
       overlay.classList.add('show');
 

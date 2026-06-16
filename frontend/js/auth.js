@@ -97,6 +97,8 @@ async function verifyRegistrationOtp(event) {
 
     Cookie.remove('currentUser');
     Cookie.remove('currentAdmin');
+    localStorage.removeItem('aqCart');
+    sessionStorage.removeItem('aqGuestCart');
     if (user) {
       Cookie.set('currentUser', user, 60 / 1440);
     }
@@ -188,6 +190,8 @@ async function login(event) {
 
     Cookie.remove('currentUser');
     Cookie.remove('currentAdmin');
+    localStorage.removeItem('aqCart');
+    sessionStorage.removeItem('aqGuestCart');
     if (user.role === 'admin') {
       Cookie.set('currentAdmin', user, 60 / 1440);
     } else {

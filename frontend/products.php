@@ -214,8 +214,7 @@ if (isAdmin()) {
     new Product({ id:'P12', name:'Travel Dental Kit',        price:329,  category:'accessories', desc:'Compact travel set with foldable brush, mini paste, and floss picks.',           img:'images/dental kit.jpg' }),
   ];
 
-  /* Rehydrate cart from localStorage as CartItem instances */
-  let cart = normalizeCartItems(JSON.parse(localStorage.getItem('aqCart') || '[]'));
+  let cart = [];
   let activeCategory = 'all', activeSort = 'default';
   const pendingCartAdds = new Set();
 
@@ -242,10 +241,41 @@ if (isAdmin()) {
     return [...merged.values()];
   }
 
-  function saveCart() { localStorage.setItem('aqCart', JSON.stringify(cart.map(i => i.toObject()))); updateBadges(); }
+  function getCurrentUser() {
+    return Cookie.get('currentUser');
+  }
+
+  function cartStorage() {
+    const user = getCurrentUser();
+    return user
+      ? { store: localStorage, key: 'aqCart_user_' + user.id }
+      : { store: sessionStorage, key: 'aqGuestCart' };
+  }
+
+  function readStoredCart() {
+    const target = cartStorage();
+    try { return JSON.parse(target.store.getItem(target.key) || '[]'); }
+    catch { return []; }
+  }
+
+  function writeStoredCart(items) {
+    const target = cartStorage();
+    target.store.setItem(target.key, JSON.stringify(items));
+  }
+
+  function clearSharedCartDisplayKeys() {
+    localStorage.removeItem('aqCart');
+    localStorage.removeItem('aqsmile_cart');
+    sessionStorage.removeItem('aqsmile_cart');
+  }
+
+  function saveCart() {
+    writeStoredCart(cart.map(i => i.toObject()));
+    updateBadges();
+  }
 
   async function syncCartItemToDatabase(pid, quantity) {
-    const user = Cookie.get('currentUser');
+    const user = getCurrentUser();
     if (!user) return;
 
     await fetch(new URL('../backend/api/index.php', window.location.href).pathname + '?action=save_cart_item', {
@@ -253,7 +283,6 @@ if (isAdmin()) {
       headers: { 'Content-Type': 'application/json' },
       cache: 'no-store',
       body: JSON.stringify({
-        userId: user.id,
         productId: normalizeProductId(pid),
         quantity
       }),
@@ -265,7 +294,7 @@ if (isAdmin()) {
   }
 
   async function removeCartItemFromDatabase(pid) {
-    const user = Cookie.get('currentUser');
+    const user = getCurrentUser();
     if (!user) return;
 
     await fetch(new URL('../backend/api/index.php', window.location.href).pathname + '?action=remove_cart_item', {
@@ -273,7 +302,6 @@ if (isAdmin()) {
       headers: { 'Content-Type': 'application/json' },
       cache: 'no-store',
       body: JSON.stringify({
-        userId: user.id,
         productId: normalizeProductId(pid)
       }),
     }).then(async response => {
@@ -372,11 +400,13 @@ if (isAdmin()) {
       return;
     }
 
-    if (pendingCartAdds.has(pid)) return;
-    const p = PRODUCTS.find(x=>x.id===pid); if (!p) return;
-    pendingCartAdds.add(pid);
-    const ex = cart.find(i=>i.id===pid);
+    const normalizedId = normalizeProductId(pid);
+    if (pendingCartAdds.has(normalizedId)) return;
+    const p = PRODUCTS.find(x => normalizeProductId(x.id) === normalizedId); if (!p) return;
+    pendingCartAdds.add(normalizedId);
+    const ex = cart.find(i => String(i.id) === normalizedId);
     const previousQty = ex ? ex.qty : 0;
+    const previous = cart.map(item => item.toObject());
 
     try {
       if (ex) { ex.increment(); } else { cart.push(new CartItem({ ...p.toObject(), id: normalizeProductId(p.id) })); }
@@ -390,11 +420,12 @@ if (isAdmin()) {
       showToast(p.name+' added to cart');
     } catch (err) {
       console.warn('Cart save failed:', err.message);
-      cart = normalizeCartItems(JSON.parse(localStorage.getItem('aqCart') || '[]'));
+      cart = normalizeCartItems(previous);
+      saveCart();
       renderCartDrawer();
       showToast(err.message || 'Cart was not saved to the database.');
     } finally {
-      pendingCartAdds.delete(pid);
+      pendingCartAdds.delete(normalizedId);
     }
   }
 
@@ -520,7 +551,8 @@ if (isAdmin()) {
     Cookie.remove('currentUser');
     Cookie.remove('currentAdmin');
     sessionStorage.removeItem('aqsmile_cart'); // kiniclear ang session
-    localStorage.removeItem('aqCart');          // clear products page cart
+    sessionStorage.removeItem('aqGuestCart');
+    clearSharedCartDisplayKeys();
     cart = [];                                  // reset in-memory cart
     updateBadges();                             // reset badge to 
     window.location.href = 'logout.php';
@@ -564,12 +596,16 @@ if (isAdmin()) {
   }
 
   async function syncCartFromDatabase() {
-    const user = Cookie.get('currentUser');
-    if (!user) return;
+    const user = getCurrentUser();
+    if (!user) {
+      cart = normalizeCartItems(readStoredCart());
+      saveCart();
+      return;
+    }
 
     try {
       const apiBase = new URL('../backend/api/index.php', window.location.href).pathname;
-      const response = await fetch(apiBase + '?action=cart_items&user_id=' + encodeURIComponent(user.id), { cache: 'no-store' });
+      const response = await fetch(apiBase + '?action=cart_items', { cache: 'no-store' });
       const data = await response.json();
       if (!response.ok || !data.ok) throw new Error(data.message || 'Cart load failed.');
 
@@ -591,6 +627,8 @@ if (isAdmin()) {
   }
 
   async function initProductsPage() {
+    clearSharedCartDisplayKeys();
+    cart = normalizeCartItems(readStoredCart());
     await syncProductsFromDatabase();
     await syncCartFromDatabase();
     applyFiltersAndSort();

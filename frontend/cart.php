@@ -147,7 +147,7 @@ requirePatientPage();
 
   const CAT_LABELS = {electric:'Electric Tools',paste:'Toothpaste',floss:'Floss & Rinse',whitening:'Whitening',accessories:'Accessories'};
 
-  let cart = normalizeCartItems(JSON.parse(localStorage.getItem('aqCart') || '[]'));
+  let cart = [];
   let promoApplied = false;
   const pendingCartUpdates = new Set();
 
@@ -172,10 +172,19 @@ requirePatientPage();
     return [...merged.values()];
   }
 
-  function saveCart() { localStorage.setItem('aqCart', JSON.stringify(cart)); }
-
   function getCurrentUser() {
     return Cookie.get('currentUser');
+  }
+
+  function cartCacheKey() {
+    const user = getCurrentUser();
+    return user ? 'aqCart_user_' + user.id : null;
+  }
+
+  function saveCart() {
+    const key = cartCacheKey();
+    if (key) localStorage.setItem(key, JSON.stringify(cart));
+    localStorage.removeItem('aqCart');
   }
 
   async function apiPost(action, data) {
@@ -194,7 +203,6 @@ requirePatientPage();
     const user = getCurrentUser();
     if (!user) return;
     await apiPost('save_cart_item', {
-      userId: user.id,
       productId: normalizeProductId(pid),
       quantity
     });
@@ -204,7 +212,6 @@ requirePatientPage();
     const user = getCurrentUser();
     if (!user) return;
     await apiPost('remove_cart_item', {
-      userId: user.id,
       productId: normalizeProductId(pid)
     });
   }
@@ -213,7 +220,7 @@ requirePatientPage();
     const user = getCurrentUser();
     if (!user) return;
 
-    const response = await fetch(new URL('../backend/api/index.php', window.location.href).pathname + '?action=cart_items&user_id=' + encodeURIComponent(user.id), {
+    const response = await fetch(new URL('../backend/api/index.php', window.location.href).pathname + '?action=cart_items', {
       cache: 'no-store'
     });
     const payload = await response.json();
@@ -400,7 +407,10 @@ requirePatientPage();
       showToast(p.name+' added to cart');
     } catch (err) {
       console.warn('Cart add failed:', err.message);
-      cart = normalizeCartItems(JSON.parse(localStorage.getItem('aqCart') || '[]'));
+      cart = ex
+        ? cart.map(item => item.id === normalizedId ? { ...item, qty: previousQty } : item)
+        : cart.filter(item => item.id !== normalizedId);
+      saveCart();
       render();
       showToast(err.message || 'Cart add failed.');
     } finally {
@@ -460,14 +470,19 @@ requirePatientPage();
     }
   })();
 
+  localStorage.removeItem('aqCart');
+
   loadCartFromDatabase().catch(err => {
-    console.warn('Using local cart fallback:', err.message);
+    console.warn('Cart load failed:', err.message);
+    const key = cartCacheKey();
+    try { cart = normalizeCartItems(key ? JSON.parse(localStorage.getItem(key) || '[]') : []); }
+    catch { cart = []; }
   }).finally(() => {
     render();
   });
 
   window.addEventListener('storage', function(e) {
-    if (e.key === 'aqCart' && (e.newValue === null || e.newValue === '[]')) {
+    if (e.key === cartCacheKey() && (e.newValue === null || e.newValue === '[]')) {
       cart = [];
       promoApplied = false;
       render();
@@ -476,9 +491,10 @@ requirePatientPage();
 
 
   window.addEventListener('pageshow', function(e) {
-    cart = normalizeCartItems(JSON.parse(localStorage.getItem('aqCart') || '[]'));
     promoApplied = false;
-    render();
+    loadCartFromDatabase().catch(err => {
+      console.warn('Cart refresh failed:', err.message);
+    }).finally(render);
   });
 
   /* ── AUTH NAV ── */
@@ -511,6 +527,7 @@ requirePatientPage();
     Cookie.remove('currentUser');
     Cookie.remove('currentAdmin');
     localStorage.removeItem('aqCart');
+    sessionStorage.removeItem('aqGuestCart');
     window.location.href = 'logout.php';
   }
 

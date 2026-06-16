@@ -1315,7 +1315,9 @@ function logout() {
   Cookie.remove('currentUser');
   Cookie.remove('currentAdmin');
   sessionStorage.removeItem('aqsmile_cart');
+  sessionStorage.removeItem('aqGuestCart');
   localStorage.removeItem('aqsmile_cart');
+  localStorage.removeItem('aqCart');
   window.location.href = 'logout.php';
 }
 

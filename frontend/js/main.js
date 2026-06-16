@@ -232,7 +232,9 @@ function logout() {
   Cookie.remove('currentUser');
   Cookie.remove('currentAdmin');
   Session.remove('cart');              
+  sessionStorage.removeItem('aqGuestCart');
   localStorage.removeItem('aqsmile_cart');
+  localStorage.removeItem('aqCart');
   window.location.href = 'logout.php';
 }
 
