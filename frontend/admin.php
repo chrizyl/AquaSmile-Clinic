@@ -82,7 +82,7 @@ requireAdminPage();
         <article class="admin-stat-card">
           <span class="stat-kicker">Revenue</span>
           <strong id="stat-revenue">PHP 0</strong>
-          <small>sample order total</small>
+          <small>order total</small>
         </article>
       </section>
 
