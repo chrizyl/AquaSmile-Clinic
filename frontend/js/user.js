@@ -3,6 +3,21 @@ let profileSnapshot = null;
 let selectedAppointmentId = null;
 let selectedOrderId = null;
 
+const LETTERS_ONLY_PATTERN = /^[A-Za-z' -]+$/;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function sanitizeLettersOnly(value) {
+  return String(value || '').replace(/[^A-Za-z' -]/g, '');
+}
+
+function sanitizeDigitsOnly(value) {
+  return String(value || '').replace(/[^0-9]/g, '');
+}
+
+function sanitizeHouseNumber(value) {
+  return String(value || '').replace(/[^0-9/]/g, '');
+}
+
 function accountMessage(message) {
   if (typeof showToast === 'function') showToast(message);
 }
@@ -20,7 +35,7 @@ function setProfileMessage(messages = [], type = 'error') {
 
 function validateProfile(payload) {
   const errors = [];
-  const mobilePattern = /^09\d{9}$/;
+  const mobilePattern = /^\d{11}$/;
   const addressLimits = {
     house_no: ['House No.', 50],
     street: ['Street', 150],
@@ -31,11 +46,16 @@ function validateProfile(payload) {
   };
 
   if (!payload.first_name) errors.push('First name is required.');
+  else if (!LETTERS_ONLY_PATTERN.test(payload.first_name)) errors.push('Only letters are allowed.');
   if (!payload.last_name) errors.push('Last name is required.');
+  else if (!LETTERS_ONLY_PATTERN.test(payload.last_name)) errors.push('Only letters are allowed.');
   if (!payload.phone) {
     errors.push('Phone number is required.');
   } else if (!mobilePattern.test(payload.phone)) {
-    errors.push('Phone number must start with 09 and contain exactly 11 digits.');
+    errors.push('Please enter a valid 11-digit phone number.');
+  }
+  if (payload.email && !EMAIL_PATTERN.test(payload.email)) {
+    errors.push('Please enter a valid email address.');
   }
   if (payload.birthdate) {
     const birthdate = new Date(`${payload.birthdate}T00:00:00`);
@@ -54,8 +74,11 @@ function validateProfile(payload) {
   if (payload.zip_code && !/^\d+$/.test(payload.zip_code)) {
     errors.push('ZIP Code must contain numbers only.');
   }
+  if (payload.house_no && !/^[0-9/]+$/.test(payload.house_no)) {
+    errors.push('House number may contain numbers and slash only.');
+  }
   if (payload.emergency_contact_number && !mobilePattern.test(payload.emergency_contact_number)) {
-    errors.push('Emergency contact number must start with 09 and contain exactly 11 digits.');
+    errors.push('Please enter a valid 11-digit phone number.');
   }
 
   return errors;
@@ -705,5 +728,26 @@ document.getElementById('password-form').addEventListener('submit', async event 
   } catch (error) { accountMessage(error.errors?.join(' ') || error.message); }
   finally { button.disabled = false; }
 });
+
+['profile-first-name', 'profile-last-name'].forEach(id => {
+  const input = document.getElementById(id);
+  if (input) input.addEventListener('input', event => {
+    event.target.value = sanitizeLettersOnly(event.target.value);
+  });
+});
+
+['profile-phone', 'profile-emergency-number'].forEach(id => {
+  const input = document.getElementById(id);
+  if (input) input.addEventListener('input', event => {
+    event.target.value = sanitizeDigitsOnly(event.target.value).slice(0, 11);
+  });
+});
+
+const profileHouseNoInput = document.getElementById('profile-house-no');
+if (profileHouseNoInput) {
+  profileHouseNoInput.addEventListener('input', event => {
+    event.target.value = sanitizeHouseNumber(event.target.value);
+  });
+}
 
 loadAccount();

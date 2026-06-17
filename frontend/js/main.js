@@ -379,6 +379,32 @@ function renderNotificationCenter() {
   renderNotificationPanel();
 }
 
+function setupMobileNav() {
+  const nav = document.getElementById('main-nav') || document.querySelector('nav');
+  const navLinks = nav?.querySelector('.nav-links');
+  if (!nav || !navLinks || nav.querySelector('.nav-menu-toggle')) return;
+
+  const toggle = document.createElement('button');
+  toggle.className = 'nav-menu-toggle';
+  toggle.type = 'button';
+  toggle.setAttribute('aria-label', 'Toggle navigation menu');
+  toggle.setAttribute('aria-expanded', 'false');
+  toggle.innerHTML = '<span></span><span></span><span></span>';
+  nav.insertBefore(toggle, navLinks);
+
+  toggle.addEventListener('click', () => {
+    const open = navLinks.classList.toggle('open');
+    toggle.setAttribute('aria-expanded', String(open));
+  });
+
+  navLinks.addEventListener('click', event => {
+    if (event.target.closest('button, a')) {
+      navLinks.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+    }
+  });
+}
+
 function toggleNotifications() {
   const panel = document.getElementById('notify-panel');
   if (!panel) return;
@@ -1105,6 +1131,7 @@ async function init() {
   await syncCatalogFromDatabase();
   await loadHomepageCoupons();
   updateNav();
+  setupMobileNav();
   notifyCurrentUser();
   renderHomeDentists();
   renderHomeServices();
@@ -1112,5 +1139,7 @@ async function init() {
   renderClinicStats();
   renderDailyTip(getRandomTip());
 }
+
+document.addEventListener('DOMContentLoaded', setupMobileNav);
 
 init();

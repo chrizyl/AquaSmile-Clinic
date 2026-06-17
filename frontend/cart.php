@@ -24,7 +24,7 @@ requirePatientPage();
 <div class="toast" id="toast"></div>
 
 <!-- NAV -->
-<nav>
+<nav id="main-nav">
   <div class="nav-logo">
     <img src="images/AquaSmile_Logo.svg" alt="AquaSmile" class="nav-logo-img" />
     <span>AquaSmile</span>
@@ -59,7 +59,7 @@ requirePatientPage();
       <div class="cart-items-header">
         <label class="cart-select-all">
           <input type="checkbox" id="select-all-items" onchange="toggleSelectAll(this.checked)" checked>
-          <span>Items</span>
+          <span>Select Items</span>
         </label>
         <div style="display:flex;align-items:center;gap:16px;">
           <span class="cart-items-count" id="items-count"></span>
@@ -76,13 +76,6 @@ requirePatientPage();
     <!-- RIGHT: SUMMARY -->
     <div class="glass-card summary-card" id="summary-card">
       <div class="summary-title">Order Summary</div>
-
-      <!-- Promo -->
-      <div class="promo-row" hidden>
-        <input class="promo-input" id="promo-input" type="text" placeholder="Promo code">
-        <button class="btn-apply" onclick="applyPromo()">Apply</button>
-      </div>
-      <div class="promo-success" id="promo-success">✓ Code <strong id="promo-code-used"></strong> applied — 10% off!</div>
 
       <div class="summary-rows" id="summary-rows"></div>
 
@@ -141,10 +134,10 @@ requirePatientPage();
     { id:'P5',  name:'Teeth Whitening Strips',   price:899,  category:'whitening',   img:'images/whitening strips.jpg',   desc:'14-day whitening kit, up to 7 shades.' },
     { id:'P6',  name:'Tongue Scraper Set',       price:249,  category:'accessories', img:'images/scraper set.jpg',        desc:'Stainless steel scrapers for fresher breath.' },
     { id:'P7',  name:'Sensitive Gum Gel',        price:399,  category:'paste',       img:'images/gum gel.png',            desc:'Soothing gel for gum sensitivity.' },
-    { id:'P8',  name:'Natural Bamboo Brush Set', price:549,  category:'accessories', img:'images/bamboo_toothbrush.webp', desc:'4-pack biodegradable bamboo toothbrushes.' },
+    { id:'P8',  name:'Natural Bamboo Brush Set', price:549,  category:'accessories', img:'images/bamboo toothbrush.webp', desc:'4-pack biodegradable bamboo toothbrushes.' },
     { id:'P9',  name:'Water Flosser Elite',      price:1899, category:'electric',    img:'images/elite flosser.jpg',      desc:'Cordless flosser with 10 pressure settings.' },
     { id:'P10', name:'Enamel Repair Paste',      price:449,  category:'paste',       img:'images/enamel repair.jpg',      desc:'Re-mineralizes and strengthens tooth enamel.' },
-    { id:'P11', name:'Charcoal Whitening Kit',   price:749,  category:'whitening',   img:'images/charcoal_kit.png',       desc:'Charcoal powder with LED tray.' },
+    { id:'P11', name:'Charcoal Whitening Kit',   price:749,  category:'whitening',   img:'images/charcoal kit.png',       desc:'Charcoal powder with LED tray.' },
     { id:'P12', name:'Travel Dental Kit',        price:329,  category:'accessories', img:'images/dental kit.jpg',         desc:'Compact travel set with brush, mini paste & floss.' },
   ];
 
@@ -158,6 +151,18 @@ requirePatientPage();
     const text = String(pid || '');
     const match = text.match(/^P?(\d+)$/i);
     return match ? match[1] : text;
+  }
+
+  function cartImageHtml(src, alt) {
+    const imageMap = {
+      'images/bamboo_toothbrush.webp': 'images/bamboo toothbrush.webp',
+      'images/charcoal_kit.png': 'images/charcoal kit.png',
+    };
+    const rawSrc = String(src || '').trim();
+    const safeSrc = imageMap[rawSrc] || rawSrc;
+    const safeAlt = String(alt || 'Product').replace(/"/g, '&quot;');
+    if (!safeSrc) return SVG.img;
+    return `<img src="${safeSrc}" alt="${safeAlt}" loading="lazy" onerror="this.onerror=null;this.remove();this.parentElement.insertAdjacentHTML('beforeend', SVG.img);">`;
   }
 
   function normalizeCartItems(items) {
@@ -314,15 +319,16 @@ requirePatientPage();
     count.textContent = `${total} item${total!==1?'s':''}`;
 
     list.innerHTML = cart.map(item => {
-      const product = ALL_PRODUCTS.find(p=>p.id===item.id);
+      const product = ALL_PRODUCTS.find(p=>normalizeProductId(p.id)===normalizeProductId(item.id));
       const cat = product ? CAT_LABELS[product.category] || '' : '';
+      const img = item.img || product?.img || '';
       return `
       <div class="cart-item" id="ci-${item.id}">
         <label class="cart-item-select">
           <input type="checkbox" ${selectedItemIds.has(String(item.id)) ? 'checked' : ''} onchange="toggleCartItemSelection('${item.id}', this.checked)">
         </label>
         <div class="cart-item-thumb">
-          ${item.img ? `<img src="${item.img}" alt="${item.name}">` : SVG.img}
+          ${cartImageHtml(img, item.name)}
         </div>
         <div class="cart-item-info">
           <div class="cart-item-category">${cat}</div>
@@ -361,7 +367,7 @@ requirePatientPage();
     if (!recs.length) { document.getElementById('rec-section').style.display='none'; return; }
     grid.innerHTML = recs.map(p=>`
       <div class="rec-card">
-        <div class="rec-thumb">${p.img ? `<img src="${p.img}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">` : SVG.img}</div>
+        <div class="rec-thumb">${cartImageHtml(p.img, p.name)}</div>
         <div class="rec-body">
           <div class="rec-cat">${CAT_LABELS[p.category]||p.category}</div>
           <div class="rec-name">${p.name}</div>
@@ -459,10 +465,6 @@ requirePatientPage();
     } finally {
       pendingCartUpdates.delete(normalizedId);
     }
-  }
-
-  function applyPromo() {
-    showToast('Promo codes can be applied during checkout.');
   }
 
   function checkout() {

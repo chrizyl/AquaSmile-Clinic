@@ -10,6 +10,21 @@ let _selectedOrderId = null;
 let _adminRouteHandled = false;
 const SERVICE_CATEGORY_OPTIONS = ['Preventive', 'Diagnostic', 'Restorative', 'Cosmetic', 'Orthodontic'];
 const PRODUCT_CATEGORY_OPTIONS = ['Electric Tools', 'Toothpaste', 'Floss & Rinse', 'Whitening', 'Accessories'];
+const LETTERS_ONLY_PATTERN = /^[A-Za-z' -]+$/;
+
+function sanitizeLettersOnly(value) {
+  return String(value || '').replace(/[^A-Za-z' -]/g, '');
+}
+
+function sanitizeDigitsOnly(value) {
+  return String(value || '').replace(/[^0-9]/g, '');
+}
+
+function sanitizeDecimalNumber(value) {
+  const cleaned = String(value || '').replace(/[^0-9.]/g, '');
+  const parts = cleaned.split('.');
+  return parts.length > 1 ? parts.shift() + '.' + parts.join('') : cleaned;
+}
 
 function showToast(msg, ok = true) {
   const t = document.getElementById('toast');
@@ -1072,7 +1087,7 @@ function openCouponModal(coupon) {
             </div>
             <div class="form-group">
               <label for="coupon-discount-value">Discount Value *</label>
-              <input id="coupon-discount-value" name="discount_value" type="number" min="0" step="0.01" value="${esc(coupon?.discount_value || coupon?.discountValue || '')}">
+              <input id="coupon-discount-value" name="discount_value" type="number" min="0.01" step="0.01" inputmode="decimal" value="${esc(coupon?.discount_value || coupon?.discountValue || '')}">
             </div>
           </div>
           <div class="form-row">
@@ -1095,6 +1110,12 @@ function openCouponModal(coupon) {
     </div>`;
 
   document.body.appendChild(overlay);
+  const discountInput = document.getElementById('coupon-discount-value');
+  if (discountInput) {
+    discountInput.addEventListener('input', () => {
+      discountInput.value = sanitizeDecimalNumber(discountInput.value);
+    });
+  }
   document.getElementById('coupon-save-btn').addEventListener('click', () => saveCoupon(coupon));
   requestAnimationFrame(() => overlay.classList.add('modal-visible'));
 }
@@ -1119,6 +1140,10 @@ async function saveCoupon(coupon) {
 
   if (!payload.title || !payload.coupon_code || !payload.discount_value) {
     err.textContent = 'Title, code, and discount value are required.';
+    return;
+  }
+  if (!/^\d+(\.\d+)?$/.test(payload.discount_value) || Number(payload.discount_value) <= 0) {
+    err.textContent = 'Discount value must be greater than zero.';
     return;
   }
   if (coupon) payload.id = coupon.id;
@@ -1462,8 +1487,8 @@ function modalConfig(type, record) {
         { id:'name',          label:'Product Name *',  type:'text',   value: record?.name        || '' },
         { id:'description',   label:'Description',     type:'textarea', value: record?.desc       || '' },
         { id:'category',      label:'Category *',      type:'select', value: record?.category     || '', options: PRODUCT_CATEGORY_OPTIONS },
-        { id:'price',         label:'Price (PHP) *',   type:'number', value: record?.price        || '' },
-        { id:'stock_quantity',label:'Stock Quantity',  type:'number', value: record?.stock        || 0  },
+        { id:'price',         label:'Price (PHP) *',   type:'number', value: record?.price        || '', inputmode:'decimal', min:'0.01', step:'0.01' },
+        { id:'stock_quantity',label:'Stock Quantity',  type:'number', value: record?.stock        || 0, inputmode:'numeric', min:'0', step:'1', digitsOnly:true },
         { id:'image',         label:'Product Image',   type:'file',   currentPreview: record?.imagePath || '' },
       ],
       onSave: async (vals) => {
@@ -1492,7 +1517,7 @@ function modalConfig(type, record) {
       fields: [
         { id:'name',        label:'Service Name *',    type:'text',    value: record?.name     || '' },
         { id:'description', label:'Description',       type:'textarea',value: record?.desc      || '' },
-        { id:'price',       label:'Price (PHP) *',     type:'number',  value: record?.rawPrice || record?.price || '' },
+        { id:'price',       label:'Price (PHP) *',     type:'number',  value: record?.rawPrice || record?.price || '', inputmode:'decimal', min:'0.01', step:'0.01' },
         { id:'category',    label:'Category',          type:'select',  value: record?.category || '', options: SERVICE_CATEGORY_OPTIONS },
         { id:'daily_slots', label:'Daily Slots',       type:'number',  value: record?.dailySlots || 8 },
         { id:'image',       label:'Service Image',     type:'file',    currentPreview: record?.imagePath || '' },
@@ -1521,14 +1546,14 @@ function modalConfig(type, record) {
     return {
       title: isEdit ? 'Edit Dentist' : 'Add New Dentist',
       fields: [
-        { id:'first_name',     label:'First Name *',     type:'text',    value: record?.firstName || '' },
-        { id:'last_name',      label:'Last Name *',      type:'text',    value: record?.lastName  || '' },
+        { id:'first_name',     label:'First Name *',     type:'text',    value: record?.firstName || '', lettersOnly:true },
+        { id:'last_name',      label:'Last Name *',      type:'text',    value: record?.lastName  || '', lettersOnly:true },
         { id:'specialization', label:'Specialization',   type:'text',    value: record?.spec  || '' },
         { id:'credentials',    label:'Credentials',      type:'text',    value: record?.cred  || '' },
         { id:'bio',            label:'Bio / Description',type:'textarea',value: record?.desc  || '' },
         { id:'education',      label:'Education',        type:'textarea',value: record?.education || '' },
         { id:'languages',      label:'Languages',        type:'text',    value: record?.languages || '' },
-        { id:'practicing_since',label:'Practicing Since',type:'text',    value: record?.practicingSince || record?.practicing_since || '' },
+        { id:'practicing_since',label:'Years of Experience',type:'text', value: record?.practicingSince || record?.practicing_since || '', inputmode:'numeric', digitsOnly:true },
         { id:'image',          label:'Dentist Image',    type:'file',    currentPreview: record?.imagePath || '' },
       ],
       onSave: async (vals) => {
@@ -1591,7 +1616,7 @@ function openModal(title, fields, onSave) {
                           <option value="">Select category</option>
                           ${(f.options || []).map(option => `<option value="${esc(option)}" ${option === f.value ? 'selected' : ''}>${esc(option)}</option>`).join('')}
                         </select>`
-                    : `<input id="mf-${f.id}" name="${f.id}" type="${f.type}" value="${esc(String(f.value))}">`}
+                    : `<input id="mf-${f.id}" name="${f.id}" type="${f.type}" value="${esc(String(f.value))}"${f.inputmode ? ` inputmode="${esc(f.inputmode)}"` : ''}${f.min !== undefined ? ` min="${esc(f.min)}"` : ''}${f.step !== undefined ? ` step="${esc(f.step)}"` : ''}${f.lettersOnly ? ` pattern="[A-Za-z' -]+" title="Only letters are allowed."` : ''}${f.digitsOnly ? ` pattern="[0-9]*"` : ''}>`}
                 </div>`).join('')}
             </div>
           </section>
@@ -1633,6 +1658,16 @@ function openModal(title, fields, onSave) {
     });
   });
 
+  fields.filter(f => f.lettersOnly || f.digitsOnly || f.inputmode === 'decimal').forEach(f => {
+    const input = document.getElementById(`mf-${f.id}`);
+    if (!input) return;
+    input.addEventListener('input', () => {
+      if (f.lettersOnly) input.value = sanitizeLettersOnly(input.value);
+      else if (f.digitsOnly) input.value = sanitizeDigitsOnly(input.value);
+      else if (f.inputmode === 'decimal') input.value = sanitizeDecimalNumber(input.value);
+    });
+  });
+
   document.getElementById('modal-save-btn').addEventListener('click', async () => {
     const form = document.getElementById('admin-modal-form');
     const vals = {};
@@ -1646,6 +1681,18 @@ function openModal(title, fields, onSave) {
       vals[f.id] = f.type === 'file' ? (el.files[0] || null) : (f.type === 'number' ? parseFloat(val) || 0 : val);
       if (f.label.includes('*') && val === '') {
         errEl.textContent = f.label.replace(' *','') + ' is required.';
+        valid = false;
+      }
+      if (valid && f.lettersOnly && val && !LETTERS_ONLY_PATTERN.test(val)) {
+        errEl.textContent = 'Only letters are allowed.';
+        valid = false;
+      }
+      if (valid && f.digitsOnly && val && !/^\d+$/.test(val)) {
+        errEl.textContent = f.id === 'stock_quantity' ? 'Stock cannot be negative.' : 'Only numbers are allowed.';
+        valid = false;
+      }
+      if (valid && f.id === 'price' && (val === '' || !/^\d+(\.\d+)?$/.test(val) || Number(val) <= 0)) {
+        errEl.textContent = 'Price must be greater than 0.';
         valid = false;
       }
     });

@@ -46,17 +46,17 @@
         <div class="form-row">
           <div class="form-group">
             <label class="form-label" for="reg-fname">First name</label>
-            <input class="form-input" id="reg-fname" name="first_name" type="text" placeholder="Maria" autocomplete="given-name" required>
+            <input class="form-input" id="reg-fname" name="first_name" type="text" placeholder="Maria" autocomplete="given-name" pattern="[A-Za-z' -]+" title="Only letters are allowed." required>
           </div>
           <div class="form-group">
             <label class="form-label" for="reg-lname">Last name</label>
-            <input class="form-input" id="reg-lname" name="last_name" type="text" placeholder="Santos" autocomplete="family-name" required>
+            <input class="form-input" id="reg-lname" name="last_name" type="text" placeholder="Santos" autocomplete="family-name" pattern="[A-Za-z' -]+" title="Only letters are allowed." required>
           </div>
         </div>
 
         <div class="form-group">
           <label class="form-label" for="reg-email">Email</label>
-          <input class="form-input" type="email" id="reg-email" name="email" placeholder="you@example.com" autocomplete="email" required>
+          <input class="form-input" type="email" id="reg-email" name="email" placeholder="you@example.com" autocomplete="email" pattern="^[^@\s]+@[^@\s]+\.[^@\s]+$" title="Please enter a valid email address." required>
         </div>
 
         <div class="form-group">
@@ -68,7 +68,7 @@
                  placeholder="09123456789"
                  autocomplete="tel"
                  inputmode="numeric"
-                 pattern="09[0-9]{9}"
+                 pattern="[0-9]{11}"
                  maxlength="11"
                  required>
         </div>

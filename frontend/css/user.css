@@ -202,3 +202,171 @@
   .order-info-grid{grid-template-columns:1fr;column-gap:0}.order-info{grid-template-columns:1fr;gap:4px}.order-product{grid-template-columns:1fr}.order-product-price{text-align:left}.modal-actions{flex-direction:column-reverse}.modal-actions .account-btn{width:100%}
   .section-heading{align-items:flex-start}.section-heading h2{font-size:1.85rem}.account-card{padding:21px 18px}
 }
+
+@media (min-width: 768px) and (max-width: 991px) {
+  .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .account-shell,
+  .portal-main,
+  .account-card,
+  .history-master-detail,
+  .history-master-list,
+  .history-detail-panel {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .summary-grid,
+  .overview-grid,
+  .profile-fields,
+  .history-master-detail,
+  .history-master-list,
+  .history-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .portal-menu {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .history-master-detail {
+    gap: 14px;
+  }
+
+  .account-modal {
+    width: 90vw;
+    max-width: 90vw;
+  }
+}
+
+@media (max-width: 768px) {
+  .account-body {
+    overflow-x: hidden;
+  }
+
+  .account-shell {
+    width: min(100% - 20px, 680px);
+    padding-top: 88px;
+  }
+
+  .account-hero {
+    display: block;
+    margin-bottom: 16px;
+    padding: 22px 18px;
+    border-radius: 18px;
+  }
+
+  .account-hero h1 {
+    font-size: clamp(2.05rem, 12vw, 2.8rem);
+  }
+
+  .portal-layout {
+    display: block;
+  }
+
+  .portal-sidebar {
+    position: relative;
+    top: auto;
+    margin-bottom: 16px;
+    padding: 10px;
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .sidebar-profile {
+    display: none;
+  }
+
+  .portal-menu {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 0 0 2px;
+    scrollbar-width: none;
+  }
+
+  .portal-menu::-webkit-scrollbar {
+    display: none;
+  }
+
+  .portal-menu-item {
+    flex: 0 0 auto;
+    width: auto;
+    min-height: 40px;
+    padding: 10px 12px;
+    white-space: nowrap;
+  }
+
+  .section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .summary-grid,
+  .overview-grid,
+  .profile-fields,
+  .history-master-detail,
+  .history-master-list,
+  .history-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .history-detail-panel,
+  .account-card {
+    border-radius: 16px;
+    padding: 18px;
+  }
+
+  .history-list-top,
+  .history-detail-head,
+  .notification-item,
+  .notification-actions {
+    align-items: flex-start;
+  }
+
+  .notification-item {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .card-actions,
+  .modal-actions {
+    justify-content: stretch;
+  }
+
+  .card-actions .account-btn,
+  .modal-actions .account-btn,
+  #edit-profile-btn,
+  #save-profile-btn,
+  #cancel-profile-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .account-shell {
+    width: min(100% - 14px, 460px);
+  }
+
+  .summary-card {
+    min-height: 104px;
+    padding: 16px;
+  }
+
+  .summary-card strong {
+    font-size: 1.9rem;
+  }
+
+  .profile-fields input,
+  .profile-fields textarea,
+  .profile-fields select,
+  .password-field input {
+    padding: 11px 12px;
+  }
+}

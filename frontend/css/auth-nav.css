@@ -50,3 +50,16 @@
 @media (max-width: 760px) {
   .account-nav-link { max-width: 145px; }
 }
+
+@media (max-width: 768px) {
+  .nav-links.open .account-nav-link,
+  .nav-links.open #nav-user-info.account-nav {
+    width: 100%;
+    max-width: none;
+  }
+
+  .nav-links.open .account-nav-link {
+    justify-content: center;
+    padding: 6px 8px;
+  }
+}

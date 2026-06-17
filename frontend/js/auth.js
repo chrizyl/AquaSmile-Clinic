@@ -31,6 +31,17 @@ function clearRegistrationPasswords() {
   if (confirmPasswordInput) confirmPasswordInput.value = '';
 }
 
+const LETTERS_ONLY_PATTERN = /^[A-Za-z' -]+$/;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function sanitizeLettersOnly(value) {
+  return value.replace(/[^A-Za-z' -]/g, '');
+}
+
+function sanitizeDigitsOnly(value) {
+  return value.replace(/[^0-9]/g, '');
+}
+
 async function register(event) {
   event.preventDefault();
 
@@ -49,6 +60,22 @@ async function register(event) {
 
   hideMessage(errEl);
   hideMessage(sucEl);
+
+  if (!LETTERS_ONLY_PATTERN.test(fname) || !LETTERS_ONLY_PATTERN.test(lname)) {
+    showMessage(errEl, 'Only letters are allowed.');
+    (!LETTERS_ONLY_PATTERN.test(fname) ? document.getElementById('reg-fname') : document.getElementById('reg-lname')).focus();
+    return;
+  }
+  if (!EMAIL_PATTERN.test(email)) {
+    showMessage(errEl, 'Please enter a valid email address.');
+    document.getElementById('reg-email').focus();
+    return;
+  }
+  if (!/^\d{11}$/.test(contact)) {
+    showMessage(errEl, 'Please enter a valid 11-digit phone number.');
+    document.getElementById('reg-contact').focus();
+    return;
+  }
 
   if (password !== confirmPassword) {
     clearRegistrationPasswords();
@@ -184,6 +211,12 @@ async function login(event) {
 
   hideMessage(errEl);
 
+  if (!EMAIL_PATTERN.test(email)) {
+    showMessage(errEl, 'Please enter a valid email address.');
+    document.getElementById('login-email').focus();
+    return;
+  }
+
   try {
     const result = await apiRequest('login', { email, password });
     const user = result.user;
@@ -218,9 +251,16 @@ if (registerForm) {
 const contactInput = document.getElementById('reg-contact');
 if (contactInput) {
   contactInput.addEventListener('input', function(e) {
-    e.target.value = e.target.value.replace(/[^0-9]/g, '');
+    e.target.value = sanitizeDigitsOnly(e.target.value).slice(0, 11);
   });
 }
+
+['reg-fname', 'reg-lname'].forEach(id => {
+  const input = document.getElementById(id);
+  if (input) input.addEventListener('input', event => {
+    event.target.value = sanitizeLettersOnly(event.target.value);
+  });
+});
 
 const otpForm = document.getElementById('otp-form');
 if (otpForm) {

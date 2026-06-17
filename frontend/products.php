@@ -26,7 +26,7 @@ if (isAdmin()) {
 <div class="toast" id="toast"></div>
 
 <!-- NAV -->
-<nav>
+<nav id="main-nav">
   <div class="nav-logo">
     <img src="images/AquaSmile_Logo.svg" alt="AquaSmile dental clinic logo" class="nav-logo-img">
     AquaSmile

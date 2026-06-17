@@ -206,19 +206,31 @@ requirePatientPage();
     }
 
     .star-btn:hover { transform: scale(1.18); }
+    .star-btn:hover svg {
+      fill: #e8c9b0;
+      stroke: #d4a882;
+    }
 
     .star-btn svg {
       width: 36px;
       height: 36px;
-      fill: #e0ddd8;
-      stroke: none;
-      transition: fill 0.18s;
+      fill: rgba(120,154,153,0.14);
+      stroke: rgba(90,112,104,0.72);
+      stroke-width: 1.4;
+      transition: fill 0.18s, stroke 0.18s, transform 0.18s;
     }
 
     .star-btn.active svg,
-    .star-btn.hovered svg { fill: #e8c9b0; }
+    .star-btn.hovered svg {
+      fill: #e8c9b0;
+      stroke: #d4a882;
+      transform: scale(1.03);
+    }
 
-    .star-btn.active svg { fill: #d4a882; }
+    .star-btn.active svg {
+      fill: #d4a882;
+      stroke: #ad765a;
+    }
 
     .rating-labels {
       display: flex;
@@ -258,10 +270,11 @@ requirePatientPage();
     }
 
     .aspect-chip.selected {
-      background: rgba(120,154,153,0.15);
+      background: rgba(120,154,153,0.2);
       border-color: #789a99;
-      color: #2c3e38;
-      font-weight: 500;
+      color: #4e7170;
+      font-weight: 700;
+      box-shadow: 0 0 0 3px rgba(120,154,153,0.1);
     }
 
     .rating-textarea {

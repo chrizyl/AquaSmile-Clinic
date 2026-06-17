@@ -210,6 +210,31 @@ function valid_availability_status($s)
     return in_array($s, ['available','unavailable'], true);
 }
 
+function is_letters_only($value)
+{
+    return preg_match("/^[A-Za-z' -]+$/", (string) $value) === 1;
+}
+
+function is_digits_only($value)
+{
+    return preg_match('/^\d+$/', (string) $value) === 1;
+}
+
+function is_house_number($value)
+{
+    return preg_match('/^[0-9\/]+$/', (string) $value) === 1;
+}
+
+function is_valid_phone($value)
+{
+    return preg_match('/^\d{11}$/', (string) $value) === 1;
+}
+
+function is_valid_decimal_number($value)
+{
+    return preg_match('/^\d+(\.\d+)?$/', (string) $value) === 1;
+}
+
 function admin_update_order_status()
 {
     require_admin();
@@ -356,15 +381,18 @@ function admin_add_product()
     $name        = trim($data['name'] ?? '');
     $description = trim($data['description'] ?? '');
     $category    = trim($data['category'] ?? '');
-    $price       = (float)($data['price'] ?? 0);
-    $stock       = max(0, (int)($data['stock_quantity'] ?? 0));
+    $priceRaw    = trim((string) ($data['price'] ?? ''));
+    $stockRaw    = trim((string) ($data['stock_quantity'] ?? 0));
+    $price       = (float) $priceRaw;
+    $stock       = (int) $stockRaw;
     $errors      = [];
     $categoryOptions = ['Electric Tools', 'Toothpaste', 'Floss & Rinse', 'Whitening', 'Accessories'];
 
     if ($name === '') $errors[] = 'Product name is required.';
     if ($category === '') $errors[] = 'Category is required.';
     if ($category !== '' && !in_array($category, $categoryOptions, true)) $errors[] = 'Invalid product category.';
-    if ($price <= 0)  $errors[] = 'Price must be greater than 0.';
+    if ($priceRaw === '' || !is_valid_decimal_number($priceRaw) || $price <= 0)  $errors[] = 'Price must be greater than 0.';
+    if ($stockRaw !== '' && !is_digits_only($stockRaw)) $errors[] = 'Stock cannot be negative.';
     if ($errors) {
         json_response(['ok' => false, 'message' => implode(' ', $errors), 'errors' => $errors], 422);
     }
@@ -388,8 +416,10 @@ function admin_edit_product()
     $name        = trim($data['name'] ?? '');
     $description = trim($data['description'] ?? '');
     $category    = trim($data['category'] ?? '');
-    $price       = (float)($data['price'] ?? 0);
-    $stock       = max(0, (int)($data['stock_quantity'] ?? 0));
+    $priceRaw    = trim((string) ($data['price'] ?? ''));
+    $stockRaw    = trim((string) ($data['stock_quantity'] ?? 0));
+    $price       = (float) $priceRaw;
+    $stock       = (int) $stockRaw;
     $errors      = [];
     $categoryOptions = ['Electric Tools', 'Toothpaste', 'Floss & Rinse', 'Whitening', 'Accessories'];
 
@@ -397,7 +427,8 @@ function admin_edit_product()
     if ($name === '') $errors[] = 'Product name is required.';
     if ($category === '') $errors[] = 'Category is required.';
     if ($category !== '' && !in_array($category, $categoryOptions, true)) $errors[] = 'Invalid product category.';
-    if ($price <= 0)  $errors[] = 'Price must be greater than 0.';
+    if ($priceRaw === '' || !is_valid_decimal_number($priceRaw) || $price <= 0)  $errors[] = 'Price must be greater than 0.';
+    if ($stockRaw !== '' && !is_digits_only($stockRaw)) $errors[] = 'Stock cannot be negative.';
     if ($errors) {
         json_response(['ok' => false, 'message' => implode(' ', $errors), 'errors' => $errors], 422);
     }
@@ -492,6 +523,9 @@ function admin_add_dentist()
 
     if ($firstName === '') $errors[] = 'Dentist first name is required.';
     if ($lastName === '') $errors[] = 'Dentist last name is required.';
+    if ($firstName !== '' && !is_letters_only($firstName)) $errors[] = 'Only letters are allowed.';
+    if ($lastName !== '' && !is_letters_only($lastName)) $errors[] = 'Only letters are allowed.';
+    if ($practicingSince !== '' && !is_digits_only($practicingSince)) $errors[] = 'Only numbers are allowed.';
     if ($errors) {
         json_response(['ok' => false, 'message' => implode(' ', $errors), 'errors' => $errors], 422);
     }
@@ -524,6 +558,9 @@ function admin_edit_dentist()
     if ($id <= 0)     $errors[] = 'Invalid dentist ID.';
     if ($firstName === '') $errors[] = 'Dentist first name is required.';
     if ($lastName === '') $errors[] = 'Dentist last name is required.';
+    if ($firstName !== '' && !is_letters_only($firstName)) $errors[] = 'Only letters are allowed.';
+    if ($lastName !== '' && !is_letters_only($lastName)) $errors[] = 'Only letters are allowed.';
+    if ($practicingSince !== '' && !is_digits_only($practicingSince)) $errors[] = 'Only numbers are allowed.';
     if ($errors) {
         json_response(['ok' => false, 'message' => implode(' ', $errors), 'errors' => $errors], 422);
     }
@@ -905,6 +942,7 @@ function coupon_payload()
     $data = request_json();
     $type = strtolower(trim((string) ($data['coupon_type'] ?? $data['type'] ?? '')));
     $discountType = strtolower(trim((string) ($data['discount_type'] ?? $data['discountType'] ?? 'percentage')));
+    $discountValueRaw = trim((string) ($data['discount_value'] ?? $data['discountValue'] ?? ''));
     $status = strtolower(trim((string) ($data['status'] ?? 'active')));
     $startsAt = trim((string) ($data['starts_at'] ?? $data['startsAt'] ?? ''));
     $endsAt = trim((string) ($data['ends_at'] ?? $data['endsAt'] ?? ''));
@@ -915,7 +953,7 @@ function coupon_payload()
         'description' => trim((string) ($data['description'] ?? '')),
         'type' => $type,
         'discount_type' => $discountType,
-        'discount_value' => (float) ($data['discount_value'] ?? $data['discountValue'] ?? 0),
+        'discount_value' => (float) $discountValueRaw,
         'status' => $status,
         'starts_at' => $startsAt !== '' ? $startsAt : null,
         'ends_at' => $endsAt !== '' ? $endsAt : null,
@@ -926,7 +964,7 @@ function coupon_payload()
     if ($payload['title'] === '') $errors[] = 'Coupon title is required.';
     if (!in_array($payload['type'], ['product', 'appointment'], true)) $errors[] = 'Choose Product or Appointment coupon type.';
     if (!in_array($payload['discount_type'], ['percentage', 'fixed'], true)) $errors[] = 'Choose a valid discount type.';
-    if ($payload['discount_value'] <= 0) $errors[] = 'Discount value must be greater than zero.';
+    if ($discountValueRaw === '' || !is_valid_decimal_number($discountValueRaw) || $payload['discount_value'] <= 0) $errors[] = 'Discount value must be greater than zero.';
     if (!in_array($payload['status'], ['active', 'inactive'], true)) $errors[] = 'Choose a valid status.';
     foreach (['starts_at' => 'Start date', 'ends_at' => 'End date'] as $key => $label) {
         if ($payload[$key] !== null && !DateTime::createFromFormat('Y-m-d', $payload[$key])) {
@@ -1399,9 +1437,13 @@ function register_user()
 
     if ($firstName === '') {
         $errors[] = 'First name is required.';
+    } elseif (!is_letters_only($firstName)) {
+        $errors[] = 'Only letters are allowed.';
     }
     if ($lastName === '') {
         $errors[] = 'Last name is required.';
+    } elseif (!is_letters_only($lastName)) {
+        $errors[] = 'Only letters are allowed.';
     }
     if ($email === '') {
         $errors[] = 'Email is required.';
@@ -1410,8 +1452,8 @@ function register_user()
     }
     if ($phone === '') {
         $errors[] = 'Contact number is required.';
-    } elseif (!preg_match('/^09\d{9}$/', $phone)) {
-        $errors[] = 'Contact number must use the format 09XXXXXXXXX (11 digits).';
+    } elseif (!is_valid_phone($phone)) {
+        $errors[] = 'Please enter a valid 11-digit phone number.';
     }
     if ($password === '') {
         $errors[] = 'Password is required.';
@@ -2139,7 +2181,11 @@ function update_stock()
     $data = request_json();
     $type = $data['type'] ?? 'product';
     $id = (int) ($data['id'] ?? 0);
-    $quantity = max(0, (int) ($data['quantity'] ?? 0));
+    $quantityRaw = trim((string) ($data['quantity'] ?? 0));
+    if ($id <= 0 || !is_digits_only($quantityRaw)) {
+        json_response(['ok' => false, 'message' => 'Stock cannot be negative.'], 422);
+    }
+    $quantity = (int) $quantityRaw;
 
     if ($type === 'service') {
         execute_sql('UPDATE services SET daily_slots = ? WHERE service_id = ?', [$quantity, $id]);
@@ -2236,6 +2282,15 @@ function create_order()
     }
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         json_response(['ok' => false, 'message' => 'Please enter a valid email address.'], 422);
+    }
+    if (!is_letters_only($firstName) || !is_letters_only($lastName)) {
+        json_response(['ok' => false, 'message' => 'Only letters are allowed.'], 422);
+    }
+    if (!is_valid_phone($phone)) {
+        json_response(['ok' => false, 'message' => 'Please enter a valid 11-digit phone number.'], 422);
+    }
+    if (!is_house_number($houseNo)) {
+        json_response(['ok' => false, 'message' => 'House number may contain numbers and slash only.'], 422);
     }
     if (!preg_match('/^\d+$/', $zip)) {
         json_response(['ok' => false, 'message' => 'ZIP Code must contain numbers only.'], 422);
@@ -2417,6 +2472,7 @@ function update_profile()
     $data = request_json();
     $firstName = trim((string) ($data['first_name'] ?? ''));
     $lastName = trim((string) ($data['last_name'] ?? ''));
+    $email = trim((string) ($data['email'] ?? ''));
     $phone = trim((string) ($data['phone'] ?? ''));
     $birthdate = trim((string) ($data['birthdate'] ?? ''));
     $gender = trim((string) ($data['gender'] ?? ''));
@@ -2432,14 +2488,21 @@ function update_profile()
 
     if ($firstName === '') {
         $errors[] = 'First name is required.';
+    } elseif (!is_letters_only($firstName)) {
+        $errors[] = 'Only letters are allowed.';
     }
     if ($lastName === '') {
         $errors[] = 'Last name is required.';
+    } elseif (!is_letters_only($lastName)) {
+        $errors[] = 'Only letters are allowed.';
     }
     if ($phone === '') {
         $errors[] = 'Phone number is required.';
-    } elseif (!preg_match('/^09\d{9}$/', $phone)) {
-        $errors[] = 'Phone number must start with 09 and contain exactly 11 digits.';
+    } elseif (!is_valid_phone($phone)) {
+        $errors[] = 'Please enter a valid 11-digit phone number.';
+    }
+    if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $errors[] = 'Please enter a valid email address.';
     }
     if ($birthdate !== '') {
         $parsedBirthdate = DateTime::createFromFormat('Y-m-d', $birthdate);
@@ -2468,6 +2531,9 @@ function update_profile()
     }
     if ($zipCode !== '' && !preg_match('/^\d+$/', $zipCode)) {
         $errors[] = 'ZIP Code must contain numbers only.';
+    }
+    if ($houseNo !== '' && !is_house_number($houseNo)) {
+        $errors[] = 'House number may contain numbers and slash only.';
     }
     if ($emergencyContactNumber !== '' && !preg_match('/^09\d{9}$/', $emergencyContactNumber)) {
         $errors[] = 'Emergency contact number must start with 09 and contain exactly 11 digits.';

@@ -47,7 +47,7 @@
       <form id="login-form" method="post" novalidate>
         <div class="form-group">
           <label class="form-label" for="login-email">Email address</label>
-          <input class="form-input" type="email" id="login-email" name="email" placeholder="you@example.com" autocomplete="email" required>
+          <input class="form-input" type="email" id="login-email" name="email" placeholder="you@example.com" autocomplete="email" pattern="^[^@\s]+@[^@\s]+\.[^@\s]+$" title="Please enter a valid email address." required>
         </div>
 
         <div class="form-group">

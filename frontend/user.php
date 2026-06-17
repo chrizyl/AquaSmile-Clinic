@@ -101,10 +101,10 @@ $initialFirstName = preg_split('/\s+/', $sessionName)[0] ?? 'Patient';
             <form id="profile-form" novalidate>
               <div class="profile-form-message" id="profile-form-message" role="alert" hidden></div>
               <div class="profile-fields">
-                <label><span>First Name</span><input type="text" id="profile-first-name" autocomplete="given-name" readonly required></label>
-                <label><span>Last Name</span><input type="text" id="profile-last-name" autocomplete="family-name" readonly required></label>
-                <label><span>Email Address</span><input type="email" id="profile-email" autocomplete="email" readonly aria-readonly="true"></label>
-                <label><span>Phone Number</span><input type="tel" id="profile-phone" autocomplete="tel" inputmode="numeric" maxlength="11" pattern="09[0-9]{9}" readonly required></label>
+                <label><span>First Name</span><input type="text" id="profile-first-name" autocomplete="given-name" pattern="[A-Za-z' -]+" title="Only letters are allowed." readonly required></label>
+                <label><span>Last Name</span><input type="text" id="profile-last-name" autocomplete="family-name" pattern="[A-Za-z' -]+" title="Only letters are allowed." readonly required></label>
+                <label><span>Email Address</span><input type="email" id="profile-email" autocomplete="email" pattern="^[^@\s]+@[^@\s]+\.[^@\s]+$" title="Please enter a valid email address." readonly aria-readonly="true"></label>
+                <label><span>Phone Number</span><input type="tel" id="profile-phone" autocomplete="tel" inputmode="numeric" maxlength="11" pattern="[0-9]{11}" title="Please enter a valid 11-digit phone number." readonly required></label>
                 <label><span>Birthdate</span><input type="date" id="profile-birthdate" autocomplete="bday" readonly></label>
                 <label>
                   <span>Gender</span>
@@ -116,7 +116,7 @@ $initialFirstName = preg_split('/\s+/', $sessionName)[0] ?? 'Patient';
                   </select>
                 </label>
                 <div class="profile-subsection-title field-wide">Address</div>
-                <label><span>House No.</span><input type="text" id="profile-house-no" autocomplete="address-line1" maxlength="50" placeholder="Enter house number" readonly></label>
+                <label><span>House No.</span><input type="text" id="profile-house-no" autocomplete="address-line1" inputmode="numeric" pattern="[0-9/]+" maxlength="50" placeholder="Enter house number" readonly></label>
                 <label><span>Street</span><input type="text" id="profile-street" autocomplete="address-line2" maxlength="150" placeholder="Enter street" readonly></label>
                 <label><span>Barangay</span><input type="text" id="profile-barangay" maxlength="100" placeholder="Enter barangay" readonly></label>
                 <label><span>City / Municipality</span><input type="text" id="profile-city" autocomplete="address-level2" maxlength="100" placeholder="Enter city or municipality" readonly></label>

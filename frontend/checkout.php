@@ -1,6 +1,7 @@
 <?php
 require_once 'includes/session-init.php';
 include 'includes/admin-check.php';
+require_once 'includes/navbar-auth.php';
 
 no_cache_headers();
 
@@ -59,7 +60,7 @@ requirePatientPage();
     .checkout-wrap {
       max-width: 960px;
       margin: 0 auto;
-      padding: 48px 40px 80px;
+      padding: 108px 40px 80px;
       position: relative;
       z-index: 1;
     }
@@ -652,19 +653,31 @@ requirePatientPage();
     }
 
     .star-btn:hover { transform: scale(1.18); }
+    .star-btn:hover svg {
+      fill: var(--peach);
+      stroke: var(--peach-dark);
+    }
 
     .star-btn svg {
       width: 36px;
       height: 36px;
-      fill: #e0ddd8;
-      stroke: none;
-      transition: fill 0.18s;
+      fill: rgba(120,154,153,0.14);
+      stroke: rgba(90,112,104,0.72);
+      stroke-width: 1.4;
+      transition: fill 0.18s, stroke 0.18s, transform 0.18s;
     }
 
     .star-btn.active svg,
-    .star-btn.hovered svg { fill: var(--peach); }
+    .star-btn.hovered svg {
+      fill: var(--peach);
+      stroke: var(--peach-dark);
+      transform: scale(1.03);
+    }
 
-    .star-btn.active svg { fill: var(--peach-dark); }
+    .star-btn.active svg {
+      fill: var(--peach-dark);
+      stroke: #b98266;
+    }
 
     .rating-labels {
       display: flex;
@@ -704,10 +717,11 @@ requirePatientPage();
     }
 
     .aspect-chip.selected {
-      background: rgba(120,154,153,0.15);
+      background: rgba(120,154,153,0.2);
       border-color: var(--aqua);
-      color: var(--text-dark);
-      font-weight: 500;
+      color: var(--aqua-dark);
+      font-weight: 700;
+      box-shadow: 0 0 0 3px rgba(120,154,153,0.1);
     }
 
     .rating-textarea {
@@ -932,11 +946,39 @@ requirePatientPage();
       .checkout-sidebar { position: static; }
       .form-row { grid-template-columns: 1fr; }
     }
+
+    @media (max-width: 480px) {
+      .checkout-wrap { padding-inline: 12px; }
+      .co-card { padding: 20px 16px; border-radius: 14px; }
+      .checkout-page-title { font-size: 1.65rem; }
+      .payment-option { align-items: flex-start; gap: 10px; padding: 13px; }
+      .checkout-promo-row { flex-direction: column; }
+      .btn-apply-promo { min-height: 40px; }
+      .order-item { align-items: flex-start; }
+      .order-item-name { white-space: normal; }
+      .popup-box { width: 92vw; padding: 30px 18px; }
+    }
   </style>
 </head>
 <body>
 
   <div class="toast" id="toast"></div>
+
+  <nav id="main-nav">
+    <div class="nav-logo">
+      <img src="images/AquaSmile_Logo.svg" alt="AquaSmile" class="nav-logo-img" />
+      <span>AquaSmile</span>
+    </div>
+    <div class="nav-links" id="nav-links">
+      <button class="nav-btn" onclick="window.location.href='index.php'">Home</button>
+      <button class="nav-btn" onclick="window.location.href='dentists.php'">Our Dentists</button>
+      <button class="nav-btn" onclick="window.location.href='services.php'">Services</button>
+      <button class="nav-btn active" onclick="window.location.href='products.php'">Shop</button>
+      <button class="nav-btn" id="nav-book-btn" onclick="window.location.href='booking.php'" <?php echo nav_is_patient() ? '' : 'style="display:none"'; ?>>Book Appointment</button>
+      <button class="nav-cart-btn" onclick="window.location.href='cart.php'">Cart</button>
+      <?php render_nav_auth(); ?>
+    </div>
+  </nav>
 
   <main class="checkout-wrap">
 
@@ -954,22 +996,22 @@ requirePatientPage();
           <div class="form-row">
             <div class="form-field">
               <label class="form-label" for="first-name">First Name</label>
-              <input class="form-input" type="text" id="first-name" name="first_name" placeholder="Maria" autocomplete="given-name" />
+              <input class="form-input" type="text" id="first-name" name="first_name" placeholder="Maria" autocomplete="given-name" pattern="[A-Za-z' -]+" title="Only letters are allowed." />
             </div>
             <div class="form-field">
               <label class="form-label" for="last-name">Last Name</label>
-              <input class="form-input" type="text" id="last-name" name="last_name" placeholder="Santos" autocomplete="family-name" />
+              <input class="form-input" type="text" id="last-name" name="last_name" placeholder="Santos" autocomplete="family-name" pattern="[A-Za-z' -]+" title="Only letters are allowed." />
             </div>
           </div>
 
           <div class="form-field">
             <label class="form-label" for="email">Email Address</label>
-            <input class="form-input" type="email" id="email" name="email" placeholder="maria@email.com" autocomplete="email" />
+            <input class="form-input" type="email" id="email" name="email" placeholder="maria@email.com" autocomplete="email" pattern="^[^@\s]+@[^@\s]+\.[^@\s]+$" title="Please enter a valid email address." />
           </div>
 
           <div class="form-field">
             <label class="form-label" for="phone">Phone Number</label>
-            <input class="form-input" type="tel" id="phone" name="phone" placeholder="+63 9XX XXX XXXX" autocomplete="tel" />
+            <input class="form-input" type="tel" id="phone" name="phone" placeholder="09672547242" autocomplete="tel" inputmode="numeric" pattern="[0-9]{11}" maxlength="11" title="Please enter a valid 11-digit phone number." />
           </div>
         </div>
 
@@ -980,7 +1022,7 @@ requirePatientPage();
           <div class="form-row">
             <div class="form-field">
               <label class="form-label" for="house-no">House No. / Unit No.</label>
-              <input class="form-input" type="text" id="house-no" name="house_no" placeholder="1" autocomplete="address-line1" maxlength="50" />
+              <input class="form-input" type="text" id="house-no" name="house_no" placeholder="1" autocomplete="address-line1" inputmode="numeric" pattern="[0-9/]+" maxlength="50" />
             </div>
             <div class="form-field">
               <label class="form-label" for="street">Street</label>
@@ -1060,7 +1102,7 @@ requirePatientPage();
 
           <div class="gcash-field" id="gcash-field">
             <label class="form-label" for="gcash-number">Your GCash Number</label>
-            <input class="form-input" type="tel" id="gcash-number" name="gcash_number" placeholder="09XX XXX XXXX" />
+            <input class="form-input" type="tel" id="gcash-number" name="gcash_number" placeholder="09672547242" inputmode="numeric" pattern="[0-9]{11}" maxlength="11" />
             <p style="font-size:0.75rem;color:var(--text-light);margin-top:7px;font-weight:300;">
               Our GCash number will be sent to your email after placing your order.
             </p>
@@ -1286,15 +1328,25 @@ requirePatientPage();
     });
 
     document.getElementById('phone').addEventListener('input', function() {
-      this.value = this.value.replace(/[^0-9]/g, '');
+      this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);
     });
 
     document.getElementById('gcash-number').addEventListener('input', function() {
-      this.value = this.value.replace(/[^0-9]/g, '');
+      this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);
     });
 
     document.getElementById('zip').addEventListener('input', function() {
       this.value = this.value.replace(/[^0-9]/g, '');
+    });
+
+    ['first-name', 'last-name'].forEach(id => {
+      document.getElementById(id).addEventListener('input', function() {
+        this.value = this.value.replace(/[^A-Za-z' -]/g, '');
+      });
+    });
+
+    document.getElementById('house-no').addEventListener('input', function() {
+      this.value = this.value.replace(/[^0-9/]/g, '');
     });
 
     /* ── CART DATA (loaded from the logged-in user's server cart) ── */
@@ -1526,9 +1578,15 @@ requirePatientPage();
       const notes     = document.getElementById('notes').value.trim();
       const payment   = document.querySelector('input[name="payment_method"]:checked')?.value || 'cod';
 
+      const lettersOnlyRegex = /^[A-Za-z' -]+$/;
       if (!firstName || !lastName) {
         alert('Please enter your full name.');
         document.getElementById('first-name').focus();
+        return null;
+      }
+      if (!lettersOnlyRegex.test(firstName) || !lettersOnlyRegex.test(lastName)) {
+        alert('Only letters are allowed.');
+        (!lettersOnlyRegex.test(firstName) ? document.getElementById('first-name') : document.getElementById('last-name')).focus();
         return null;
       }
 
@@ -1544,6 +1602,11 @@ requirePatientPage();
         document.getElementById('phone').focus();
         return null;
       }
+      if (!/^\d{11}$/.test(phone)) {
+        alert('Please enter a valid 11-digit phone number.');
+        document.getElementById('phone').focus();
+        return null;
+      }
 
       if (!houseNo || !street || !barangay || !city || !province || !zip) {
         alert('Please complete your delivery address.');
@@ -1553,11 +1616,21 @@ requirePatientPage();
         firstEmpty?.focus();
         return null;
       }
+      if (!/^[0-9/]+$/.test(houseNo)) {
+        alert('House number may contain numbers and slash only.');
+        document.getElementById('house-no').focus();
+        return null;
+      }
 
       if (payment === 'gcash') {
         const gcashNum = document.getElementById('gcash-number').value.trim();
         if (!gcashNum) {
           alert('Please enter your GCash number.');
+          document.getElementById('gcash-number').focus();
+          return null;
+        }
+        if (!/^\d{11}$/.test(gcashNum)) {
+          alert('Please enter a valid 11-digit phone number.');
           document.getElementById('gcash-number').focus();
           return null;
         }
