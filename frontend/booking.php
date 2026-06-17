@@ -496,6 +496,80 @@ requirePatientPage();
     </div>
   </div>
 
+  <!-- SUCCESS POPUP -->
+  <div class="bk-popup-overlay" id="success-popup">
+    <div class="bk-popup-box">
+      <div class="bk-popup-check">
+        <svg viewBox="0 0 24 24">
+          <path d="M20 6L9 17l-5-5"/>
+        </svg>
+      </div>
+      <div class="bk-popup-title">Booking Confirmed!</div>
+      <div class="bk-popup-msg">Your appointment has been successfully scheduled. We look forward to seeing you at AquaSmile.</div>
+      <div class="bk-popup-actions">
+        <button class="bk-btn-rate" onclick="showRatingPopup()">
+          <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>
+          Rate Your Experience
+        </button>
+        <button class="bk-btn-skip" onclick="closeBookingPopups()">Maybe Later</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RATING POPUP -->
+  <div class="bk-popup-overlay" id="rating-popup">
+    <div class="bk-popup-box bk-rating-box">
+
+      <div class="rating-form-content" id="rating-form-content">
+        <div class="bk-popup-title">How was your booking experience?</div>
+        <div class="bk-popup-msg" style="margin-bottom:18px;">Your feedback helps us improve AquaSmile for everyone.</div>
+
+        <div class="rating-stars" id="rating-stars">
+          <button class="star-btn" data-star="1" onclick="setStarRating(1)">
+            <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>
+          </button>
+          <button class="star-btn" data-star="2" onclick="setStarRating(2)">
+            <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>
+          </button>
+          <button class="star-btn" data-star="3" onclick="setStarRating(3)">
+            <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>
+          </button>
+          <button class="star-btn" data-star="4" onclick="setStarRating(4)">
+            <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>
+          </button>
+          <button class="star-btn" data-star="5" onclick="setStarRating(5)">
+            <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>
+          </button>
+        </div>
+        <div class="rating-labels">
+          <span>Poor</span>
+          <span>Excellent</span>
+        </div>
+
+        <div class="rating-aspects" id="rating-aspects">
+          <div class="aspect-chip" data-aspect="Fast Website" onclick="toggleAspect(this)">Friendly Staff</div>
+          <div class="aspect-chip" data-aspect="Easy Booking" onclick="toggleAspect(this)">Easy Booking</div>
+          <div class="aspect-chip" data-aspect="On Time" onclick="toggleAspect(this)">On Time</div>
+          <div class="aspect-chip" data-aspect="Clean Website" onclick="toggleAspect(this)">Clean Facility</div>
+          <div class="aspect-chip" data-aspect="Great Care" onclick="toggleAspect(this)">Great Care</div>
+        </div>
+
+        <textarea class="rating-textarea" id="rating-comment" placeholder="Tell us more about your experience (optional)..."></textarea>
+
+        <button class="bk-btn-submit" id="rating-submit-btn" onclick="submitRating()" disabled>Submit Feedback</button>
+        <button class="rating-skip-link" onclick="closeBookingPopups()">Skip for now</button>
+      </div>
+
+      <div class="rating-thankyou" id="rating-thankyou">
+        <div class="thankyou-emoji">🦷✨</div>
+        <div class="bk-popup-title">Thank You!</div>
+        <div class="bk-popup-msg">We appreciate you taking the time to share your feedback with us.</div>
+        <button class="bk-btn-submit" onclick="closeBookingPopups()">Done</button>
+      </div>
+
+    </div>
+  </div>
+
   <script src="js/main.js?v=20260616a"></script>
   <script src="js/booking.js?v=20260523"></script>
   <script src="js/notifications.js?v=20260615"></script>

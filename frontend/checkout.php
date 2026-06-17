@@ -534,25 +534,219 @@ requirePatientPage();
       margin-bottom: 28px;
     }
 
-    .popup-progress {
-      height: 3px;
-      background: rgba(120,154,153,0.15);
-      border-radius: 99px;
-      overflow: hidden;
-    }
-
-    .popup-progress-bar {
-      height: 100%;
-      background: var(--aqua);
-      border-radius: 99px;
-      width: 0%;
-      transition: width 2.5s linear;
-    }
-
     .popup-redirect-note {
       font-size: 0.74rem;
       color: var(--text-light);
       margin-top: 10px;
+    }
+
+    /* ── SUCCESS POPUP ACTIONS (rate / skip) ── */
+    .popup-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .btn-rate {
+      padding: 13px 20px;
+      border: none;
+      border-radius: var(--radius-md);
+      background: var(--aqua);
+      color: #fff;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.92rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.22s, transform 0.18s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-rate:hover {
+      background: var(--aqua-dark);
+      transform: translateY(-1px);
+    }
+
+    .btn-rate svg {
+      width: 16px;
+      height: 16px;
+      fill: #fff;
+      stroke: none;
+    }
+
+    .btn-skip {
+      padding: 11px 20px;
+      border: 1.5px solid rgba(120,154,153,0.3);
+      border-radius: var(--radius-md);
+      background: transparent;
+      color: var(--text-mid);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.87rem;
+      font-weight: 400;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-skip:hover {
+      background: rgba(120,154,153,0.07);
+      border-color: var(--aqua);
+    }
+
+    /* ── RATING POPUP ── */
+    .rating-box .popup-title { font-size: 1.5rem; }
+
+    .rating-stars {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 4px 0 20px;
+    }
+
+    .star-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      transition: transform 0.15s;
+    }
+
+    .star-btn:hover { transform: scale(1.18); }
+
+    .star-btn svg {
+      width: 36px;
+      height: 36px;
+      fill: #e0ddd8;
+      stroke: none;
+      transition: fill 0.18s;
+    }
+
+    .star-btn.active svg,
+    .star-btn.hovered svg { fill: var(--peach); }
+
+    .star-btn.active svg { fill: var(--peach-dark); }
+
+    .rating-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.72rem;
+      color: var(--text-light);
+      font-weight: 300;
+      margin-top: -14px;
+      margin-bottom: 22px;
+      padding: 0 4px;
+    }
+
+    .rating-aspects {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 18px;
+    }
+
+    .aspect-chip {
+      padding: 6px 14px;
+      border-radius: 99px;
+      border: 1.5px solid rgba(120,154,153,0.25);
+      background: rgba(255,255,255,0.5);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.78rem;
+      color: var(--text-mid);
+      cursor: pointer;
+      transition: all 0.18s;
+      user-select: none;
+    }
+
+    .aspect-chip:hover {
+      border-color: var(--aqua);
+      background: rgba(120,154,153,0.08);
+    }
+
+    .aspect-chip.selected {
+      background: rgba(120,154,153,0.15);
+      border-color: var(--aqua);
+      color: var(--text-dark);
+      font-weight: 500;
+    }
+
+    .rating-textarea {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid rgba(120,154,153,0.25);
+      border-radius: var(--radius-sm);
+      background: rgba(255,255,255,0.6);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.86rem;
+      color: var(--text-dark);
+      resize: vertical;
+      min-height: 80px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      margin-bottom: 18px;
+    }
+
+    .rating-textarea::placeholder { color: var(--text-light); }
+
+    .rating-textarea:focus {
+      border-color: var(--aqua);
+      box-shadow: 0 0 0 3px rgba(120,154,153,0.12);
+    }
+
+    .btn-submit-rating {
+      width: 100%;
+      padding: 13px 20px;
+      border: none;
+      border-radius: var(--radius-md);
+      background: var(--aqua);
+      color: #fff;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.92rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.22s, transform 0.18s;
+      margin-bottom: 10px;
+    }
+
+    .btn-submit-rating:hover {
+      background: var(--aqua-dark);
+      transform: translateY(-1px);
+    }
+
+    .btn-submit-rating:disabled {
+      background: var(--aqua-light);
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .rating-skip-link {
+      font-size: 0.79rem;
+      color: var(--text-light);
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      background: none;
+      border: none;
+      font-family: 'DM Sans', sans-serif;
+      transition: color 0.18s;
+    }
+
+    .rating-skip-link:hover { color: var(--text-mid); }
+
+    .rating-thankyou { display: none; }
+    .rating-thankyou.show { display: block; }
+    .rating-form-content.hide { display: none; }
+
+    .thankyou-emoji {
+      font-size: 2.5rem;
+      margin-bottom: 12px;
+    }
+
+    @media (max-width: 480px) {
+      .popup-box { padding: 32px 22px 28px; }
+      .star-btn svg { width: 30px; height: 30px; }
     }
 
     /* ── GCASH RECEIPT UPLOAD ── */
@@ -956,10 +1150,66 @@ requirePatientPage();
         Your order has been received.<br />
         A confirmation will be sent to your email shortly.
       </p>
-      <div class="popup-progress">
-        <div class="popup-progress-bar" id="progress-bar"></div>
+      <div class="popup-actions">
+        <button class="btn-rate" onclick="showRatingPopup()">
+          <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>
+          Rate Your Experience
+        </button>
+        <button class="btn-skip" onclick="finishCheckoutPopups()">Maybe Later</button>
       </div>
-      <p class="popup-redirect-note">Redirecting you to the homepage…</p>
+    </div>
+  </div>
+
+  <div class="popup-overlay" id="rating-popup" role="dialog" aria-modal="true" aria-labelledby="rating-popup-heading">
+    <div class="popup-box rating-box">
+
+      <div class="rating-form-content" id="rating-form-content">
+        <h2 class="popup-title" id="rating-popup-heading">How was your shopping experience?</h2>
+        <p class="popup-msg" style="margin-bottom:18px;">Your feedback helps us improve AquaSmile for everyone.</p>
+
+        <div class="rating-stars" id="rating-stars">
+          <button class="star-btn" data-star="1" onclick="setStarRating(1)">
+            <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>
+          </button>
+          <button class="star-btn" data-star="2" onclick="setStarRating(2)">
+            <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>
+          </button>
+          <button class="star-btn" data-star="3" onclick="setStarRating(3)">
+            <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>
+          </button>
+          <button class="star-btn" data-star="4" onclick="setStarRating(4)">
+            <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>
+          </button>
+          <button class="star-btn" data-star="5" onclick="setStarRating(5)">
+            <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>
+          </button>
+        </div>
+        <div class="rating-labels">
+          <span>Poor</span>
+          <span>Excellent</span>
+        </div>
+
+        <div class="rating-aspects" id="rating-aspects">
+          <div class="aspect-chip" data-aspect="Easy Checkout" onclick="toggleAspect(this)">Easy Checkout</div>
+          <div class="aspect-chip" data-aspect="Good Selection" onclick="toggleAspect(this)">Good Selection</div>
+          <div class="aspect-chip" data-aspect="Fast Delivery" onclick="toggleAspect(this)">Fast Delivery</div>
+          <div class="aspect-chip" data-aspect="Great Value" onclick="toggleAspect(this)">Great Value</div>
+          <div class="aspect-chip" data-aspect="Helpful Support" onclick="toggleAspect(this)">Helpful Support</div>
+        </div>
+
+        <textarea class="rating-textarea" id="rating-comment" placeholder="Tell us more about your experience (optional)..."></textarea>
+
+        <button class="btn-submit-rating" id="rating-submit-btn" onclick="submitRating()" disabled>Submit Feedback</button>
+        <button class="rating-skip-link" onclick="finishCheckoutPopups()">Skip for now</button>
+      </div>
+
+      <div class="rating-thankyou" id="rating-thankyou">
+        <div class="thankyou-emoji">🛍️✨</div>
+        <h2 class="popup-title">Thank You!</h2>
+        <p class="popup-msg">We appreciate you taking the time to share your feedback with us.</p>
+        <button class="btn-submit-rating" onclick="finishCheckoutPopups()">Done</button>
+      </div>
+
     </div>
   </div>
 
@@ -1270,7 +1520,6 @@ requirePatientPage();
 
     function showSuccessPopup() {
       const overlay = document.getElementById('success-popup');
-      const bar     = document.getElementById('progress-bar');
 
       try {
         localStorage.removeItem('aqCart');
@@ -1279,14 +1528,100 @@ requirePatientPage();
       } catch(e) {}
 
       overlay.classList.add('show');
+    }
 
-      requestAnimationFrame(() => {
-        bar.style.width = '100%';
+    // ── RATING POPUP STATE ──
+    let ratingStars   = 0;
+    let ratingAspects = [];
+
+    function showRatingPopup() {
+      const successPopup = document.getElementById('success-popup');
+      const ratingPopup   = document.getElementById('rating-popup');
+      if (successPopup) successPopup.classList.remove('show');
+      if (ratingPopup)   ratingPopup.classList.add('show');
+    }
+
+    function setStarRating(n) {
+      ratingStars = n;
+
+      document.querySelectorAll('#rating-stars .star-btn').forEach(btn => {
+        const val = Number(btn.dataset.star);
+        btn.classList.toggle('active', val <= n);
       });
 
-      setTimeout(() => {
-        window.location.href = 'index.php';
-      }, 2800);
+      updateRatingSubmitState();
+    }
+
+    function toggleAspect(chipEl) {
+      const aspect = chipEl.dataset.aspect;
+      const idx = ratingAspects.indexOf(aspect);
+
+      if (idx === -1) {
+        ratingAspects.push(aspect);
+        chipEl.classList.add('selected');
+      } else {
+        ratingAspects.splice(idx, 1);
+        chipEl.classList.remove('selected');
+      }
+    }
+
+    function updateRatingSubmitState() {
+      const submitBtn = document.getElementById('rating-submit-btn');
+      if (submitBtn) submitBtn.disabled = ratingStars === 0;
+    }
+
+    function submitRating() {
+      if (ratingStars === 0) return;
+
+      const comment = document.getElementById('rating-comment')?.value || '';
+
+      const feedback = {
+        stars:      ratingStars,
+        aspects:    ratingAspects,
+        comment:    comment,
+        ratedAt:    new Date().toISOString(),
+      };
+
+      // No persistence yet — just log for now.
+      console.log('Order feedback submitted:', feedback);
+
+      const formContent = document.getElementById('rating-form-content');
+      const thankYou     = document.getElementById('rating-thankyou');
+      if (formContent) formContent.classList.add('hide');
+      if (thankYou)     thankYou.classList.add('show');
+    }
+
+    function resetRatingForm() {
+      ratingStars   = 0;
+      ratingAspects = [];
+
+      document.querySelectorAll('#rating-stars .star-btn').forEach(btn => {
+        btn.classList.remove('active', 'hovered');
+      });
+      document.querySelectorAll('#rating-aspects .aspect-chip').forEach(chip => {
+        chip.classList.remove('selected');
+      });
+
+      const commentEl = document.getElementById('rating-comment');
+      if (commentEl) commentEl.value = '';
+
+      updateRatingSubmitState();
+
+      const formContent = document.getElementById('rating-form-content');
+      const thankYou     = document.getElementById('rating-thankyou');
+      if (formContent) formContent.classList.remove('hide');
+      if (thankYou)     thankYou.classList.remove('show');
+    }
+
+    function finishCheckoutPopups() {
+      const successPopup = document.getElementById('success-popup');
+      const ratingPopup   = document.getElementById('rating-popup');
+      if (successPopup) successPopup.classList.remove('show');
+      if (ratingPopup)   ratingPopup.classList.remove('show');
+
+      resetRatingForm();
+
+      window.location.href = 'index.php';
     }
 
     function handleReceiptUpload(input) {

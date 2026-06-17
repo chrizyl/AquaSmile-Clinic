@@ -50,6 +50,10 @@ let currentStep = 1;
 let calYear  = new Date().getFullYear();
 let calMonth = new Date().getMonth();
 
+// ── RATING POPUP STATE ──
+let ratingStars    = 0;
+let ratingAspects  = [];
+
 // ── GUARD: Redirect if not logged in ──
 function guardAuth() {
   const user  = Cookie.get('currentUser');
@@ -411,7 +415,7 @@ async function confirmBooking() {
     DB.set('appointments', appts);
   }
 
-  /* Show the success popup — redirect handled by booking.html popup flow */
+  /* Show the success popup — rating popup and redirect handled below */
   const popup = document.getElementById('success-popup');
   if (popup) {
     popup.classList.add('show');
@@ -419,6 +423,97 @@ async function confirmBooking() {
     showToast('Appointment booked successfully!');
     setTimeout(() => { window.location.href = 'index.php'; }, 1400);
   }
+}
+
+// ── SUCCESS / RATING POPUP FLOW ──
+function showRatingPopup() {
+  const successPopup = document.getElementById('success-popup');
+  const ratingPopup   = document.getElementById('rating-popup');
+  if (successPopup) successPopup.classList.remove('show');
+  if (ratingPopup)   ratingPopup.classList.add('show');
+}
+
+function setStarRating(n) {
+  ratingStars = n;
+
+  document.querySelectorAll('#rating-stars .star-btn').forEach(btn => {
+    const val = Number(btn.dataset.star);
+    btn.classList.toggle('active', val <= n);
+  });
+
+  updateRatingSubmitState();
+}
+
+function toggleAspect(chipEl) {
+  const aspect = chipEl.dataset.aspect;
+  const idx = ratingAspects.indexOf(aspect);
+
+  if (idx === -1) {
+    ratingAspects.push(aspect);
+    chipEl.classList.add('selected');
+  } else {
+    ratingAspects.splice(idx, 1);
+    chipEl.classList.remove('selected');
+  }
+}
+
+function updateRatingSubmitState() {
+  const submitBtn = document.getElementById('rating-submit-btn');
+  if (submitBtn) submitBtn.disabled = ratingStars === 0;
+}
+
+function submitRating() {
+  if (ratingStars === 0) return;
+
+  const comment = document.getElementById('rating-comment')?.value || '';
+
+  const feedback = {
+    stars:    ratingStars,
+    aspects:  ratingAspects,
+    comment:  comment,
+    bookedAt: new Date().toISOString(),
+  };
+
+  // No persistence yet — just log for now.
+  console.log('Booking feedback submitted:', feedback);
+
+  const formContent = document.getElementById('rating-form-content');
+  const thankYou     = document.getElementById('rating-thankyou');
+  if (formContent) formContent.classList.add('hide');
+  if (thankYou)     thankYou.classList.add('show');
+}
+
+function resetRatingForm() {
+  ratingStars   = 0;
+  ratingAspects = [];
+
+  document.querySelectorAll('#rating-stars .star-btn').forEach(btn => {
+    btn.classList.remove('active', 'hovered');
+  });
+  document.querySelectorAll('#rating-aspects .aspect-chip').forEach(chip => {
+    chip.classList.remove('selected');
+  });
+
+  const commentEl = document.getElementById('rating-comment');
+  if (commentEl) commentEl.value = '';
+
+  updateRatingSubmitState();
+
+  const formContent = document.getElementById('rating-form-content');
+  const thankYou     = document.getElementById('rating-thankyou');
+  if (formContent) formContent.classList.remove('hide');
+  if (thankYou)     thankYou.classList.remove('show');
+}
+
+function closeBookingPopups() {
+  const successPopup = document.getElementById('success-popup');
+  const ratingPopup   = document.getElementById('rating-popup');
+  if (successPopup) successPopup.classList.remove('show');
+  if (ratingPopup)   ratingPopup.classList.remove('show');
+
+  resetRatingForm();
+
+  window.location.href = 'index.php';
 }
 
 async function initBooking() {
