@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 15, 2026 at 11:07 PM
+-- Generation Time: Jun 17, 2026 at 06:21 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -35,6 +35,10 @@ CREATE TABLE IF NOT EXISTS `appointments` (
   `user_id` int(11) NOT NULL,
   `dentist_id` int(11) DEFAULT NULL,
   `service_id` int(11) DEFAULT NULL,
+  `promo_id` int(11) DEFAULT NULL,
+  `promo_code` varchar(50) DEFAULT NULL,
+  `discount_amount` decimal(10,2) DEFAULT 0.00,
+  `final_fee` decimal(10,2) DEFAULT NULL,
   `appointment_date` date NOT NULL,
   `appointment_time` time NOT NULL,
   `notes` text DEFAULT NULL,
@@ -45,31 +49,40 @@ CREATE TABLE IF NOT EXISTS `appointments` (
   PRIMARY KEY (`appointment_id`),
   KEY `user_id` (`user_id`),
   KEY `dentist_id` (`dentist_id`),
-  KEY `service_id` (`service_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  KEY `service_id` (`service_id`),
+  KEY `appointments_promo_fk` (`promo_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=34 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `appointments`
 --
 
-INSERT INTO `appointments` (`appointment_id`, `user_id`, `dentist_id`, `service_id`, `appointment_date`, `appointment_time`, `notes`, `status`, `created_at`, `cancellation_reason`, `cancelled_by`) VALUES
-(6, 3, 1, 5, '2026-05-23', '08:00:00', '', 'confirmed', '2026-05-23 02:54:45', NULL, NULL),
-(10, 4, 1, 2, '2026-05-26', '15:00:00', '', 'confirmed', '2026-05-24 03:34:22', NULL, NULL),
-(11, 4, 1, 5, '2026-05-26', '15:00:00', '', 'cancelled', '2026-05-24 03:37:23', 'due to conflict schedule', 'admin'),
-(12, 4, 1, 8, '2026-05-28', '15:00:00', '', 'cancelled', '2026-05-24 03:41:56', 'Cancelled by patient before admin approval.', 'user'),
-(13, 5, 2, 1, '2026-05-26', '13:00:00', '', 'cancelled', '2026-05-24 04:13:08', 'Cancelled by patient before admin approval.', 'user'),
-(14, 5, 2, 1, '2026-05-26', '13:00:00', '', 'cancelled', '2026-05-24 04:13:08', 'Cancelled by patient before admin approval.', 'user'),
-(15, 5, 2, 6, '2026-05-26', '11:00:00', '', 'cancelled', '2026-05-24 04:19:14', 'Cancelled by patient before admin approval.', 'user'),
-(16, 5, 2, 2, '2026-05-27', '15:00:00', 'i have pekdsjh', 'completed', '2026-05-24 04:20:07', NULL, NULL),
-(17, 5, 3, 2, '2026-05-25', '08:00:00', '', 'confirmed', '2026-05-24 04:49:04', NULL, NULL),
-(18, 5, 3, 2, '2026-05-27', '15:00:00', 'peanuts\n', 'cancelled', '2026-05-26 07:17:11', 'Cancelled by patient before admin approval.', 'user'),
-(19, 6, 2, 8, '2026-05-26', '15:00:00', '', 'cancelled', '2026-05-26 08:21:57', 'Cancelled by patient before admin approval.', 'user'),
-(20, 5, 2, 4, '2026-05-27', '08:00:00', '', 'pending', '2026-05-26 08:41:45', NULL, NULL),
-(21, 8, 2, 5, '2026-06-17', '11:00:00', 'allergic sa dust', 'completed', '2026-06-14 09:33:08', NULL, NULL),
-(22, 8, 1, 1, '2026-06-27', '09:00:00', '', 'archived', '2026-06-14 09:57:04', NULL, NULL),
-(23, 8, 3, 6, '2026-08-07', '08:00:00', '', 'pending', '2026-06-15 09:00:19', NULL, NULL),
-(24, 8, 2, 8, '2026-08-06', '15:00:00', '', 'pending', '2026-06-15 09:57:00', NULL, NULL),
-(25, 8, 3, 2, '2026-08-22', '11:00:00', '', 'confirmed', '2026-06-15 20:58:56', NULL, NULL);
+INSERT INTO `appointments` (`appointment_id`, `user_id`, `dentist_id`, `service_id`, `promo_id`, `promo_code`, `discount_amount`, `final_fee`, `appointment_date`, `appointment_time`, `notes`, `status`, `created_at`, `cancellation_reason`, `cancelled_by`) VALUES
+(6, 3, 1, 5, NULL, NULL, 0.00, NULL, '2026-05-23', '08:00:00', '', 'confirmed', '2026-05-23 02:54:45', NULL, NULL),
+(10, 4, 1, 2, NULL, NULL, 0.00, NULL, '2026-05-26', '15:00:00', '', 'confirmed', '2026-05-24 03:34:22', NULL, NULL),
+(11, 4, 1, 5, NULL, NULL, 0.00, NULL, '2026-05-26', '15:00:00', '', 'cancelled', '2026-05-24 03:37:23', 'due to conflict schedule', 'admin'),
+(12, 4, 1, 8, NULL, NULL, 0.00, NULL, '2026-05-28', '15:00:00', '', 'cancelled', '2026-05-24 03:41:56', 'Cancelled by patient before admin approval.', 'user'),
+(13, 5, 2, 1, NULL, NULL, 0.00, NULL, '2026-05-26', '13:00:00', '', 'cancelled', '2026-05-24 04:13:08', 'Cancelled by patient before admin approval.', 'user'),
+(14, 5, 2, 1, NULL, NULL, 0.00, NULL, '2026-05-26', '13:00:00', '', 'cancelled', '2026-05-24 04:13:08', 'Cancelled by patient before admin approval.', 'user'),
+(15, 5, 2, 6, NULL, NULL, 0.00, NULL, '2026-05-26', '11:00:00', '', 'cancelled', '2026-05-24 04:19:14', 'Cancelled by patient before admin approval.', 'user'),
+(16, 5, 2, 2, NULL, NULL, 0.00, NULL, '2026-05-27', '15:00:00', 'i have pekdsjh', 'completed', '2026-05-24 04:20:07', NULL, NULL),
+(17, 5, 3, 2, NULL, NULL, 0.00, NULL, '2026-05-25', '08:00:00', '', 'confirmed', '2026-05-24 04:49:04', NULL, NULL),
+(18, 5, 3, 2, NULL, NULL, 0.00, NULL, '2026-05-27', '15:00:00', 'peanuts\n', 'cancelled', '2026-05-26 07:17:11', 'Cancelled by patient before admin approval.', 'user'),
+(19, 6, 2, 8, NULL, NULL, 0.00, NULL, '2026-05-26', '15:00:00', '', 'cancelled', '2026-05-26 08:21:57', 'Cancelled by patient before admin approval.', 'user'),
+(20, 5, 2, 4, NULL, NULL, 0.00, NULL, '2026-05-27', '08:00:00', '', 'pending', '2026-05-26 08:41:45', NULL, NULL),
+(21, 8, 2, 5, NULL, NULL, 0.00, NULL, '2026-06-17', '11:00:00', 'allergic sa dust', 'completed', '2026-06-14 09:33:08', NULL, NULL),
+(22, 8, 1, 1, NULL, NULL, 0.00, NULL, '2026-06-27', '09:00:00', '', 'archived', '2026-06-14 09:57:04', NULL, NULL),
+(23, 8, 3, 6, NULL, NULL, 0.00, NULL, '2026-08-07', '08:00:00', '', 'pending', '2026-06-15 09:00:19', NULL, NULL),
+(24, 8, 2, 8, NULL, NULL, 0.00, NULL, '2026-08-06', '15:00:00', '', 'pending', '2026-06-15 09:57:00', NULL, NULL),
+(25, 8, 3, 2, NULL, NULL, 0.00, NULL, '2026-08-22', '11:00:00', '', 'confirmed', '2026-06-15 20:58:56', NULL, NULL),
+(26, 8, 3, 7, NULL, NULL, 0.00, NULL, '2026-06-17', '17:00:00', '', 'pending', '2026-06-17 09:50:59', NULL, NULL),
+(27, 8, 3, 5, NULL, NULL, 0.00, NULL, '2026-06-17', '08:00:00', '', 'pending', '2026-06-17 09:51:52', NULL, NULL),
+(28, 8, 2, 4, NULL, NULL, 0.00, NULL, '2026-06-17', '11:00:00', '', 'pending', '2026-06-17 09:57:50', NULL, NULL),
+(29, 8, 1, 3, NULL, NULL, 0.00, NULL, '2026-06-17', '14:00:00', '', 'pending', '2026-06-17 09:59:32', NULL, NULL),
+(30, 8, 1, 5, NULL, NULL, 0.00, NULL, '2026-06-17', '13:00:00', '', 'pending', '2026-06-17 11:04:01', NULL, NULL),
+(31, 8, 2, 2, NULL, NULL, 0.00, NULL, '2026-06-22', '14:00:00', '', 'pending', '2026-06-17 11:28:30', NULL, NULL),
+(32, 8, 2, 5, 1, 'APPT10', 50.00, 450.00, '2026-09-01', '11:00:00', '', 'pending', '2026-06-17 15:36:36', NULL, NULL),
+(33, 8, 2, 2, NULL, NULL, 0.00, 450.00, '2026-08-31', '15:00:00', '', 'pending', '2026-06-17 16:15:41', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -87,7 +100,7 @@ CREATE TABLE IF NOT EXISTS `cart_items` (
   PRIMARY KEY (`cart_item_id`),
   KEY `user_id` (`user_id`),
   KEY `product_id` (`product_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=24 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=38 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `cart_items`
@@ -95,7 +108,7 @@ CREATE TABLE IF NOT EXISTS `cart_items` (
 
 INSERT INTO `cart_items` (`cart_item_id`, `user_id`, `product_id`, `quantity`, `added_at`) VALUES
 (9, 4, 8, 6, '2026-05-24 03:57:07'),
-(23, 8, 8, 1, '2026-06-15 13:09:57');
+(37, 8, 3, 2, '2026-06-17 11:47:18');
 
 -- --------------------------------------------------------
 
@@ -111,20 +124,54 @@ CREATE TABLE IF NOT EXISTS `dentists` (
   `specialization` varchar(100) DEFAULT NULL,
   `credentials` text DEFAULT NULL,
   `bio` text DEFAULT NULL,
+  `education` varchar(255) DEFAULT NULL,
+  `languages` varchar(150) DEFAULT NULL,
+  `practicing_since` varchar(100) DEFAULT NULL,
   `image_path` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `status` enum('available','unavailable') NOT NULL DEFAULT 'available',
   PRIMARY KEY (`dentist_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `dentists`
 --
 
-INSERT INTO `dentists` (`dentist_id`, `first_name`, `last_name`, `specialization`, `credentials`, `bio`, `image_path`, `created_at`, `status`) VALUES
-(1, 'Sophia ', 'Reyes', 'General & Cosmetic Dentistry', 'DMD - 12 years experience', 'Smile transformations and preventive care.', NULL, '2026-05-23 01:55:18', 'available'),
-(2, 'Marcus', 'Tan', 'Orthodontics & Oral Surgery', 'DMD, MScD - 9 years experience', 'Complex cases with precision and care.', NULL, '2026-05-23 01:55:18', 'available'),
-(3, 'Leila', 'Varon', 'Pediatric & Family Dentistry', 'DMD, PedDent - 7 years experience', 'Warm care for families and younger patients.', NULL, '2026-05-23 01:55:18', 'available');
+INSERT INTO `dentists` (`dentist_id`, `first_name`, `last_name`, `specialization`, `credentials`, `bio`, `education`, `languages`, `practicing_since`, `image_path`, `created_at`, `status`) VALUES
+(1, 'Sophia ', 'Reyes', 'General & Cosmetic Dentistry', 'DMD - 12 years experience', 'Smile transformations and preventive care.', NULL, NULL, NULL, NULL, '2026-05-23 01:55:18', 'available'),
+(2, 'Marcus', 'Tan', 'Orthodontics & Oral Surgery', 'DMD, MScD - 9 years experience', 'Complex cases with precision and care.', NULL, NULL, NULL, NULL, '2026-05-23 01:55:18', 'available'),
+(3, 'Leila', 'Varon', 'Pediatric & Family Dentistry', 'DMD, PedDent - 7 years experience', 'Warm care for families and younger patients.', NULL, NULL, NULL, NULL, '2026-05-23 01:55:18', 'available');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `feedback`
+--
+
+DROP TABLE IF EXISTS `feedback`;
+CREATE TABLE IF NOT EXISTS `feedback` (
+  `feedback_id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `appointment_id` int(11) DEFAULT NULL,
+  `order_id` int(11) DEFAULT NULL,
+  `feedback_type` enum('appointment','order') NOT NULL,
+  `rating` tinyint(1) NOT NULL,
+  `tags` text DEFAULT NULL,
+  `comment` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`feedback_id`),
+  KEY `user_id` (`user_id`),
+  KEY `appointment_id` (`appointment_id`),
+  KEY `order_id` (`order_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `feedback`
+--
+
+INSERT INTO `feedback` (`feedback_id`, `user_id`, `appointment_id`, `order_id`, `feedback_type`, `rating`, `tags`, `comment`, `created_at`) VALUES
+(1, 8, NULL, 12, 'order', 4, 'Great Value, Easy Checkout, Fast Delivery', '', '2026-06-17 10:56:11'),
+(2, 8, 30, NULL, 'appointment', 5, 'Clean Website, Fast Website', '', '2026-06-17 11:04:09');
 
 -- --------------------------------------------------------
 
@@ -144,7 +191,7 @@ CREATE TABLE IF NOT EXISTS `notifications` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`notification_id`),
   KEY `notifications_order_fk` (`order_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `notifications`
@@ -166,7 +213,20 @@ INSERT INTO `notifications` (`notification_id`, `user_id`, `appointment_id`, `or
 (13, 8, 21, NULL, 'user', 'Your appointment for Dental Braces Consult on 2026-06-17 at 11:00 has been confirmed.', 1, '2026-06-14 09:34:18'),
 (14, 8, 22, NULL, 'admin', 'Mary Josephine Magboo cancelled the appointment for Dental Cleaning on 2026-06-27 at 09:00. Reason: had another schedule', 1, '2026-06-14 10:34:03'),
 (15, 8, 25, NULL, 'admin', 'Mary Josephine Magboo booked an appointment for Dental X-Ray on 2026-08-22 at 11:00.', 1, '2026-06-15 20:58:56'),
-(16, 8, 25, NULL, 'user', 'Your appointment for Dental X-Ray on 2026-08-22 at 11:00 has been confirmed.', 1, '2026-06-15 20:59:41');
+(16, 8, 25, NULL, 'user', 'Your appointment for Dental X-Ray on 2026-08-22 at 11:00 has been confirmed.', 1, '2026-06-15 20:59:41'),
+(17, 8, NULL, 9, 'admin', 'New order #9 has been placed by Mary Josephine Magboo.', 1, '2026-06-17 09:50:10'),
+(18, 8, 26, NULL, 'admin', 'Mary Josephine Magboo booked an appointment for Dental Crown on 2026-06-17 at 17:00.', 1, '2026-06-17 09:50:59'),
+(19, 8, 27, NULL, 'admin', 'Mary Josephine Magboo booked an appointment for Dental Braces Consult on 2026-06-17 at 08:00.', 1, '2026-06-17 09:51:52'),
+(20, 8, NULL, 10, 'admin', 'New order #10 has been placed by Mary Josephine Magboo.', 1, '2026-06-17 09:52:32'),
+(21, 8, NULL, 11, 'admin', 'New order #11 has been placed by Mary Josephine Magboo.', 1, '2026-06-17 09:56:24'),
+(22, 8, 28, NULL, 'admin', 'Mary Josephine Magboo booked an appointment for Teeth Whitening on 2026-06-17 at 11:00.', 1, '2026-06-17 09:57:50'),
+(23, 8, 29, NULL, 'admin', 'Mary Josephine Magboo booked an appointment for Tooth Extraction on 2026-06-17 at 14:00.', 1, '2026-06-17 09:59:33'),
+(24, 8, NULL, 12, 'admin', 'New order #12 has been placed by Mary Josephine Magboo.', 0, '2026-06-17 10:55:59'),
+(25, 8, 30, NULL, 'admin', 'Mary Josephine Magboo booked an appointment for Dental Braces Consult on 2026-06-17 at 13:00.', 0, '2026-06-17 11:04:01'),
+(26, 8, 31, NULL, 'admin', 'Mary Josephine Magboo booked an appointment for Dental X-Ray on 2026-06-22 at 14:00.', 0, '2026-06-17 11:28:30'),
+(27, 8, 32, NULL, 'admin', 'Mary Josephine Magboo booked an appointment for Dental Braces Consult on 2026-09-01 at 11:00.', 0, '2026-06-17 15:36:36'),
+(28, 8, 33, NULL, 'admin', 'Mary Josephine Magboo booked an appointment for Dental X-Ray on 2026-08-31 at 15:00.', 0, '2026-06-17 16:15:41'),
+(29, 8, NULL, 13, 'admin', 'New order #13 has been placed by Mary Josephine Magboo.', 0, '2026-06-17 16:16:11');
 
 -- --------------------------------------------------------
 
@@ -178,6 +238,9 @@ DROP TABLE IF EXISTS `orders`;
 CREATE TABLE IF NOT EXISTS `orders` (
   `order_id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
+  `promo_id` int(11) DEFAULT NULL,
+  `promo_code` varchar(50) DEFAULT NULL,
+  `discount_amount` decimal(10,2) DEFAULT 0.00,
   `first_name` varchar(100) DEFAULT NULL,
   `last_name` varchar(100) DEFAULT NULL,
   `email` varchar(120) DEFAULT NULL,
@@ -195,22 +258,28 @@ CREATE TABLE IF NOT EXISTS `orders` (
   `status` enum('pending','processing','out_for_delivery','delivered','completed','cancelled','archived') NOT NULL DEFAULT 'pending',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`order_id`),
-  KEY `user_id` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  KEY `user_id` (`user_id`),
+  KEY `orders_promo_fk` (`promo_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `orders`
 --
 
-INSERT INTO `orders` (`order_id`, `user_id`, `first_name`, `last_name`, `email`, `phone`, `house_no`, `street`, `barangay`, `city`, `province`, `zip`, `notes`, `payment_method`, `gcash_number`, `total_amount`, `status`, `created_at`) VALUES
-(1, 3, 'Chrizyl Abella', NULL, 'abellachrizyl@gmail.com', '+639274213879', NULL, NULL, NULL, 'STO. TOMAS CITY', NULL, '3423', '', 'cod', '', 738.00, 'pending', '2026-05-23 02:56:00'),
-(2, 4, 'Chrizyl Abella', NULL, 'abellachrizyl@gmail.com', '+639274213879', NULL, NULL, NULL, 'STO. TOMAS CITY', NULL, '3423', '', 'cod', '', 1137.00, 'pending', '2026-05-24 03:35:41'),
-(3, 4, 'Chrizyl Abella', NULL, 'abellachrizyl@gmail.com', '+639274213879', NULL, NULL, NULL, 'STO. TOMAS CITY', NULL, '3423', '', 'cod', '', 1137.00, 'pending', '2026-05-24 03:35:41'),
-(4, 6, 'Chrizyl Abella', NULL, 'abellachrizyl@gmail.com', '+639274213879', NULL, NULL, NULL, 'STO. TOMAS CITY', NULL, '3423', '', 'cod', '', 588.00, 'pending', '2026-05-26 08:22:23'),
-(5, 5, 'Chrizyl Abella', NULL, 'abellachrizyl@gmail.com', '+639274213879', NULL, NULL, NULL, 'STO. TOMAS CITY', NULL, '3423', '', 'cod', '', 1137.00, 'pending', '2026-05-26 08:42:32'),
-(6, 8, 'Mary Josephine', 'Magboo', 'magboo.mary@gmail.com', '09196882025', NULL, NULL, NULL, 'Calamba', NULL, '4027', '', 'cod', '', 567.00, 'pending', '2026-06-14 07:19:52'),
-(7, 8, 'Mary Josephine', 'Magboo', 'magboo.mary@gmail.com', '09196882025', NULL, NULL, NULL, 'Calamba', NULL, '4027', '', 'cod', '', 1137.00, 'pending', '2026-06-14 10:36:42'),
-(8, 8, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027', '', 'cod', '', 538.00, 'pending', '2026-06-15 09:55:17');
+INSERT INTO `orders` (`order_id`, `user_id`, `promo_id`, `promo_code`, `discount_amount`, `first_name`, `last_name`, `email`, `phone`, `house_no`, `street`, `barangay`, `city`, `province`, `zip`, `notes`, `payment_method`, `gcash_number`, `total_amount`, `status`, `created_at`) VALUES
+(1, 3, NULL, NULL, 0.00, 'Chrizyl Abella', NULL, 'abellachrizyl@gmail.com', '+639274213879', NULL, NULL, NULL, 'STO. TOMAS CITY', NULL, '3423', '', 'cod', '', 738.00, 'pending', '2026-05-23 02:56:00'),
+(2, 4, NULL, NULL, 0.00, 'Chrizyl Abella', NULL, 'abellachrizyl@gmail.com', '+639274213879', NULL, NULL, NULL, 'STO. TOMAS CITY', NULL, '3423', '', 'cod', '', 1137.00, 'pending', '2026-05-24 03:35:41'),
+(3, 4, NULL, NULL, 0.00, 'Chrizyl Abella', NULL, 'abellachrizyl@gmail.com', '+639274213879', NULL, NULL, NULL, 'STO. TOMAS CITY', NULL, '3423', '', 'cod', '', 1137.00, 'pending', '2026-05-24 03:35:41'),
+(4, 6, NULL, NULL, 0.00, 'Chrizyl Abella', NULL, 'abellachrizyl@gmail.com', '+639274213879', NULL, NULL, NULL, 'STO. TOMAS CITY', NULL, '3423', '', 'cod', '', 588.00, 'pending', '2026-05-26 08:22:23'),
+(5, 5, NULL, NULL, 0.00, 'Chrizyl Abella', NULL, 'abellachrizyl@gmail.com', '+639274213879', NULL, NULL, NULL, 'STO. TOMAS CITY', NULL, '3423', '', 'cod', '', 1137.00, 'pending', '2026-05-26 08:42:32'),
+(6, 8, NULL, NULL, 0.00, 'Mary Josephine', 'Magboo', 'magboo.mary@gmail.com', '09196882025', NULL, NULL, NULL, 'Calamba', NULL, '4027', '', 'cod', '', 567.00, 'pending', '2026-06-14 07:19:52'),
+(7, 8, NULL, NULL, 0.00, 'Mary Josephine', 'Magboo', 'magboo.mary@gmail.com', '09196882025', NULL, NULL, NULL, 'Calamba', NULL, '4027', '', 'cod', '', 1137.00, 'pending', '2026-06-14 10:36:42'),
+(8, 8, NULL, NULL, 0.00, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027', '', 'cod', '', 538.00, 'pending', '2026-06-15 09:55:17'),
+(9, 8, NULL, NULL, 0.00, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027', '', 'cod', '', 1337.00, 'pending', '2026-06-17 09:50:10'),
+(10, 8, NULL, NULL, 0.00, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027', '', 'cod', '', 777.00, 'pending', '2026-06-17 09:52:32'),
+(11, 8, NULL, NULL, 0.00, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027', '', 'cod', '', 189.00, 'pending', '2026-06-17 09:56:24'),
+(12, 8, NULL, NULL, 0.00, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027', '', 'cod', '', 548.00, 'pending', '2026-06-17 10:55:59'),
+(13, 8, 2, 'SHOP10', 39.90, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027', '', 'cod', '', 359.10, 'pending', '2026-06-17 16:16:11');
 
 -- --------------------------------------------------------
 
@@ -229,7 +298,7 @@ CREATE TABLE IF NOT EXISTS `order_items` (
   PRIMARY KEY (`order_item_id`),
   KEY `order_id` (`order_id`),
   KEY `product_id` (`product_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `order_items`
@@ -254,7 +323,16 @@ INSERT INTO `order_items` (`order_item_id`, `order_id`, `product_id`, `quantity`
 (16, 7, 7, 1, 399.00, '2026-06-14 10:36:42'),
 (17, 7, 3, 1, 189.00, '2026-06-14 10:36:42'),
 (18, 8, 4, 1, 349.00, '2026-06-15 09:55:17'),
-(19, 8, 3, 1, 189.00, '2026-06-15 09:55:17');
+(19, 8, 3, 1, 189.00, '2026-06-15 09:55:17'),
+(20, 9, 3, 1, 189.00, '2026-06-17 09:50:10'),
+(21, 9, 6, 1, 249.00, '2026-06-17 09:50:10'),
+(22, 9, 5, 1, 899.00, '2026-06-17 09:50:10'),
+(23, 10, 7, 1, 399.00, '2026-06-17 09:52:32'),
+(24, 10, 3, 2, 189.00, '2026-06-17 09:52:32'),
+(25, 11, 3, 1, 189.00, '2026-06-17 09:56:24'),
+(26, 12, 6, 1, 249.00, '2026-06-17 10:55:59'),
+(27, 12, 2, 1, 299.00, '2026-06-17 10:55:59'),
+(28, 13, 7, 1, 399.00, '2026-06-17 16:16:11');
 
 -- --------------------------------------------------------
 
@@ -298,6 +376,7 @@ DROP TABLE IF EXISTS `products`;
 CREATE TABLE IF NOT EXISTS `products` (
   `product_id` int(11) NOT NULL AUTO_INCREMENT,
   `product_name` varchar(150) NOT NULL,
+  `category` varchar(50) DEFAULT NULL,
   `description` text DEFAULT NULL,
   `image_path` varchar(255) DEFAULT NULL,
   `price` decimal(10,2) DEFAULT NULL,
@@ -305,21 +384,55 @@ CREATE TABLE IF NOT EXISTS `products` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `status` enum('available','sold_out') NOT NULL DEFAULT 'available',
   PRIMARY KEY (`product_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `products`
 --
 
-INSERT INTO `products` (`product_id`, `product_name`, `description`, `image_path`, `price`, `stock_quantity`, `created_at`, `status`) VALUES
-(1, 'Sonic Pro Toothbrush', 'Rechargeable electric toothbrush with 3 modes.', NULL, 1299.00, 12, '2026-05-23 01:55:18', 'available'),
-(2, 'WhiteGlow Toothpaste', 'Enamel-strengthening whitening paste.', NULL, 299.00, 30, '2026-05-23 01:55:18', 'available'),
-(3, 'Silk Dental Floss', 'Natural silk floss with wax coating.', NULL, 189.00, 24, '2026-05-23 01:55:18', 'available'),
-(4, 'AquaFresh Mouthwash', 'Antibacterial alcohol-free rinse.', NULL, 349.00, 18, '2026-05-23 01:55:18', 'available'),
-(5, 'Teeth Whitening Strips', '14-day whitening kit.', NULL, 899.00, 16, '2026-05-23 01:55:18', 'available'),
-(6, 'Tongue Scraper Set', 'Stainless steel scrapers.', NULL, 249.00, 20, '2026-05-23 01:55:18', 'available'),
-(7, 'Sensitive Gum Gel', 'Soothing gel for gum sensitivity.', NULL, 399.00, 15, '2026-05-23 01:55:18', 'available'),
-(8, 'Natural Bamboo Brush Set', '4-pack biodegradable bamboo toothbrushes.', NULL, 549.00, 10, '2026-05-23 01:55:18', 'available');
+INSERT INTO `products` (`product_id`, `product_name`, `category`, `description`, `image_path`, `price`, `stock_quantity`, `created_at`, `status`) VALUES
+(1, 'Sonic Pro Toothbrush', NULL, 'Rechargeable electric toothbrush with 3 modes.', NULL, 1299.00, 12, '2026-05-23 01:55:18', 'available'),
+(2, 'WhiteGlow Toothpaste', NULL, 'Enamel-strengthening whitening paste.', NULL, 299.00, 30, '2026-05-23 01:55:18', 'available'),
+(3, 'Silk Dental Floss', NULL, 'Natural silk floss with wax coating.', NULL, 189.00, 24, '2026-05-23 01:55:18', 'available'),
+(4, 'AquaFresh Mouthwash', NULL, 'Antibacterial alcohol-free rinse.', NULL, 349.00, 18, '2026-05-23 01:55:18', 'available'),
+(5, 'Teeth Whitening Strips', NULL, '14-day whitening kit.', NULL, 899.00, 16, '2026-05-23 01:55:18', 'available'),
+(6, 'Tongue Scraper Set', NULL, 'Stainless steel scrapers.', NULL, 249.00, 20, '2026-05-23 01:55:18', 'available'),
+(7, 'Sensitive Gum Gel', NULL, 'Soothing gel for gum sensitivity.', NULL, 399.00, 15, '2026-05-23 01:55:18', 'available'),
+(8, 'Natural Bamboo Brush Set', NULL, '4-pack biodegradable bamboo toothbrushes.', NULL, 549.00, 10, '2026-05-23 01:55:18', 'available');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `promos`
+--
+
+DROP TABLE IF EXISTS `promos`;
+CREATE TABLE IF NOT EXISTS `promos` (
+  `promo_id` int(11) NOT NULL AUTO_INCREMENT,
+  `promo_code` varchar(50) NOT NULL,
+  `promo_name` varchar(150) NOT NULL,
+  `description` text DEFAULT NULL,
+  `promo_target` enum('appointment','shop','both') NOT NULL DEFAULT 'appointment',
+  `discount_type` enum('percentage','fixed') NOT NULL DEFAULT 'percentage',
+  `discount_value` decimal(10,2) NOT NULL,
+  `original_price` decimal(10,2) DEFAULT NULL,
+  `promo_price` decimal(10,2) DEFAULT NULL,
+  `image_path` varchar(255) DEFAULT NULL,
+  `status` enum('active','inactive','expired') NOT NULL DEFAULT 'active',
+  `start_date` date DEFAULT NULL,
+  `end_date` date DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`promo_id`),
+  UNIQUE KEY `promo_code` (`promo_code`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `promos`
+--
+
+INSERT INTO `promos` (`promo_id`, `promo_code`, `promo_name`, `description`, `promo_target`, `discount_type`, `discount_value`, `original_price`, `promo_price`, `image_path`, `status`, `start_date`, `end_date`, `created_at`) VALUES
+(1, 'APPT10', 'Appointment Discount', 'Hidden appointment promo code.', 'appointment', 'percentage', 10.00, NULL, NULL, NULL, 'active', '2026-06-01', '2026-06-30', '2026-06-17 12:03:00'),
+(2, 'SHOP10', 'Shop Discount', 'Hidden shop promo code.', 'shop', 'percentage', 10.00, NULL, NULL, NULL, 'active', '2026-06-01', '2026-06-30', '2026-06-17 12:03:00');
 
 -- --------------------------------------------------------
 
@@ -339,7 +452,7 @@ CREATE TABLE IF NOT EXISTS `services` (
   `daily_slots` int(11) NOT NULL DEFAULT 0,
   `status` enum('available','unavailable') NOT NULL DEFAULT 'available',
   PRIMARY KEY (`service_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `services`
@@ -407,7 +520,8 @@ INSERT INTO `users` (`user_id`, `first_name`, `last_name`, `email`, `phone`, `pa
 ALTER TABLE `appointments`
   ADD CONSTRAINT `appointments_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE,
   ADD CONSTRAINT `appointments_ibfk_2` FOREIGN KEY (`dentist_id`) REFERENCES `dentists` (`dentist_id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `appointments_ibfk_3` FOREIGN KEY (`service_id`) REFERENCES `services` (`service_id`) ON DELETE SET NULL;
+  ADD CONSTRAINT `appointments_ibfk_3` FOREIGN KEY (`service_id`) REFERENCES `services` (`service_id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `appointments_promo_fk` FOREIGN KEY (`promo_id`) REFERENCES `promos` (`promo_id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `cart_items`
@@ -415,6 +529,14 @@ ALTER TABLE `appointments`
 ALTER TABLE `cart_items`
   ADD CONSTRAINT `cart_items_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE,
   ADD CONSTRAINT `cart_items_ibfk_2` FOREIGN KEY (`product_id`) REFERENCES `products` (`product_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `feedback`
+--
+ALTER TABLE `feedback`
+  ADD CONSTRAINT `feedback_appointment_fk` FOREIGN KEY (`appointment_id`) REFERENCES `appointments` (`appointment_id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `feedback_order_fk` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `feedback_user_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `notifications`
@@ -426,7 +548,8 @@ ALTER TABLE `notifications`
 -- Constraints for table `orders`
 --
 ALTER TABLE `orders`
-  ADD CONSTRAINT `orders_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
+  ADD CONSTRAINT `orders_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `orders_promo_fk` FOREIGN KEY (`promo_id`) REFERENCES `promos` (`promo_id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `order_items`
