@@ -58,11 +58,11 @@ if (isAdmin()) {
 <div class="filter-bar">
   <div class="filter-inner">
     <button class="filter-btn active" data-category="all"         onclick="filterProducts('all',this)">All Products</button>
-    <button class="filter-btn"        data-category="electric"    onclick="filterProducts('electric',this)">Electric Tools</button>
-    <button class="filter-btn"        data-category="paste"       onclick="filterProducts('paste',this)">Toothpaste</button>
-    <button class="filter-btn"        data-category="floss"       onclick="filterProducts('floss',this)">Floss &amp; Rinse</button>
-    <button class="filter-btn"        data-category="whitening"   onclick="filterProducts('whitening',this)">Whitening</button>
-    <button class="filter-btn"        data-category="accessories" onclick="filterProducts('accessories',this)">Accessories</button>
+    <button class="filter-btn"        data-category="Electric Tools" onclick="filterProducts('Electric Tools',this)">Electric Tools</button>
+    <button class="filter-btn"        data-category="Toothpaste"     onclick="filterProducts('Toothpaste',this)">Toothpaste</button>
+    <button class="filter-btn"        data-category="Floss &amp; Rinse" onclick="filterProducts('Floss & Rinse',this)">Floss &amp; Rinse</button>
+    <button class="filter-btn"        data-category="Whitening"      onclick="filterProducts('Whitening',this)">Whitening</button>
+    <button class="filter-btn"        data-category="Accessories"    onclick="filterProducts('Accessories',this)">Accessories</button>
   </div>
   <div class="sort-group">
     <label class="sort-label" for="sort-select">Sort by</label>
@@ -200,18 +200,18 @@ if (isAdmin()) {
 
   /* ── Products ── */
   let PRODUCTS = [
-    new Product({ id:'P1',  name:'Sonic Pro Toothbrush',     price:1299, category:'electric',    desc:'Rechargeable electric toothbrush with 3 modes and UV sanitizer.',                 img:'images/toothbrush.avif' }),
-    new Product({ id:'P2',  name:'WhiteGlo Toothpaste',     price:299,  category:'paste',       desc:'Enamel-strengthening whitening paste with fluoride and mint.',                    img:'images/toothpaste.jpg' }),
-    new Product({ id:'P3',  name:'Silk Dental Floss',        price:189,  category:'floss',       desc:'Natural silk floss with wax coating for smooth, effortless cleaning.',           img:'images/floss.jpg' }),
-    new Product({ id:'P4',  name:'AquaFresh Mouthwash',      price:349,  category:'floss',       desc:'Antibacterial rinse with fresh mint and zero alcohol formula.',                   img:'images/mouthwash.jpg' }),
-    new Product({ id:'P5',  name:'Teeth Whitening Strips',   price:899,  category:'whitening',   desc:'14-day whitening kit, clinically proven to whiten up to 7 shades.',              img:'images/whitening strips.jpg' }),
-    new Product({ id:'P6',  name:'Tongue Scraper Set',       price:249,  category:'accessories', desc:'Stainless steel scrapers for fresher breath and improved oral hygiene.',          img:'images/scraper set.jpg' }),
-    new Product({ id:'P7',  name:'Sensitive Gum Balm Gel',        price:399,  category:'paste',       desc:'Soothing gel formula for gum sensitivity and irritation relief.',                img:'images/gum gel.png' }),
-    new Product({ id:'P8',  name:'Natural Bamboo Brush Set', price:549,  category:'accessories', desc:'4-pack biodegradable bamboo toothbrushes with charcoal bristles.',               img:'images/bamboo toothbrush.webp' }),
-    new Product({ id:'P9',  name:'Water Flosser Elite',      price:1899, category:'electric',    desc:'Cordless water flosser with 10 pressure settings and 360&#176; rotating tip.',   img:'images/elite flosser.jpg' }),
-    new Product({ id:'P10', name:'Enamel Repair Paste',      price:449,  category:'paste',       desc:'Clinically proven formula that re-mineralizes and strengthens tooth enamel.',     img:'images/enamel repair.jpg' }),
-    new Product({ id:'P11', name:'Charcoal Whitening Kit',   price:749,  category:'whitening',   desc:'Activated charcoal powder with LED light tray for professional results at home.', img:'images/charcoal kit.png' }),
-    new Product({ id:'P12', name:'Travel Dental Kit',        price:329,  category:'accessories', desc:'Compact travel set with foldable brush, mini paste, and floss picks.',           img:'images/dental kit.jpg' }),
+    new Product({ id:'P1',  name:'Sonic Pro Toothbrush',     price:1299, category:'Electric Tools', desc:'Rechargeable electric toothbrush with 3 modes and UV sanitizer.',                 img:'images/toothbrush.avif' }),
+    new Product({ id:'P2',  name:'WhiteGlo Toothpaste',     price:299,  category:'Toothpaste',     desc:'Enamel-strengthening whitening paste with fluoride and mint.',                    img:'images/toothpaste.jpg' }),
+    new Product({ id:'P3',  name:'Silk Dental Floss',        price:189,  category:'Floss & Rinse', desc:'Natural silk floss with wax coating for smooth, effortless cleaning.',           img:'images/floss.jpg' }),
+    new Product({ id:'P4',  name:'AquaFresh Mouthwash',      price:349,  category:'Floss & Rinse', desc:'Antibacterial rinse with fresh mint and zero alcohol formula.',                   img:'images/mouthwash.jpg' }),
+    new Product({ id:'P5',  name:'Teeth Whitening Strips',   price:899,  category:'Whitening',     desc:'14-day whitening kit, clinically proven to whiten up to 7 shades.',              img:'images/whitening strips.jpg' }),
+    new Product({ id:'P6',  name:'Tongue Scraper Set',       price:249,  category:'Accessories',   desc:'Stainless steel scrapers for fresher breath and improved oral hygiene.',          img:'images/scraper set.jpg' }),
+    new Product({ id:'P7',  name:'Sensitive Gum Balm Gel',   price:399,  category:'Toothpaste',     desc:'Soothing gel formula for gum sensitivity and irritation relief.',                img:'images/gum gel.png' }),
+    new Product({ id:'P8',  name:'Natural Bamboo Brush Set', price:549,  category:'Accessories',   desc:'4-pack biodegradable bamboo toothbrushes with charcoal bristles.',               img:'images/bamboo toothbrush.webp' }),
+    new Product({ id:'P9',  name:'Water Flosser Elite',      price:1899, category:'Electric Tools', desc:'Cordless water flosser with 10 pressure settings and 360&#176; rotating tip.',   img:'images/elite flosser.jpg' }),
+    new Product({ id:'P10', name:'Enamel Repair Paste',      price:449,  category:'Toothpaste',     desc:'Clinically proven formula that re-mineralizes and strengthens tooth enamel.',     img:'images/enamel repair.jpg' }),
+    new Product({ id:'P11', name:'Charcoal Whitening Kit',   price:749,  category:'Whitening',     desc:'Activated charcoal powder with LED light tray for professional results at home.', img:'images/charcoal kit.png' }),
+    new Product({ id:'P12', name:'Travel Dental Kit',        price:329,  category:'Accessories',   desc:'Compact travel set with foldable brush, mini paste, and floss picks.',           img:'images/dental kit.jpg' }),
   ];
 
   let cart = [];
@@ -318,7 +318,13 @@ if (isAdmin()) {
   }
 
   function categoryLabel(cat) {
-    return {electric:'Electric Tools',paste:'Toothpaste',floss:'Floss & Rinse',whitening:'Whitening',accessories:'Accessories'}[cat]||cat;
+    return {
+      electric:'Electric Tools',
+      paste:'Toothpaste',
+      floss:'Floss & Rinse',
+      whitening:'Whitening',
+      accessories:'Accessories'
+    }[cat] || cat;
   }
 
   function filterProducts(cat, btn) {
@@ -560,11 +566,11 @@ if (isAdmin()) {
 
   function productCategoryFromName(name) {
     const text = name.toLowerCase();
-    if (text.includes('toothbrush') || text.includes('flosser')) return 'electric';
-    if (text.includes('paste') || text.includes('gel')) return 'paste';
-    if (text.includes('floss') || text.includes('mouthwash')) return 'floss';
-    if (text.includes('white') || text.includes('charcoal')) return 'whitening';
-    return 'accessories';
+    if (text.includes('toothbrush') || text.includes('flosser')) return 'Electric Tools';
+    if (text.includes('paste') || text.includes('gel')) return 'Toothpaste';
+    if (text.includes('floss') || text.includes('mouthwash')) return 'Floss & Rinse';
+    if (text.includes('white') || text.includes('charcoal')) return 'Whitening';
+    return 'Accessories';
   }
 
   async function syncProductsFromDatabase() {
@@ -578,7 +584,7 @@ if (isAdmin()) {
         id: String(p.id),
         name: p.name,
         price: Number(p.price),
-        category: productCategoryFromName(p.name),
+        category: p.category || productCategoryFromName(p.name),
         desc: p.desc || '',
         img: p.img || p.photo || '',
       }));

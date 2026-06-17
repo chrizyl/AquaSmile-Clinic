@@ -1489,7 +1489,7 @@ requirePatientPage();
       const formData = collectFormData();
       if (!formData) return;
       try {
-        await apiRequest('create_order', {
+        const result = await apiRequest('create_order', {
           first_name: formData.first_name,
           last_name: formData.last_name,
           email: formData.email,
@@ -1511,6 +1511,7 @@ requirePatientPage();
           })),
           total: formData.total,
         });
+        currentOrderId = result.orderId || result.order_id || null;
       } catch (err) {
         alert(err.message || 'Unable to place your order. Please try again.');
         return;
@@ -1533,6 +1534,7 @@ requirePatientPage();
     // ── RATING POPUP STATE ──
     let ratingStars   = 0;
     let ratingAspects = [];
+    let currentOrderId = null;
 
     function showRatingPopup() {
       const successPopup = document.getElementById('success-popup');
@@ -1570,20 +1572,40 @@ requirePatientPage();
       if (submitBtn) submitBtn.disabled = ratingStars === 0;
     }
 
-    function submitRating() {
-      if (ratingStars === 0) return;
+    async function submitRating() {
+      if (ratingStars < 1 || ratingStars > 5) {
+        alert('Please select a rating before submitting.');
+        return;
+      }
+      if (!currentOrderId) {
+        alert('Unable to find the order for this feedback. Please try again.');
+        return;
+      }
+
+      const submitBtn = document.getElementById('rating-submit-btn');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving...';
+      }
 
       const comment = document.getElementById('rating-comment')?.value || '';
 
-      const feedback = {
-        stars:      ratingStars,
-        aspects:    ratingAspects,
-        comment:    comment,
-        ratedAt:    new Date().toISOString(),
-      };
-
-      // No persistence yet — just log for now.
-      console.log('Order feedback submitted:', feedback);
+      try {
+        await apiRequest('save_feedback', {
+          feedback_type: 'order',
+          order_id: currentOrderId,
+          rating: ratingStars,
+          tags: ratingAspects.join(', '),
+          comment: comment,
+        });
+      } catch (err) {
+        alert(err.message || 'Unable to save your feedback. Please try again.');
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Submit Feedback';
+        }
+        return;
+      }
 
       const formContent = document.getElementById('rating-form-content');
       const thankYou     = document.getElementById('rating-thankyou');
@@ -1606,6 +1628,8 @@ requirePatientPage();
       if (commentEl) commentEl.value = '';
 
       updateRatingSubmitState();
+      const submitBtn = document.getElementById('rating-submit-btn');
+      if (submitBtn) submitBtn.textContent = 'Submit Feedback';
 
       const formContent = document.getElementById('rating-form-content');
       const thankYou     = document.getElementById('rating-thankyou');

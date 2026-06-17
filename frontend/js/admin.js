@@ -9,6 +9,7 @@ let _selectedAppointmentId = null;
 let _selectedOrderId = null;
 let _adminRouteHandled = false;
 const SERVICE_CATEGORY_OPTIONS = ['Preventive', 'Diagnostic', 'Restorative', 'Cosmetic', 'Orthodontic'];
+const PRODUCT_CATEGORY_OPTIONS = ['Electric Tools', 'Toothpaste', 'Floss & Rinse', 'Whitening', 'Accessories'];
 
 function showToast(msg, ok = true) {
   const t = document.getElementById('toast');
@@ -53,6 +54,7 @@ async function adminRefresh() {
     renderOrders(d.orders || [], d.orderItems || []);
     renderCatalog(d.products || [], d.services || [], d.dentists || []);
     renderNotifications(d.notifications || []);
+    renderFeedback(d.feedback || []);
     updateNotifyBadge(d.notifications || []);
     applyAdminRouteTarget();
   } catch (e) {
@@ -804,6 +806,52 @@ function renderNotifications(notifications) {
   }).join('') || '<div class="empty-state-card">No notifications yet.</div>';
 }
 
+function renderFeedback(feedback) {
+  const rows = feedback || [];
+  const total = rows.length;
+  const appointmentCount = rows.filter(item => item.type === 'appointment').length;
+  const orderCount = rows.filter(item => item.type === 'order').length;
+  const ratingTotal = rows.reduce((sum, item) => sum + (Number(item.rating) || 0), 0);
+  const average = total ? ratingTotal / total : 0;
+
+  setText('feedback-average-rating', total ? average.toFixed(1) : '0.0');
+  setText('feedback-average-subtitle', total ? `${renderStarsText(Math.round(average))} from ${total} review${total === 1 ? '' : 's'}` : 'No ratings yet');
+  setText('feedback-appointment-count', appointmentCount);
+  setText('feedback-order-count', orderCount);
+  setText('feedback-total-count', total);
+
+  const list = document.getElementById('feedback-list');
+  if (!list) return;
+
+  list.innerHTML = rows.map(item => {
+    const isOrder = item.type === 'order';
+    const reference = isOrder
+      ? `Order #${item.orderId || '-'}`
+      : `Appointment #${item.appointmentId || '-'}`;
+    const tags = String(item.tags || '').split(',').map(tag => tag.trim()).filter(Boolean);
+    return `
+      <article class="feedback-item">
+        <div class="feedback-item-main">
+          <div class="feedback-avatar">${initials(item.userName)}</div>
+          <div class="feedback-copy">
+            <div class="feedback-heading">
+              <strong>${esc(item.userName || 'AquaSmile Patient')}</strong>
+              <span class="feedback-type ${isOrder ? 'order' : 'appointment'}">${esc(statusLabel(item.type || 'feedback'))}</span>
+            </div>
+            <div class="feedback-reference">${esc(reference)}</div>
+            <div class="feedback-stars" aria-label="${esc(String(item.rating || 0))} out of 5 stars">
+              ${renderStars(Number(item.rating) || 0)}
+              <span>${esc(String(item.rating || 0))}/5</span>
+            </div>
+            ${tags.length ? `<div class="feedback-tags">${tags.map(tag => `<span>${esc(tag)}</span>`).join('')}</div>` : '<div class="feedback-tags muted">No tags selected</div>'}
+            <p class="feedback-comment">${item.comment ? esc(item.comment) : '<span>No comment provided.</span>'}</p>
+          </div>
+        </div>
+        <time>${esc(formatDate(item.createdAt))}</time>
+      </article>`;
+  }).join('') || '<div class="empty-state-card">No feedback submitted yet.</div>';
+}
+
 async function openAdminNotification(notificationId) {
   const notification = (_adminData.notifications || []).find(item => String(item.id) === String(notificationId));
   if (!notification) return;
@@ -989,6 +1037,7 @@ function modalConfig(type, record) {
       fields: [
         { id:'name',          label:'Product Name *',  type:'text',   value: record?.name        || '' },
         { id:'description',   label:'Description',     type:'textarea', value: record?.desc       || '' },
+        { id:'category',      label:'Category *',      type:'select', value: record?.category     || '', options: PRODUCT_CATEGORY_OPTIONS },
         { id:'price',         label:'Price (PHP) *',   type:'number', value: record?.price        || '' },
         { id:'stock_quantity',label:'Stock Quantity',  type:'number', value: record?.stock        || 0  },
         { id:'image',         label:'Product Image',   type:'file',   currentPreview: record?.imagePath || '' },
@@ -1309,6 +1358,15 @@ function formatDateOnly(dateStr) {
 function formatDate(dateStr) {
   if (!dateStr) return '—';
   return new Date(dateStr).toLocaleString('en-PH', { dateStyle:'medium', timeStyle:'short' });
+}
+
+function renderStars(rating) {
+  const value = Math.max(0, Math.min(5, Number(rating) || 0));
+  return Array.from({ length: 5 }, (_, index) => `<span class="${index < value ? 'filled' : ''}">&#9733;</span>`).join('');
+}
+function renderStarsText(rating) {
+  const value = Math.max(0, Math.min(5, Number(rating) || 0));
+  return `${value}/5`;
 }
 
 function logout() {

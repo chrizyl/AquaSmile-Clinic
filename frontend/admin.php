@@ -19,7 +19,7 @@ requireAdminPage();
     href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&amp;family=DM+Sans:wght@300;400;500&amp;display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="css/style.css?v=20260524">
-  <link rel="stylesheet" href="css/admin.css?v=20260616m">
+  <link rel="stylesheet" href="css/admin.css?v=20260617a">
 </head>
 
 <body class="admin-body">
@@ -47,6 +47,7 @@ requireAdminPage();
       <button class="admin-side-link" type="button" data-view="notifications" onclick="showAdminView('notifications')">
         Notifications <span class="admin-notify-badge" id="admin-notify-badge">0</span>
       </button>
+      <button class="admin-side-link" type="button" data-view="feedback" onclick="showAdminView('feedback')">Feedback</button>
     </aside>
 
     <section class="admin-content">
@@ -253,11 +254,52 @@ requireAdminPage();
       </article>
       </section>
 
+      <section class="admin-view" id="view-feedback" data-admin-view="feedback">
+      <article class="admin-panel feedback-panel">
+        <div class="panel-head">
+          <div>
+            <div class="section-label">Patient Feedback</div>
+            <h2>Reviews and Ratings</h2>
+          </div>
+          <span class="admin-badge">latest responses</span>
+        </div>
+        <section class="feedback-stats" aria-label="Feedback summary">
+          <article class="feedback-stat-card average">
+            <span>Average Rating</span>
+            <strong id="feedback-average-rating">0.0</strong>
+            <small id="feedback-average-subtitle">No ratings yet</small>
+          </article>
+          <article class="feedback-stat-card appointment">
+            <span>Appointment Reviews</span>
+            <strong id="feedback-appointment-count">0</strong>
+            <small>booking experience</small>
+          </article>
+          <article class="feedback-stat-card order">
+            <span>Order Reviews</span>
+            <strong id="feedback-order-count">0</strong>
+            <small>shop experience</small>
+          </article>
+          <article class="feedback-stat-card total">
+            <span>Total Feedback</span>
+            <strong id="feedback-total-count">0</strong>
+            <small>submitted reviews</small>
+          </article>
+        </section>
+        <div class="feedback-list-head">
+          <div>
+            <div class="section-label">Recent Feedback</div>
+            <h3>What Patients Are Saying</h3>
+          </div>
+        </div>
+        <div class="feedback-list" id="feedback-list"></div>
+      </article>
+      </section>
+
     </section>
   </main>
 
   <script src="js/main.js?v=20260616a"></script>
-  <script src="js/admin.js?v=20260616m"></script>
+  <script src="js/admin.js?v=20260617a"></script>
 </body>
 
 </html>

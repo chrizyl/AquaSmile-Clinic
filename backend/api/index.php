@@ -101,6 +101,9 @@ try {
         case 'create_order':
             create_order();
             break;
+        case 'save_feedback':
+            save_feedback();
+            break;
         case 'user_account':
             user_account();
             break;
@@ -328,11 +331,15 @@ function admin_add_product()
     $data        = request_json();
     $name        = trim($data['name'] ?? '');
     $description = trim($data['description'] ?? '');
+    $category    = trim($data['category'] ?? '');
     $price       = (float)($data['price'] ?? 0);
     $stock       = max(0, (int)($data['stock_quantity'] ?? 0));
     $errors      = [];
+    $categoryOptions = ['Electric Tools', 'Toothpaste', 'Floss & Rinse', 'Whitening', 'Accessories'];
 
     if ($name === '') $errors[] = 'Product name is required.';
+    if ($category === '') $errors[] = 'Category is required.';
+    if ($category !== '' && !in_array($category, $categoryOptions, true)) $errors[] = 'Invalid product category.';
     if ($price <= 0)  $errors[] = 'Price must be greater than 0.';
     if ($errors) {
         json_response(['ok' => false, 'message' => implode(' ', $errors), 'errors' => $errors], 422);
@@ -341,8 +348,8 @@ function admin_add_product()
     $imagePath = upload_catalog_image('products');
 
     execute_sql(
-        "INSERT INTO products (product_name, description, price, stock_quantity, image_path, status) VALUES (?, ?, ?, ?, ?, 'available')",
-        [$name, $description, $price, $stock, $imagePath]
+        "INSERT INTO products (product_name, description, category, price, stock_quantity, image_path, status) VALUES (?, ?, ?, ?, ?, ?, 'available')",
+        [$name, $description, $category, $price, $stock, $imagePath]
     );
     $id  = (int)db()->lastInsertId();
     $row = fetch_one('SELECT * FROM products WHERE product_id = ?', [$id]);
@@ -356,12 +363,16 @@ function admin_edit_product()
     $id          = (int)($data['id'] ?? 0);
     $name        = trim($data['name'] ?? '');
     $description = trim($data['description'] ?? '');
+    $category    = trim($data['category'] ?? '');
     $price       = (float)($data['price'] ?? 0);
     $stock       = max(0, (int)($data['stock_quantity'] ?? 0));
     $errors      = [];
+    $categoryOptions = ['Electric Tools', 'Toothpaste', 'Floss & Rinse', 'Whitening', 'Accessories'];
 
     if ($id <= 0)    $errors[] = 'Invalid product ID.';
     if ($name === '') $errors[] = 'Product name is required.';
+    if ($category === '') $errors[] = 'Category is required.';
+    if ($category !== '' && !in_array($category, $categoryOptions, true)) $errors[] = 'Invalid product category.';
     if ($price <= 0)  $errors[] = 'Price must be greater than 0.';
     if ($errors) {
         json_response(['ok' => false, 'message' => implode(' ', $errors), 'errors' => $errors], 422);
@@ -374,8 +385,8 @@ function admin_edit_product()
     $imagePath = upload_catalog_image('products', $existing['image_path'] ?? null);
 
     execute_sql(
-        'UPDATE products SET product_name = ?, description = ?, price = ?, stock_quantity = ?, image_path = ? WHERE product_id = ?',
-        [$name, $description, $price, $stock, $imagePath, $id]
+        'UPDATE products SET product_name = ?, description = ?, category = ?, price = ?, stock_quantity = ?, image_path = ? WHERE product_id = ?',
+        [$name, $description, $category, $price, $stock, $imagePath, $id]
     );
     $row = fetch_one('SELECT * FROM products WHERE product_id = ?', [$id]);
     json_response(['ok' => true, 'message' => 'Product updated successfully.', 'product' => normalize_product($row)]);
@@ -715,7 +726,7 @@ function normalize_product($row)
         'imagePath' => $imagePath,
         'photo' => $photo,
         'img' => $photo,
-        'category' => '',
+        'category' => $row['category'] ?? '',
         'stock' => (int) ($row['stock_quantity'] ?? 0),
         'status' => $row['status'] ?? 'available',
     ];
@@ -739,6 +750,22 @@ function normalize_appointment($row)
         'status' => $row['status'],
         'cancellationReason' => $row['cancellation_reason'] ?? '',
         'cancelledBy' => $row['cancelled_by'] ?? '',
+        'createdAt' => $row['created_at'] ?? '',
+    ];
+}
+
+function normalize_feedback($row)
+{
+    return [
+        'id' => (string) ($row['feedback_id'] ?? ''),
+        'userId' => (string) ($row['user_id'] ?? ''),
+        'userName' => trim((string) ($row['user_name'] ?? '')) ?: 'AquaSmile Patient',
+        'appointmentId' => $row['appointment_id'] !== null ? (string) $row['appointment_id'] : null,
+        'orderId' => $row['order_id'] !== null ? (string) $row['order_id'] : null,
+        'type' => $row['feedback_type'] ?? '',
+        'rating' => (int) ($row['rating'] ?? 0),
+        'tags' => $row['tags'] ?? '',
+        'comment' => $row['comment'] ?? '',
         'createdAt' => $row['created_at'] ?? '',
     ];
 }
@@ -770,7 +797,7 @@ function catalog()
     json_response([
         'ok' => true,
         'services' => array_map('normalize_service', fetch_all("SELECT * FROM services WHERE status != 'archived' ORDER BY service_name")),
-        'products' => array_map('normalize_product', fetch_all("SELECT * FROM products WHERE status != 'archived' ORDER BY product_name")),
+        'products' => array_map('normalize_product', fetch_all("SELECT * FROM products WHERE status = 'available' ORDER BY product_name")),
         'dentists' => array_map('normalize_dentist', fetch_all("SELECT * FROM dentists WHERE status != 'archived' ORDER BY first_name, last_name")),
     ]);
 }
@@ -821,6 +848,13 @@ function dashboard()
          ORDER BY n.created_at DESC"
     );
 
+    $feedback = array_map('normalize_feedback', fetch_all(
+        "SELECT f.*, CONCAT(u.first_name, ' ', u.last_name) AS user_name
+         FROM feedback f
+         LEFT JOIN users u ON u.user_id = f.user_id
+         ORDER BY f.created_at DESC, f.feedback_id DESC"
+    ));
+
     json_response([
         'ok' => true,
         'users' => array_map('normalize_user', fetch_all('SELECT * FROM users ORDER BY created_at DESC')),
@@ -838,6 +872,7 @@ function dashboard()
         'orders' => $orders,
         'orderItems' => $orderItems,
         'notifications' => $notifications,
+        'feedback' => $feedback,
     ]);
 }
 
@@ -1364,6 +1399,62 @@ function create_notification($userId, $message, $audience = 'user', $appointment
         'INSERT INTO notifications (user_id, appointment_id, order_id, audience, message) VALUES (?, ?, ?, ?, ?)',
         [$userId, $appointmentId, $orderId, $audience, $message]
     );
+}
+
+function save_feedback()
+{
+    $userId = require_patient();
+    $data = request_json();
+    $type = trim((string) ($data['feedback_type'] ?? $data['type'] ?? ''));
+    $rating = (int) ($data['rating'] ?? 0);
+    $tags = $data['tags'] ?? '';
+    $comment = trim((string) ($data['comment'] ?? ''));
+    $appointmentId = null;
+    $orderId = null;
+    $errors = [];
+
+    if (!in_array($type, ['order', 'appointment'], true)) {
+        $errors[] = 'Invalid feedback type.';
+    }
+    if ($rating < 1 || $rating > 5) {
+        $errors[] = 'Rating must be between 1 and 5.';
+    }
+
+    if (is_array($tags)) {
+        $tags = implode(', ', array_map('trim', array_filter($tags, fn($tag) => trim((string) $tag) !== '')));
+    } else {
+        $tags = trim((string) $tags);
+    }
+
+    if ($type === 'order') {
+        $orderId = (int) ($data['order_id'] ?? $data['orderId'] ?? 0);
+        if ($orderId <= 0) {
+            $errors[] = 'Order is required.';
+        } elseif (!fetch_one('SELECT order_id FROM orders WHERE order_id = ? AND user_id = ?', [$orderId, $userId])) {
+            $errors[] = 'Order not found for this account.';
+        }
+    }
+
+    if ($type === 'appointment') {
+        $appointmentId = (int) ($data['appointment_id'] ?? $data['appointmentId'] ?? 0);
+        if ($appointmentId <= 0) {
+            $errors[] = 'Appointment is required.';
+        } elseif (!fetch_one('SELECT appointment_id FROM appointments WHERE appointment_id = ? AND user_id = ?', [$appointmentId, $userId])) {
+            $errors[] = 'Appointment not found for this account.';
+        }
+    }
+
+    if ($errors) {
+        json_response(['ok' => false, 'message' => implode(' ', $errors), 'errors' => $errors], 422);
+    }
+
+    execute_sql(
+        'INSERT INTO feedback (user_id, appointment_id, order_id, feedback_type, rating, tags, comment, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, NOW())',
+        [$userId, $appointmentId, $orderId, $type, $rating, $tags, $comment]
+    );
+
+    json_response(['ok' => true, 'feedbackId' => (string) db()->lastInsertId()]);
 }
 
 function update_appointment()
