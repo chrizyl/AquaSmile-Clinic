@@ -83,6 +83,6 @@ require_once 'includes/navbar-auth.php';
   <script src="js/notifications.js?v=20260615"></script>
 
   <div id="site-footer-root"></div>
-  <script src="js/footer.js?v=20260523"></script>
+  <script src="js/footer.js?v=20260618d"></script>
 </body>
 </html>

@@ -13,7 +13,7 @@ require_once 'includes/navbar-auth.php';
   <link
     href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20260608">
+  <link rel="stylesheet" href="css/style.css?v=20260618c">
   <link rel="stylesheet" href="css/notifications.css?v=20260616a">
   <link rel="stylesheet" href="css/auth-nav.css?v=20260614">
   <link rel="stylesheet" href="css/admin-restrictions.css">
@@ -62,6 +62,20 @@ require_once 'includes/navbar-auth.php';
   <!-- DAILY DENTAL TIP (Random Number Condition — Lesson 2) -->
   <div class="section" style="padding-top: 48px; padding-bottom: 48px;">
     <div id="daily-tip-widget"></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- COUPON SECTION -->
+  <div class="section coupon-section" id="user-coupons">
+    <div class="section-label">User Coupons</div>
+    <div class="section-title">Exclusive AquaSmile<br>offers.</div>
+    <p class="section-sub">Claim a product or appointment promo and use the code when you check out or book.</p>
+    <div class="tabs coupon-tabs" id="coupon-tabs">
+      <button class="tab-btn active" type="button" data-coupon-tab="product" onclick="setCouponCategory('product')">Product Coupons</button>
+      <button class="tab-btn" type="button" data-coupon-tab="appointment" onclick="setCouponCategory('appointment')">Appointment Coupons</button>
+    </div>
+    <div class="coupon-grid" id="coupon-grid"></div>
   </div>
 
   <div class="divider"></div>
@@ -138,11 +152,11 @@ require_once 'includes/navbar-auth.php';
   <div class="clinic-stats-strip" id="clinic-stats-strip"></div>
 
   <script src="js/auth.js?v=20260523"></script>
-  <script src="js/main.js?v=20260617b"></script>
+  <script src="js/main.js?v=20260618c"></script>
   <script src="js/notifications.js?v=20260615"></script>
 
   <div id="site-footer-root"></div>
-  <script src="js/footer.js?v=20260523"></script>
+  <script src="js/footer.js?v=20260618d"></script>
 </body>
 
 </html>

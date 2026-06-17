@@ -575,6 +575,6 @@ requirePatientPage();
 </script>
 
   <div id="site-footer-root"></div>
-  <script src="js/footer.js?v=20260608"></script>
+  <script src="js/footer.js?v=20260618d"></script>
 </body>
 </html>

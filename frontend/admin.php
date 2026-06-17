@@ -19,7 +19,7 @@ requireAdminPage();
     href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&amp;family=DM+Sans:wght@300;400;500&amp;display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="css/style.css?v=20260524">
-  <link rel="stylesheet" href="css/admin.css?v=20260617a">
+  <link rel="stylesheet" href="css/admin.css?v=20260618r">
 </head>
 
 <body class="admin-body">
@@ -42,12 +42,14 @@ requireAdminPage();
       <button class="admin-side-link" type="button" data-view="appointments" onclick="showAdminView('appointments')">Appointments</button>
       <button class="admin-side-link" type="button" data-view="dentists" onclick="showAdminView('dentists')">Dentist Calendar</button>
       <button class="admin-side-link" type="button" data-view="orders" onclick="showAdminView('orders')">Orders</button>
+      <button class="admin-side-link" type="button" data-view="coupons" onclick="showAdminView('coupons')">Coupons</button>
       <button class="admin-side-link" type="button" data-view="catalog" onclick="showAdminView('catalog')">Clinic Management</button>
       <button class="admin-side-link" type="button" data-view="users" onclick="showAdminView('users')">Users</button>
       <button class="admin-side-link" type="button" data-view="notifications" onclick="showAdminView('notifications')">
         Notifications <span class="admin-notify-badge" id="admin-notify-badge">0</span>
       </button>
       <button class="admin-side-link" type="button" data-view="feedback" onclick="showAdminView('feedback')">Feedback</button>
+      <button class="admin-side-link" type="button" data-view="reports" onclick="showAdminView('reports')">Crystal Reports</button>
     </aside>
 
     <section class="admin-content">
@@ -108,6 +110,85 @@ requireAdminPage();
             <button class="panel-link-btn" type="button" onclick="showAdminView('users')">View More Users</button>
           </div>
           <div class="overview-list" id="users-preview"></div>
+        </article>
+      </section>
+      </section>
+
+      <section class="admin-view" id="view-reports" data-admin-view="reports">
+      <header class="admin-hero report-hero">
+        <div>
+          <div class="section-label">Crystal Report Panel</div>
+          <h1>Clinic Summary</h1>
+          <p>A clean overview of patients, appointments, shop activity, catalog content, coupons, feedback, and recent website operations.</p>
+        </div>
+        <div class="admin-hero-actions">
+          <button class="btn-secondary" type="button" onclick="adminRefresh()">Refresh Report</button>
+          <button class="btn-primary" type="button" onclick="window.print()">Print Report</button>
+        </div>
+      </header>
+
+      <section class="report-kpi-grid" id="report-kpi-grid"></section>
+
+      <section class="report-layout">
+        <article class="admin-panel report-panel report-wide">
+          <div class="panel-head">
+            <div>
+              <div class="section-label">Performance</div>
+              <h2>Monthly Order Revenue</h2>
+            </div>
+            <span class="admin-badge" id="report-revenue-range">Latest months</span>
+          </div>
+          <div class="report-chart" id="report-revenue-chart"></div>
+        </article>
+
+        <article class="admin-panel report-panel">
+          <div class="panel-head">
+            <div>
+              <div class="section-label">Clinic Flow</div>
+              <h2>Appointment Status</h2>
+            </div>
+          </div>
+          <div class="report-bars" id="report-appointment-bars"></div>
+        </article>
+
+        <article class="admin-panel report-panel">
+          <div class="panel-head">
+            <div>
+              <div class="section-label">Shop</div>
+              <h2>Order Status</h2>
+            </div>
+          </div>
+          <div class="report-bars" id="report-order-bars"></div>
+        </article>
+
+        <article class="admin-panel report-panel report-wide">
+          <div class="panel-head">
+            <div>
+              <div class="section-label">Website Content</div>
+              <h2>Content Inventory</h2>
+            </div>
+          </div>
+          <div class="report-content-grid" id="report-content-grid"></div>
+        </article>
+
+        <article class="admin-panel report-panel">
+          <div class="panel-head">
+            <div>
+              <div class="section-label">Feedback</div>
+              <h2>Patient Ratings</h2>
+            </div>
+          </div>
+          <div class="report-feedback" id="report-feedback"></div>
+        </article>
+
+        <article class="admin-panel report-panel">
+          <div class="panel-head">
+            <div>
+              <div class="section-label">Coupons</div>
+              <h2>Claim Activity</h2>
+            </div>
+          </div>
+          <div class="report-coupon-list" id="report-coupon-list"></div>
         </article>
       </section>
       </section>
@@ -177,6 +258,19 @@ requireAdminPage();
           </div>
         </article>
       </div>
+      </section>
+
+      <section class="admin-view" id="view-coupons" data-admin-view="coupons">
+      <article class="admin-panel coupons-admin-panel">
+        <div class="panel-head">
+          <div>
+            <div class="section-label">Coupons Management</div>
+            <h2>Product and Appointment Coupons</h2>
+          </div>
+          <button class="mini-btn add-btn" type="button" onclick="openAddCouponModal()">+ Add Coupon</button>
+        </div>
+        <div class="coupon-admin-grid" id="admin-coupons-grid"></div>
+      </article>
       </section>
 
       <section class="admin-view" id="view-catalog" data-admin-view="catalog">
@@ -299,7 +393,7 @@ requireAdminPage();
   </main>
 
   <script src="js/main.js?v=20260616a"></script>
-  <script src="js/admin.js?v=20260617c"></script>
+  <script src="js/admin.js?v=20260618r"></script>
 </body>
 
 </html>

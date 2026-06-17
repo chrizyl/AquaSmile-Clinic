@@ -199,6 +199,291 @@
   margin-bottom: 0;
 }
 
+.report-hero {
+  background:
+    radial-gradient(circle at 100% 0, rgba(255,255,255,.7), transparent 26%),
+    linear-gradient(135deg, rgba(120,154,153,.24), rgba(255,210,194,.5));
+}
+
+.report-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px;
+  margin: 22px 0;
+}
+
+.report-kpi-card {
+  position: relative;
+  min-height: 128px;
+  overflow: hidden;
+  border: 1px solid rgba(120,154,153,.14);
+  border-radius: 18px;
+  background: rgba(255,255,255,.78);
+  box-shadow: 0 10px 26px rgba(73,111,109,.08);
+  padding: 18px;
+}
+
+.report-kpi-card::after {
+  content: '';
+  position: absolute;
+  right: -24px;
+  bottom: -24px;
+  width: 82px;
+  height: 82px;
+  border-radius: 26px;
+  opacity: .24;
+  transform: rotate(20deg);
+}
+
+.report-kpi-card.aqua::after { background: #789a99; }
+.report-kpi-card.peach::after { background: #f5b8a2; }
+.report-kpi-card.green::after { background: #719b79; }
+.report-kpi-card.violet::after { background: #8f78c8; }
+
+.report-kpi-card span,
+.report-kpi-card strong,
+.report-kpi-card small {
+  display: block;
+  position: relative;
+  z-index: 1;
+}
+
+.report-kpi-card span {
+  color: var(--text-light);
+  font-size: .68rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.report-kpi-card strong {
+  margin-top: 12px;
+  color: var(--text-dark);
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(1.65rem, 2vw, 2.2rem);
+  font-weight: 700;
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
+
+.report-kpi-card small {
+  margin-top: 9px;
+  color: var(--text-mid);
+  font-size: .76rem;
+}
+
+.report-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(300px, .7fr);
+  gap: 18px;
+}
+
+.report-panel {
+  margin-bottom: 0;
+  background: rgba(255,255,255,.72);
+}
+
+.report-wide {
+  grid-column: 1;
+}
+
+.report-chart {
+  min-height: 280px;
+}
+
+.report-line-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.report-line-chart text {
+  fill: var(--text-light);
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.report-bars {
+  display: grid;
+  gap: 13px;
+}
+
+.report-bar-row {
+  display: grid;
+  gap: 7px;
+}
+
+.report-bar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.report-bar-head span {
+  color: var(--text-dark);
+  font-size: .82rem;
+  font-weight: 700;
+}
+
+.report-bar-head strong {
+  color: var(--aqua-dark);
+  font-size: .8rem;
+}
+
+.report-bar-track {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(120,154,153,.11);
+}
+
+.report-bar-track i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--aqua), var(--peach-dark));
+}
+
+.report-bar-row small {
+  color: var(--text-light);
+  font-size: .68rem;
+}
+
+.report-content-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.report-content-card {
+  min-height: 110px;
+  border: 1px solid rgba(120,154,153,.13);
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(255,255,255,.92), rgba(244,249,248,.82));
+  padding: 16px;
+}
+
+.report-content-card span,
+.report-content-card strong,
+.report-content-card small {
+  display: block;
+}
+
+.report-content-card span {
+  color: var(--text-light);
+  font-size: .68rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.report-content-card strong {
+  margin-top: 11px;
+  color: var(--text-dark);
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.report-content-card small {
+  margin-top: 8px;
+  color: var(--text-mid);
+  font-size: .74rem;
+}
+
+.report-feedback {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.report-score {
+  color: var(--text-dark);
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 4rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.report-stars {
+  color: #d7b65d;
+  font-size: 1.1rem;
+}
+
+.report-stars span:not(.filled) {
+  color: rgba(120,154,153,.24);
+}
+
+.report-mini-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  width: 100%;
+}
+
+.report-mini-grid span {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(120,154,153,.08);
+  color: var(--text-light);
+  font-size: .68rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.report-mini-grid strong {
+  color: var(--text-dark);
+  font-size: 1.15rem;
+}
+
+.report-coupon-list {
+  display: grid;
+  gap: 10px;
+}
+
+.report-coupon-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 14px;
+  border: 1px solid rgba(120,154,153,.12);
+  border-radius: 15px;
+  background: rgba(244,249,248,.72);
+}
+
+.report-coupon-item strong,
+.report-coupon-item span {
+  display: block;
+}
+
+.report-coupon-item strong {
+  color: var(--aqua-dark);
+  font-size: .78rem;
+  letter-spacing: .08em;
+}
+
+.report-coupon-item span {
+  margin-top: 3px;
+  color: var(--text-dark);
+  font-size: .78rem;
+}
+
+.report-coupon-item small {
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: rgba(255,210,194,.58);
+  color: #8d5541;
+  padding: 6px 9px;
+  font-size: .68rem;
+  font-weight: 800;
+}
+
 .panel-head {
   display: flex;
   align-items: flex-start;
@@ -689,6 +974,22 @@
     grid-template-columns: repeat(2, 1fr);
   }
 
+  .report-kpi-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .report-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .report-wide {
+    grid-column: auto;
+  }
+
+  .report-content-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
   .dentist-calendar-grid {
     grid-template-columns: 1fr;
   }
@@ -717,8 +1018,47 @@
     grid-template-columns: 1fr;
   }
 
+  .report-kpi-grid,
+  .report-content-grid {
+    grid-template-columns: 1fr;
+  }
+
   .admin-panel {
     padding: 18px;
+  }
+}
+
+@media print {
+  nav,
+  .admin-sidebar,
+  .admin-hero-actions {
+    display: none !important;
+  }
+
+  .admin-body {
+    padding-top: 0;
+    background: #fff;
+  }
+
+  .admin-shell {
+    display: block;
+    max-width: none;
+    padding: 0;
+  }
+
+  .admin-view {
+    display: none !important;
+  }
+
+  #view-reports {
+    display: block !important;
+  }
+
+  .admin-panel,
+  .report-kpi-card,
+  .admin-hero {
+    box-shadow: none;
+    break-inside: avoid;
   }
 }
 
@@ -742,6 +1082,8 @@
 .pill-available       { background: #d4edda; color: #155724; }
 .pill-unavailable     { background: #fff3cd; color: #856404; }
 .pill-sold_out        { background: #f8d7da; color: #721c24; }
+.pill-active          { background: #d4edda; color: #155724; }
+.pill-inactive        { background: #e2e3e5; color: #383d41; }
 
 .status-select {
   padding: 3px 6px;
@@ -818,6 +1160,95 @@
   gap: 6px;
   margin-top: 4px;
   flex-wrap: wrap;
+}
+
+.coupon-admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.admin-coupon-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid rgba(120,154,153,.14);
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(255,255,255,.98), rgba(244,249,248,.9));
+  box-shadow: 0 8px 20px rgba(73, 111, 109, .06);
+}
+
+.admin-coupon-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-coupon-code {
+  display: block;
+  color: var(--aqua);
+  font-size: .66rem;
+  font-weight: 800;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+.admin-coupon-card h3 {
+  margin-top: 3px;
+  color: var(--text-dark);
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+
+.admin-coupon-card p {
+  flex: 1;
+  color: var(--text-mid);
+  font-size: .8rem;
+  line-height: 1.58;
+}
+
+.admin-coupon-meta,
+.admin-coupon-dates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.admin-coupon-meta span,
+.admin-coupon-dates span {
+  border-radius: 999px;
+  background: rgba(120,154,153,.1);
+  color: var(--aqua-dark);
+  padding: 5px 9px;
+  font-size: .68rem;
+  font-weight: 700;
+}
+
+.admin-coupon-dates span {
+  background: rgba(255,210,194,.42);
+  color: #8d5541;
+}
+
+.coupon-admin-actions {
+  padding-top: 4px;
+  border-top: 1px solid rgba(120,154,153,.11);
+}
+
+.danger-btn {
+  color: #c0392b;
+}
+
+.danger-btn:hover {
+  background: #c0392b;
+  border-color: #c0392b;
+  color: #fff;
+}
+
+.coupon-form-modal {
+  width: min(620px, 95vw);
 }
 
 .dentist-list {

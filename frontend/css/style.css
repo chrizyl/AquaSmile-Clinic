@@ -519,6 +519,294 @@ nav {
 }
 .toast.show { transform: translateY(0) scale(1); opacity: 1; }
 
+.cookie-consent-banner {
+  position: fixed;
+  left: 24px;
+  right: 24px;
+  bottom: 22px;
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  width: min(760px, calc(100vw - 48px));
+  margin: 0 auto;
+  padding: 16px 18px;
+  border: 1px solid rgba(120,154,153,0.26);
+  border-radius: var(--radius-md);
+  background: rgba(255,255,255,0.96);
+  box-shadow: 0 16px 40px rgba(44,62,62,0.18);
+}
+
+.cookie-consent-text {
+  color: var(--text-dark);
+  font-size: 0.94rem;
+  font-weight: 600;
+}
+
+.cookie-consent-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.cookie-consent-actions .btn-primary,
+.cookie-consent-actions .btn-secondary {
+  padding: 10px 20px;
+  min-width: 96px;
+}
+
+.coupon-section {
+  max-width: 1040px;
+}
+
+.coupon-tabs {
+  margin-bottom: 26px;
+  padding: 6px;
+  background: rgba(255,255,255,0.78);
+  box-shadow: 0 12px 30px rgba(73,111,109,0.07);
+}
+
+.coupon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 18px;
+}
+
+.coupon-card,
+.coupon-empty {
+  border: 1px solid rgba(120,154,153,0.16);
+  border-radius: 16px;
+  background: rgba(255,255,255,0.86);
+  box-shadow: 0 14px 34px rgba(73,111,109,0.09);
+  backdrop-filter: blur(12px);
+}
+
+.coupon-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 260px;
+  overflow: hidden;
+}
+
+.coupon-card-accent {
+  height: 5px;
+  background: linear-gradient(90deg, var(--aqua), var(--peach-dark));
+}
+
+.coupon-card.claimed {
+  opacity: 0.78;
+}
+
+.coupon-card-top,
+.coupon-code-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.coupon-card-top {
+  padding: 18px 20px 0;
+}
+
+.coupon-type,
+.coupon-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.coupon-type {
+  color: var(--aqua-dark);
+  background: rgba(120,154,153,0.12);
+}
+
+.coupon-status {
+  color: #8d5541;
+  background: rgba(255,210,194,0.6);
+}
+
+.coupon-main {
+  flex: 1;
+  padding: 18px 20px 8px;
+}
+
+.coupon-main strong {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--aqua-dark);
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.coupon-main h3 {
+  color: var(--text-dark);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.32;
+}
+
+.coupon-main p {
+  margin-top: 8px;
+  color: var(--text-mid);
+  font-size: 0.86rem;
+  font-weight: 300;
+  line-height: 1.6;
+}
+
+.coupon-code-row {
+  margin: 0 20px 20px;
+  padding: 14px;
+  border: 1px dashed rgba(120,154,153,0.28);
+  border-radius: 12px;
+  background: rgba(244,249,248,0.72);
+}
+
+.coupon-code-copy {
+  min-width: 0;
+}
+
+.coupon-code-copy small,
+.coupon-code-copy span {
+  display: block;
+}
+
+.coupon-code-copy small {
+  color: var(--text-light);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.coupon-code-copy span {
+  margin-top: 3px;
+  color: var(--text-dark);
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  overflow-wrap: anywhere;
+}
+
+.coupon-claim-btn {
+  flex-shrink: 0;
+  min-width: 88px;
+  min-height: 38px;
+  border: none;
+  border-radius: 999px;
+  background: var(--aqua);
+  color: #fff;
+  padding: 9px 17px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background .2s ease, transform .2s ease;
+}
+
+.coupon-claim-btn:hover {
+  background: var(--aqua-dark);
+  transform: translateY(-1px);
+}
+
+.coupon-claim-btn:disabled {
+  cursor: default;
+  background: #aab1b0;
+  transform: none;
+}
+
+.coupon-empty {
+  grid-column: 1 / -1;
+  padding: 28px;
+  color: var(--text-light);
+  text-align: center;
+}
+
+.legal-page-header {
+  padding-bottom: 54px;
+}
+
+.legal-section {
+  max-width: 920px;
+  padding-top: 48px;
+}
+
+.legal-card {
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(circle at 100% 0, rgba(255,210,194,0.28), transparent 30%),
+    rgba(255,255,255,0.72);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(12px);
+  padding: clamp(26px, 5vw, 46px);
+}
+
+.legal-card > p {
+  color: var(--text-mid);
+  font-size: 0.96rem;
+  font-weight: 300;
+  line-height: 1.78;
+}
+
+.legal-updated {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  margin-bottom: 18px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(120,154,153,0.12);
+  color: var(--aqua-dark) !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.legal-block {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(120,154,153,0.14);
+}
+
+.legal-block h3 {
+  color: var(--text-dark);
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.42rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.legal-block p {
+  margin-top: 8px;
+  color: var(--text-mid);
+  font-size: 0.92rem;
+  font-weight: 300;
+  line-height: 1.76;
+}
+
+.legal-block a {
+  color: var(--aqua-dark);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.legal-block a:hover {
+  text-decoration: underline;
+}
+
 /* ── PER-CARD PHOTO POSITION (Homepage Dentist Preview) ── */
 .grid-3 .dentist-card:nth-of-type(1) .dentist-avatar img {
   object-position: right 10%;
@@ -706,4 +994,15 @@ nav {
   .stat-item { padding: 16px 24px; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.15); width: 50%; }
   .deals-grid { grid-template-columns: 1fr; }
   .promo-countdown { flex-wrap: wrap; }
+  .cookie-consent-banner {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .cookie-consent-actions {
+    justify-content: stretch;
+  }
+  .cookie-consent-actions .btn-primary,
+  .cookie-consent-actions .btn-secondary {
+    flex: 1;
+  }
 }

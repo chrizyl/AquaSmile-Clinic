@@ -47,6 +47,12 @@ try {
         case 'validate_promo':
             validate_promo();
             break;
+        case 'coupons':
+            coupons();
+            break;
+        case 'claim_coupon':
+            claim_coupon();
+            break;
         case 'dashboard':
             dashboard();
             break;
@@ -151,6 +157,18 @@ try {
             break;
         case 'admin_edit_dentist':
             admin_edit_dentist();              
+            break;
+        case 'admin_add_coupon':
+            admin_add_coupon();
+            break;
+        case 'admin_edit_coupon':
+            admin_edit_coupon();
+            break;
+        case 'admin_delete_coupon':
+            admin_delete_coupon();
+            break;
+        case 'admin_update_coupon_status':
+            admin_update_coupon_status();
             break;
         default:
             json_response(array('ok' => false, 'message' => 'Unknown API action.'), 404);
@@ -634,6 +652,15 @@ function require_patient()
     return (int) $_SESSION['user_id'];
 }
 
+function current_patient_id()
+{
+    if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') === 'admin') {
+        return null;
+    }
+
+    return (int) $_SESSION['user_id'];
+}
+
 function logout_user()
 {
     unset($_SESSION['guest_cart'], $_SESSION['cart'], $_SESSION['cart_user_id']);
@@ -778,6 +805,145 @@ function normalize_promo($row)
     ];
 }
 
+function ensure_coupon_tables()
+{
+    db()->exec(
+        "CREATE TABLE IF NOT EXISTS claimed_coupons (
+            claimed_coupon_id INT(11) NOT NULL AUTO_INCREMENT,
+            promo_id INT(11) NOT NULL,
+            user_id INT(11) NOT NULL,
+            claimed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (claimed_coupon_id),
+            UNIQUE KEY claimed_promo_user_unique (promo_id, user_id),
+            KEY claimed_coupons_user_fk (user_id),
+            CONSTRAINT claimed_coupons_promo_fk FOREIGN KEY (promo_id) REFERENCES promos (promo_id) ON DELETE CASCADE,
+            CONSTRAINT claimed_coupons_user_fk FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
+    );
+
+    if (!table_column_exists('claimed_coupons', 'promo_id')) {
+        db()->exec('ALTER TABLE claimed_coupons ADD COLUMN promo_id INT(11) DEFAULT NULL AFTER claimed_coupon_id');
+    }
+    if (!table_index_exists('claimed_coupons', 'claimed_promo_user_unique')) {
+        try {
+            db()->exec('ALTER TABLE claimed_coupons ADD UNIQUE KEY claimed_promo_user_unique (promo_id, user_id)');
+        } catch (Throwable $e) {
+            error_log('AquaSmile coupon migration note: ' . $e->getMessage());
+        }
+    }
+    if (!table_foreign_key_exists('claimed_coupons', 'claimed_coupons_promo_fk')) {
+        try {
+            db()->exec('ALTER TABLE claimed_coupons ADD CONSTRAINT claimed_coupons_promo_fk FOREIGN KEY (promo_id) REFERENCES promos (promo_id) ON DELETE CASCADE');
+        } catch (Throwable $e) {
+            error_log('AquaSmile coupon migration note: ' . $e->getMessage());
+        }
+    }
+}
+
+function table_column_exists($table, $column)
+{
+    $stmt = db()->prepare(
+        'SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?'
+    );
+    $stmt->execute([$table, $column]);
+    return (int) $stmt->fetchColumn() > 0;
+}
+
+function table_index_exists($table, $index)
+{
+    $stmt = db()->prepare(
+        'SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = ? AND index_name = ?'
+    );
+    $stmt->execute([$table, $index]);
+    return (int) $stmt->fetchColumn() > 0;
+}
+
+function table_foreign_key_exists($table, $constraint)
+{
+    $stmt = db()->prepare(
+        'SELECT COUNT(*) FROM information_schema.KEY_COLUMN_USAGE WHERE table_schema = DATABASE() AND table_name = ? AND constraint_name = ? AND referenced_table_name IS NOT NULL'
+    );
+    $stmt->execute([$table, $constraint]);
+    return (int) $stmt->fetchColumn() > 0;
+}
+
+function normalize_coupon($row)
+{
+    $promoTarget = $row['promo_target'] ?? '';
+    $couponType = $row['coupon_type'] ?? ($promoTarget === 'shop' ? 'product' : 'appointment');
+
+    return [
+        'id' => (string) ($row['promo_id'] ?? $row['coupon_id'] ?? ''),
+        'coupon_id' => (string) ($row['promo_id'] ?? $row['coupon_id'] ?? ''),
+        'promo_id' => (string) ($row['promo_id'] ?? ''),
+        'code' => $row['promo_code'] ?? $row['coupon_code'] ?? '',
+        'coupon_code' => $row['promo_code'] ?? $row['coupon_code'] ?? '',
+        'title' => $row['promo_name'] ?? $row['title'] ?? '',
+        'description' => $row['description'] ?? '',
+        'type' => $couponType,
+        'coupon_type' => $couponType,
+        'promoTarget' => $promoTarget,
+        'promo_target' => $promoTarget,
+        'discountType' => $row['discount_type'] ?? '',
+        'discount_type' => $row['discount_type'] ?? '',
+        'discountValue' => (float) ($row['discount_value'] ?? 0),
+        'discount_value' => (float) ($row['discount_value'] ?? 0),
+        'status' => $row['status'] ?? 'inactive',
+        'startsAt' => $row['start_date'] ?? $row['starts_at'] ?? '',
+        'starts_at' => $row['start_date'] ?? $row['starts_at'] ?? '',
+        'endsAt' => $row['end_date'] ?? $row['ends_at'] ?? '',
+        'ends_at' => $row['end_date'] ?? $row['ends_at'] ?? '',
+        'createdAt' => $row['created_at'] ?? '',
+        'created_at' => $row['created_at'] ?? '',
+        'claimed' => (int) ($row['claimed'] ?? 0) === 1,
+        'claimCount' => (int) ($row['claim_count'] ?? 0),
+    ];
+}
+
+function coupon_payload()
+{
+    $data = request_json();
+    $type = strtolower(trim((string) ($data['coupon_type'] ?? $data['type'] ?? '')));
+    $discountType = strtolower(trim((string) ($data['discount_type'] ?? $data['discountType'] ?? 'percentage')));
+    $status = strtolower(trim((string) ($data['status'] ?? 'active')));
+    $startsAt = trim((string) ($data['starts_at'] ?? $data['startsAt'] ?? ''));
+    $endsAt = trim((string) ($data['ends_at'] ?? $data['endsAt'] ?? ''));
+
+    $payload = [
+        'code' => strtoupper(trim((string) ($data['coupon_code'] ?? $data['code'] ?? ''))),
+        'title' => trim((string) ($data['title'] ?? '')),
+        'description' => trim((string) ($data['description'] ?? '')),
+        'type' => $type,
+        'discount_type' => $discountType,
+        'discount_value' => (float) ($data['discount_value'] ?? $data['discountValue'] ?? 0),
+        'status' => $status,
+        'starts_at' => $startsAt !== '' ? $startsAt : null,
+        'ends_at' => $endsAt !== '' ? $endsAt : null,
+    ];
+
+    $errors = [];
+    if ($payload['code'] === '') $errors[] = 'Coupon code is required.';
+    if ($payload['title'] === '') $errors[] = 'Coupon title is required.';
+    if (!in_array($payload['type'], ['product', 'appointment'], true)) $errors[] = 'Choose Product or Appointment coupon type.';
+    if (!in_array($payload['discount_type'], ['percentage', 'fixed'], true)) $errors[] = 'Choose a valid discount type.';
+    if ($payload['discount_value'] <= 0) $errors[] = 'Discount value must be greater than zero.';
+    if (!in_array($payload['status'], ['active', 'inactive'], true)) $errors[] = 'Choose a valid status.';
+    foreach (['starts_at' => 'Start date', 'ends_at' => 'End date'] as $key => $label) {
+        if ($payload[$key] !== null && !DateTime::createFromFormat('Y-m-d', $payload[$key])) {
+            $errors[] = $label . ' must use YYYY-MM-DD format.';
+        }
+    }
+    if ($payload['starts_at'] && $payload['ends_at'] && $payload['starts_at'] > $payload['ends_at']) {
+        $errors[] = 'End date must be after the start date.';
+    }
+
+    if ($errors) {
+        json_response(['ok' => false, 'message' => 'Please correct the coupon details.', 'errors' => $errors], 422);
+    }
+
+    return $payload;
+}
+
 function normalize_appointment($row)
 {
     return [
@@ -817,6 +983,29 @@ function find_active_promo($code, $target)
            AND (end_date IS NULL OR end_date >= CURDATE())
          LIMIT 1",
         [$code, $target]
+    );
+}
+
+function find_active_claimed_coupon($code, $target, $userId)
+{
+    ensure_coupon_tables();
+    $code = strtoupper(trim((string) $code));
+    if ($code === '' || !in_array($target, ['shop', 'appointment'], true) || (int) $userId <= 0) {
+        return null;
+    }
+
+    return fetch_one(
+        "SELECT p.*
+         FROM promos p
+         JOIN claimed_coupons cc ON cc.promo_id = p.promo_id
+         WHERE p.promo_code = ?
+           AND p.promo_target IN (?, 'both')
+           AND p.status = 'active'
+           AND cc.user_id = ?
+           AND (p.start_date IS NULL OR p.start_date <= CURDATE())
+           AND (p.end_date IS NULL OR p.end_date >= CURDATE())
+         LIMIT 1",
+        [$code, $target, (int) $userId]
     );
 }
 
@@ -910,9 +1099,12 @@ function validate_promo()
     $target = $data['target'] ?? $_GET['target'] ?? 'appointment';
     $subtotal = (float) ($data['subtotal'] ?? $_GET['subtotal'] ?? 0);
     $promo = find_active_promo($code, $target);
+    if (!$promo) {
+        $promo = find_active_claimed_coupon($code, $target, current_patient_id());
+    }
 
     if (!$promo) {
-        json_response(['ok' => false, 'message' => 'Invalid or expired promo code.'], 404);
+        json_response(['ok' => false, 'message' => 'Invalid, unclaimed, or expired promo code.'], 404);
     }
 
     $normalized = normalize_promo($promo);
@@ -927,9 +1119,196 @@ function validate_promo()
     json_response(['ok' => true, 'message' => 'Promo code applied successfully.', 'promo' => $normalized]);
 }
 
+function coupons()
+{
+    ensure_coupon_tables();
+    $userId = current_patient_id();
+    $type = strtolower(trim((string) ($_GET['type'] ?? '')));
+
+    $where = "WHERE p.status = 'active'
+              AND p.promo_target IN ('appointment', 'shop', 'both')
+              AND (p.start_date IS NULL OR p.start_date <= CURDATE())
+              AND (p.end_date IS NULL OR p.end_date >= CURDATE())";
+    $params = [];
+    if ($type === 'product') {
+        $where .= " AND p.promo_target IN ('shop', 'both')";
+    } elseif ($type === 'appointment') {
+        $where .= " AND p.promo_target IN ('appointment', 'both')";
+    }
+
+    $claimSelect = $userId
+        ? 'EXISTS(SELECT 1 FROM claimed_coupons cc WHERE cc.promo_id = p.promo_id AND cc.user_id = ?) AS claimed'
+        : '0 AS claimed';
+    $queryParams = $userId ? [$userId] : [];
+    $queryParams = array_merge($queryParams, $params);
+
+    $rows = fetch_all(
+        "SELECT p.*, $claimSelect,
+                (SELECT COUNT(*) FROM claimed_coupons ccount WHERE ccount.promo_id = p.promo_id) AS claim_count
+         FROM promos p
+         $where
+         ORDER BY p.promo_target, p.created_at DESC, p.promo_id DESC",
+        $queryParams
+    );
+
+    json_response(['ok' => true, 'coupons' => array_map('normalize_coupon', $rows)]);
+}
+
+function claim_coupon()
+{
+    ensure_coupon_tables();
+    $userId = require_patient();
+    $data = request_json();
+    $couponId = (int) ($data['coupon_id'] ?? $data['promo_id'] ?? $data['id'] ?? 0);
+
+    if ($couponId <= 0) {
+        json_response(['ok' => false, 'message' => 'Invalid coupon.'], 422);
+    }
+
+    $coupon = fetch_one(
+        "SELECT *
+         FROM promos
+         WHERE promo_id = ?
+           AND promo_target IN ('appointment', 'shop', 'both')
+           AND status = 'active'
+           AND (start_date IS NULL OR start_date <= CURDATE())
+           AND (end_date IS NULL OR end_date >= CURDATE())",
+        [$couponId]
+    );
+    if (!$coupon) {
+        json_response(['ok' => false, 'message' => 'This coupon is not available.'], 404);
+    }
+
+    try {
+        execute_sql(
+            'INSERT INTO claimed_coupons (promo_id, user_id, claimed_at) VALUES (?, ?, NOW())',
+            [$couponId, $userId]
+        );
+    } catch (PDOException $e) {
+        if ($e->getCode() === '23000') {
+            json_response(['ok' => false, 'message' => 'You already claimed this coupon.'], 409);
+        }
+        throw $e;
+    }
+
+    $normalized = normalize_coupon($coupon);
+    $normalized['claimed'] = true;
+    json_response(['ok' => true, 'message' => 'Coupon claimed.', 'coupon' => $normalized], 201);
+}
+
+function admin_add_coupon()
+{
+    ensure_coupon_tables();
+    require_admin();
+    $payload = coupon_payload();
+    $promoTarget = $payload['type'] === 'product' ? 'shop' : 'appointment';
+
+    try {
+        execute_sql(
+            'INSERT INTO promos (promo_code, promo_name, description, promo_target, discount_type, discount_value, status, start_date, end_date, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())',
+            [
+                $payload['code'],
+                $payload['title'],
+                $payload['description'],
+                $promoTarget,
+                $payload['discount_type'],
+                $payload['discount_value'],
+                $payload['status'],
+                $payload['starts_at'],
+                $payload['ends_at'],
+            ]
+        );
+    } catch (PDOException $e) {
+        if ($e->getCode() === '23000') {
+            json_response(['ok' => false, 'message' => 'A coupon with this code already exists.'], 409);
+        }
+        throw $e;
+    }
+
+    $coupon = fetch_one('SELECT p.*, 0 AS claimed, 0 AS claim_count FROM promos p WHERE promo_id = ?', [(int) db()->lastInsertId()]);
+    json_response(['ok' => true, 'message' => 'Coupon added successfully.', 'coupon' => normalize_coupon($coupon)], 201);
+}
+
+function admin_edit_coupon()
+{
+    ensure_coupon_tables();
+    require_admin();
+    $data = request_json();
+    $couponId = (int) ($data['coupon_id'] ?? $data['id'] ?? 0);
+    if ($couponId <= 0) {
+        json_response(['ok' => false, 'message' => 'Invalid coupon.'], 422);
+    }
+
+    $payload = coupon_payload();
+    $promoTarget = $payload['type'] === 'product' ? 'shop' : 'appointment';
+    try {
+        execute_sql(
+            'UPDATE promos
+             SET promo_code = ?, promo_name = ?, description = ?, promo_target = ?, discount_type = ?,
+                 discount_value = ?, status = ?, start_date = ?, end_date = ?
+             WHERE promo_id = ?',
+            [
+                $payload['code'],
+                $payload['title'],
+                $payload['description'],
+                $promoTarget,
+                $payload['discount_type'],
+                $payload['discount_value'],
+                $payload['status'],
+                $payload['starts_at'],
+                $payload['ends_at'],
+                $couponId,
+            ]
+        );
+    } catch (PDOException $e) {
+        if ($e->getCode() === '23000') {
+            json_response(['ok' => false, 'message' => 'A coupon with this code already exists.'], 409);
+        }
+        throw $e;
+    }
+
+    $coupon = fetch_one(
+        'SELECT p.*, 0 AS claimed, (SELECT COUNT(*) FROM claimed_coupons cc WHERE cc.promo_id = p.promo_id) AS claim_count FROM promos p WHERE p.promo_id = ?',
+        [$couponId]
+    );
+    json_response(['ok' => true, 'message' => 'Coupon updated successfully.', 'coupon' => normalize_coupon($coupon)]);
+}
+
+function admin_update_coupon_status()
+{
+    ensure_coupon_tables();
+    require_admin();
+    $data = request_json();
+    $couponId = (int) ($data['coupon_id'] ?? $data['id'] ?? 0);
+    $status = strtolower(trim((string) ($data['status'] ?? '')));
+    if ($couponId <= 0 || !in_array($status, ['active', 'inactive'], true)) {
+        json_response(['ok' => false, 'message' => 'Invalid coupon status.'], 422);
+    }
+
+    execute_sql('UPDATE promos SET status = ? WHERE promo_id = ?', [$status, $couponId]);
+    json_response(['ok' => true, 'message' => 'Coupon status updated.']);
+}
+
+function admin_delete_coupon()
+{
+    ensure_coupon_tables();
+    require_admin();
+    $data = request_json();
+    $couponId = (int) ($data['coupon_id'] ?? $data['id'] ?? 0);
+    if ($couponId <= 0) {
+        json_response(['ok' => false, 'message' => 'Invalid coupon.'], 422);
+    }
+
+    execute_sql('DELETE FROM claimed_coupons WHERE promo_id = ?', [$couponId]);
+    execute_sql('DELETE FROM promos WHERE promo_id = ?', [$couponId]);
+    json_response(['ok' => true, 'message' => 'Coupon deleted.']);
+}
+
 function dashboard()
 {
     require_admin();
+    ensure_coupon_tables();
 
     $orders = fetch_all(
         "SELECT o.*, TRIM(CONCAT(o.first_name, ' ', o.last_name)) AS customer_name
@@ -998,6 +1377,13 @@ function dashboard()
         'orderItems' => $orderItems,
         'notifications' => $notifications,
         'feedback' => $feedback,
+        'coupons' => array_map('normalize_coupon', fetch_all(
+            "SELECT p.*, 0 AS claimed,
+                    (SELECT COUNT(*) FROM claimed_coupons cc WHERE cc.promo_id = p.promo_id) AS claim_count
+             FROM promos p
+             WHERE p.promo_target IN ('appointment', 'shop', 'both')
+             ORDER BY p.created_at DESC, p.promo_id DESC"
+        )),
     ]);
 }
 
@@ -1495,12 +1881,15 @@ function create_appointment()
     }
 
     $promo = $promoCode !== '' ? find_active_promo($promoCode, 'appointment') : null;
+    if (!$promo && $promoCode !== '') {
+        $promo = find_active_claimed_coupon($promoCode, 'appointment', $userId);
+    }
     $promoId = null;
     $savedPromoCode = null;
     $discountAmount = 0.0;
     $finalFee = (float) ($service['price'] ?? 0);
     if ($promo) {
-        $promoId = (int) $promo['promo_id'];
+        $promoId = !empty($promo['promo_id']) ? (int) $promo['promo_id'] : null;
         $savedPromoCode = $promo['promo_code'];
         $originalFee = (float) ($promo['original_price'] ?? 0);
         if ($originalFee <= 0) {
@@ -1858,7 +2247,10 @@ function create_order()
     }
 
     $promo = $promoCode !== '' ? find_active_promo($promoCode, 'shop') : null;
-    $promoId = $promo ? (int) $promo['promo_id'] : null;
+    if (!$promo && $promoCode !== '') {
+        $promo = find_active_claimed_coupon($promoCode, 'shop', $userId);
+    }
+    $promoId = ($promo && !empty($promo['promo_id'])) ? (int) $promo['promo_id'] : null;
     $savedPromoCode = $promo ? $promo['promo_code'] : null;
     $discountAmount = $promo ? calculate_promo_discount($subtotal, $promo) : 0.0;
     $total = max(0, round($subtotal - $discountAmount, 2));

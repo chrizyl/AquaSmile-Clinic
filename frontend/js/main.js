@@ -169,6 +169,8 @@ const PRODUCTS = [
 // ── SESSION STATE ──
 let currentUser  = Cookie.get('currentUser');
 let currentAdmin = Cookie.get('currentAdmin');
+let HOME_COUPONS = [];
+let activeCouponCategory = 'product';
 
 // ── TOAST ──
 let toastTimer = null;
@@ -179,6 +181,43 @@ function showToast(msg) {
   t.classList.add('show');
   if (toastTimer) clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+function cookieConsentKey() {
+  return 'aqsmile_cookie_consent_' + (currentUser?.id || 'guest');
+}
+
+function renderCookieConsentBanner() {
+  if (!currentUser || currentAdmin) {
+    const existing = document.getElementById('cookie-consent-banner');
+    if (existing) existing.remove();
+    return;
+  }
+
+  if (localStorage.getItem(cookieConsentKey())) return;
+  if (document.getElementById('cookie-consent-banner')) return;
+
+  const banner = document.createElement('div');
+  banner.className = 'cookie-consent-banner';
+  banner.id = 'cookie-consent-banner';
+  banner.innerHTML = `
+    <div class="cookie-consent-text">Do you want to accept cookies?</div>
+    <div class="cookie-consent-actions">
+      <button type="button" class="btn-secondary" onclick="saveCookieConsent('declined')">Decline</button>
+      <button type="button" class="btn-primary" onclick="saveCookieConsent('accepted')">Accept</button>
+    </div>`;
+  document.body.appendChild(banner);
+}
+
+function saveCookieConsent(choice) {
+  if (!currentUser) return;
+  localStorage.setItem(cookieConsentKey(), JSON.stringify({
+    choice,
+    userId: currentUser.id,
+    savedAt: new Date().toISOString(),
+  }));
+  const banner = document.getElementById('cookie-consent-banner');
+  if (banner) banner.remove();
 }
 
 // ── NAV UPDATE ──
@@ -224,6 +263,7 @@ function updateNav() {
 
   updateCartBadge();
   renderNotificationCenter();
+  renderCookieConsentBanner();
 }
 
 // ── LOGOUT ──
@@ -647,6 +687,116 @@ async function loadHomepagePromos() {
   }
 }
 
+async function loadHomepageCoupons() {
+  try {
+    const data = await apiGet('coupons');
+    HOME_COUPONS = data.coupons || [];
+  } catch (err) {
+    console.warn('Unable to load homepage coupons:', err.message);
+    HOME_COUPONS = [];
+  }
+}
+
+function setCouponCategory(type) {
+  activeCouponCategory = type === 'appointment' ? 'appointment' : 'product';
+  document.querySelectorAll('[data-coupon-tab]').forEach(button => {
+    button.classList.toggle('active', button.dataset.couponTab === activeCouponCategory);
+  });
+  renderCoupons();
+}
+
+function couponDiscountLabel(coupon) {
+  const type = String(coupon.discount_type || coupon.discountType || '').toLowerCase();
+  let value = Number(coupon.discount_value || coupon.discountValue || 0);
+  if (type === 'percentage') {
+    if (value > 0 && value <= 1) value = value * 100;
+    return `${Number.isInteger(value) ? value : value.toFixed(2).replace(/\.?0+$/, '')}% OFF`;
+  }
+  return `${formatPromoMoney(value)} OFF`;
+}
+
+function renderCoupons() {
+  const grid = document.getElementById('coupon-grid');
+  if (!grid) return;
+
+  const coupons = HOME_COUPONS.filter(coupon => (coupon.coupon_type || coupon.type) === activeCouponCategory);
+  if (!coupons.length) {
+    grid.innerHTML = '<div class="coupon-empty">No coupons available in this category.</div>';
+    return;
+  }
+
+  const adminViewing = isAdmin();
+  grid.innerHTML = coupons.map(coupon => {
+    const claimed = Boolean(coupon.claimed);
+    const code = coupon.coupon_code || coupon.code || '';
+    const type = coupon.coupon_type || coupon.type || activeCouponCategory;
+    const disabled = claimed || adminViewing;
+    const title = coupon.title || 'AquaSmile Coupon';
+    const description = coupon.description || 'Use this code on your next AquaSmile transaction.';
+    return `
+      <article class="coupon-card ${claimed ? 'claimed' : ''}">
+        <div class="coupon-card-accent" aria-hidden="true"></div>
+        <div class="coupon-card-top">
+          <span class="coupon-type">${type === 'product' ? 'Product Coupon' : 'Appointment Coupon'}</span>
+          <span class="coupon-status">${claimed ? 'Claimed' : 'Available'}</span>
+        </div>
+        <div class="coupon-main">
+          <strong>${escapeHtml(couponDiscountLabel(coupon))}</strong>
+          <h3>${escapeHtml(title)}</h3>
+          <p>${escapeHtml(description)}</p>
+        </div>
+        <div class="coupon-code-row">
+          <div class="coupon-code-copy">
+            <small>Promo Code</small>
+            <span>${escapeHtml(code)}</span>
+          </div>
+          <button
+            type="button"
+            class="coupon-claim-btn"
+            onclick="claimCoupon('${escapeHtml(coupon.id)}')"
+            ${disabled ? 'disabled' : ''}
+          >${adminViewing ? 'View Only' : (claimed ? 'Claimed' : 'Claim')}</button>
+        </div>
+      </article>`;
+  }).join('');
+}
+
+async function claimCoupon(couponId) {
+  if (isAdmin()) {
+    showToast('Admin accounts cannot claim coupons.');
+    return;
+  }
+
+  if (!currentUser) {
+    showToast('Please log in to claim coupons.');
+    setTimeout(() => window.location.href = 'login.php', 1000);
+    return;
+  }
+
+  const coupon = HOME_COUPONS.find(item => String(item.id) === String(couponId));
+  if (!coupon || coupon.claimed) return;
+
+  try {
+    const data = await apiRequest('claim_coupon', { coupon_id: couponId });
+    coupon.claimed = true;
+    if (data.coupon) {
+      Object.assign(coupon, data.coupon);
+      coupon.claimed = true;
+    }
+    renderCoupons();
+    const type = coupon.coupon_type || coupon.type;
+    showToast(type === 'product'
+      ? 'Successfully claimed this deal. Use the code at checkout.'
+      : 'Successfully claimed this deal. Use the code when booking an appointment.');
+  } catch (err) {
+    if ((err.message || '').toLowerCase().includes('already')) {
+      coupon.claimed = true;
+      renderCoupons();
+    }
+    showToast(err.message || 'Unable to claim this coupon.');
+  }
+}
+
 function renderDeals() {
   const grid = document.getElementById('deals-grid');
   if (!grid) return;
@@ -953,10 +1103,12 @@ async function init() {
   }
   
   await syncCatalogFromDatabase();
+  await loadHomepageCoupons();
   updateNav();
   notifyCurrentUser();
   renderHomeDentists();
   renderHomeServices();
+  renderCoupons();
   renderClinicStats();
   renderDailyTip(getRandomTip());
 }

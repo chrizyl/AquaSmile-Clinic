@@ -48,10 +48,12 @@ async function adminRefresh() {
     if (!d.ok) { showToast(d.message || 'Failed to load dashboard.', false); return; }
     _adminData = d;
     renderOverview(d);
+    renderCrystalReports(d);
     renderAppointmentsManage(d.appointments || []);
     renderUsers(d.users || []);
     renderDentistCalendar();
     renderOrders(d.orders || [], d.orderItems || []);
+    renderAdminCoupons(d.coupons || []);
     renderCatalog(d.products || [], d.services || [], d.dentists || []);
     renderNotifications(d.notifications || []);
     renderFeedback(d.feedback || []);
@@ -773,6 +775,428 @@ async function changeStatus(action, id, status, selectEl, dataKey) {
     showToast('Network error.', false);
     selectEl.value = prev;
   }
+}
+
+function renderCrystalReports(d) {
+  const kpiGrid = document.getElementById('report-kpi-grid');
+  if (!kpiGrid) return;
+
+  const appointments = d.appointments || [];
+  const orders = d.orders || [];
+  const users = d.users || [];
+  const products = d.products || [];
+  const services = d.services || [];
+  const dentists = d.dentists || [];
+  const coupons = d.coupons || [];
+  const feedback = d.feedback || [];
+  const patients = users.filter(user => (user.role || 'patient') !== 'admin');
+  const revenue = orders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
+  const pendingAppointments = appointments.filter(item => item.status === 'pending').length;
+  const activeCoupons = coupons.filter(item => item.status === 'active').length;
+  const averageRating = feedback.length
+    ? feedback.reduce((sum, item) => sum + (Number(item.rating) || 0), 0) / feedback.length
+    : 0;
+
+  const kpis = [
+    { label: 'Revenue', value: formatMoney(revenue), meta: `${orders.length} orders`, tone: 'aqua' },
+    { label: 'Patients', value: patients.length, meta: `${users.length} total accounts`, tone: 'peach' },
+    { label: 'Appointments', value: appointments.length, meta: `${pendingAppointments} pending`, tone: 'green' },
+    { label: 'Catalog Items', value: products.length + services.length + dentists.length, meta: `${products.length} products, ${services.length} services`, tone: 'violet' },
+    { label: 'Active Coupons', value: activeCoupons, meta: `${coupons.length} total promos`, tone: 'aqua' },
+    { label: 'Avg. Rating', value: averageRating ? averageRating.toFixed(1) + '/5' : '0.0/5', meta: `${feedback.length} reviews`, tone: 'peach' },
+  ];
+
+  kpiGrid.innerHTML = kpis.map(item => `
+    <article class="report-kpi-card ${item.tone}">
+      <span>${esc(item.label)}</span>
+      <strong>${esc(item.value)}</strong>
+      <small>${esc(item.meta)}</small>
+    </article>`).join('');
+
+  renderRevenueChart(orders);
+  renderReportBars('report-appointment-bars', countBy(appointments, 'status'), appointments.length);
+  renderReportBars('report-order-bars', countBy(orders, 'status'), orders.length);
+  renderContentInventory({ products, services, dentists, users: patients, coupons });
+  renderReportFeedback(feedback, averageRating);
+  renderReportCoupons(coupons);
+}
+
+function countBy(items, key) {
+  return (items || []).reduce((counts, item) => {
+    const value = item[key] || 'unknown';
+    counts[value] = (counts[value] || 0) + 1;
+    return counts;
+  }, {});
+}
+
+function renderRevenueChart(orders) {
+  const chart = document.getElementById('report-revenue-chart');
+  if (!chart) return;
+
+  const monthMap = {};
+  (orders || []).forEach(order => {
+    const raw = order.created_at || order.createdAt || '';
+    const date = raw ? new Date(raw.replace(' ', 'T')) : null;
+    if (!date || Number.isNaN(date.getTime())) return;
+    const key = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
+    monthMap[key] = (monthMap[key] || 0) + (Number(order.total) || 0);
+  });
+
+  const months = Object.keys(monthMap).sort().slice(-7);
+  if (!months.length) {
+    chart.innerHTML = '<div class="empty-state-card">No order revenue yet.</div>';
+    setText('report-revenue-range', 'No data');
+    return;
+  }
+
+  const values = months.map(month => monthMap[month]);
+  const max = Math.max(...values, 1);
+  const width = 720;
+  const height = 260;
+  const padding = 34;
+  const step = months.length > 1 ? (width - padding * 2) / (months.length - 1) : 0;
+  const points = values.map((value, index) => {
+    const x = padding + step * index;
+    const y = height - padding - ((height - padding * 2) * value / max);
+    return [x, y];
+  });
+  const line = points.map(point => point.join(',')).join(' ');
+  const area = `${padding},${height - padding} ${line} ${width - padding},${height - padding}`;
+  const labels = months.map(month => {
+    const date = new Date(month + '-01T00:00:00');
+    return date.toLocaleString('en-PH', { month: 'short' });
+  });
+
+  setText('report-revenue-range', months[0] + ' to ' + months[months.length - 1]);
+  chart.innerHTML = `
+    <svg class="report-line-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Monthly revenue chart">
+      <defs>
+        <linearGradient id="reportAreaGradient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#789A99" stop-opacity="0.42"/>
+          <stop offset="100%" stop-color="#789A99" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <polygon points="${area}" fill="url(#reportAreaGradient)" stroke="none"></polygon>
+      <polyline points="${line}" fill="none" stroke="#5A7978" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></polyline>
+      ${points.map((point, index) => `
+        <g>
+          <circle cx="${point[0]}" cy="${point[1]}" r="5" fill="#5A7978"></circle>
+          <text x="${point[0]}" y="${height - 9}" text-anchor="middle">${esc(labels[index])}</text>
+        </g>`).join('')}
+    </svg>`;
+}
+
+function renderReportBars(id, counts, total) {
+  const wrap = document.getElementById(id);
+  if (!wrap) return;
+  const entries = Object.entries(counts || {}).sort((a, b) => b[1] - a[1]);
+  if (!entries.length) {
+    wrap.innerHTML = '<div class="empty-state-card">No records yet.</div>';
+    return;
+  }
+  wrap.innerHTML = entries.map(([label, count]) => {
+    const pct = total ? Math.round((count / total) * 100) : 0;
+    return `
+      <div class="report-bar-row">
+        <div class="report-bar-head">
+          <span>${esc(statusLabel(label))}</span>
+          <strong>${count}</strong>
+        </div>
+        <div class="report-bar-track"><i style="width:${pct}%"></i></div>
+        <small>${pct}% of total</small>
+      </div>`;
+  }).join('');
+}
+
+function renderContentInventory(groups) {
+  const grid = document.getElementById('report-content-grid');
+  if (!grid) return;
+  const rows = [
+    ['Products', groups.products.length, groups.products.filter(item => item.status === 'available').length + ' available'],
+    ['Services', groups.services.length, groups.services.filter(item => item.status === 'available').length + ' available'],
+    ['Dentists', groups.dentists.length, groups.dentists.filter(item => item.status === 'available').length + ' available'],
+    ['Patients', groups.users.length, 'registered'],
+    ['Coupons', groups.coupons.length, groups.coupons.filter(item => item.status === 'active').length + ' active'],
+  ];
+
+  grid.innerHTML = rows.map(([label, value, meta]) => `
+    <div class="report-content-card">
+      <span>${esc(label)}</span>
+      <strong>${esc(value)}</strong>
+      <small>${esc(meta)}</small>
+    </div>`).join('');
+}
+
+function renderReportFeedback(feedback, averageRating) {
+  const wrap = document.getElementById('report-feedback');
+  if (!wrap) return;
+  const appointment = feedback.filter(item => item.type === 'appointment').length;
+  const order = feedback.filter(item => item.type === 'order').length;
+  wrap.innerHTML = `
+    <div class="report-score">${averageRating ? averageRating.toFixed(1) : '0.0'}</div>
+    <div class="report-stars">${renderStars(Math.round(averageRating || 0))}</div>
+    <div class="report-mini-grid">
+      <span>Appointment Reviews <strong>${appointment}</strong></span>
+      <span>Order Reviews <strong>${order}</strong></span>
+    </div>`;
+}
+
+function renderReportCoupons(coupons) {
+  const wrap = document.getElementById('report-coupon-list');
+  if (!wrap) return;
+  const sorted = (coupons || []).slice().sort((a, b) => Number(b.claimCount || 0) - Number(a.claimCount || 0)).slice(0, 5);
+  if (!sorted.length) {
+    wrap.innerHTML = '<div class="empty-state-card">No coupons yet.</div>';
+    return;
+  }
+  wrap.innerHTML = sorted.map(coupon => `
+    <div class="report-coupon-item">
+      <div>
+        <strong>${esc(coupon.coupon_code || coupon.code || '-')}</strong>
+        <span>${esc(coupon.title || 'Promo')}</span>
+      </div>
+      <small>${Number(coupon.claimCount || 0)} claims</small>
+    </div>`).join('');
+}
+
+function renderAdminCoupons(coupons) {
+  const grid = document.getElementById('admin-coupons-grid');
+  if (!grid) return;
+
+  grid.innerHTML = (coupons || []).map(coupon => {
+    const type = coupon.coupon_type || coupon.type || '';
+    const status = coupon.status || 'inactive';
+    const claims = Number(coupon.claimCount || coupon.claim_count || 0);
+    return `
+      <article class="admin-coupon-card">
+        <div class="admin-coupon-head">
+          <div>
+            <span class="admin-coupon-code">${esc(coupon.coupon_code || coupon.code)}</span>
+            <h3>${esc(coupon.title || 'Coupon')}</h3>
+          </div>
+          <span class="status-pill pill-${esc(status)}">${statusLabel(status)}</span>
+        </div>
+        <p>${esc(coupon.description || 'No description provided.')}</p>
+        <div class="admin-coupon-meta">
+          <span>${type === 'product' ? 'Product Coupon' : 'Appointment Coupon'}</span>
+          <span>${couponDiscountAdminLabel(coupon)}</span>
+          <span>${claims} claim${claims === 1 ? '' : 's'}</span>
+        </div>
+        <div class="admin-coupon-dates">
+          <span>Starts: ${esc(formatDateOnly(coupon.starts_at || coupon.startsAt) || '-')}</span>
+          <span>Ends: ${esc(formatDateOnly(coupon.ends_at || coupon.endsAt) || '-')}</span>
+        </div>
+        <div class="catalog-item-actions coupon-admin-actions">
+          <select class="status-select status-${esc(status)}" onchange="changeCouponStatus('${esc(coupon.id)}', this.value, this)" data-current="${esc(status)}">
+            ${couponStatusOptions(status)}
+          </select>
+          <button class="mini-btn edit-btn" type="button" onclick="openEditCouponModal('${esc(coupon.id)}')">Edit</button>
+          <button class="mini-btn danger-btn" type="button" onclick="confirmDeleteCoupon('${esc(coupon.id)}')">Delete</button>
+        </div>
+      </article>`;
+  }).join('') || '<div class="empty-state-card">No coupons yet.</div>';
+}
+
+function couponDiscountAdminLabel(coupon) {
+  const type = String(coupon.discount_type || coupon.discountType || '').toLowerCase();
+  const value = Number(coupon.discount_value || coupon.discountValue || 0);
+  if (type === 'percentage') return value + '% off';
+  return formatMoney(value) + ' off';
+}
+
+function couponStatusOptions(current) {
+  return ['active', 'inactive']
+    .map(status => `<option value="${status}" ${status === current ? 'selected' : ''}>${statusLabel(status)}</option>`)
+    .join('');
+}
+
+function openAddCouponModal() {
+  openCouponModal(null);
+}
+
+function openEditCouponModal(id) {
+  const coupon = (_adminData.coupons || []).find(item => String(item.id) === String(id));
+  if (coupon) openCouponModal(coupon);
+}
+
+function openCouponModal(coupon) {
+  const isEdit = Boolean(coupon);
+  removeModal();
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'admin-modal';
+  overlay.onclick = event => { if (event.target === overlay) removeModal(); };
+  overlay.innerHTML = `
+    <div class="modal-box coupon-form-modal" role="dialog" aria-modal="true" aria-label="${isEdit ? 'Edit coupon' : 'Add coupon'}">
+      <div class="modal-head">
+        <div><span class="modal-kicker">Coupons Management</span><h3>${isEdit ? 'Edit Coupon' : 'Add Coupon'}</h3></div>
+        <button class="modal-close" type="button" onclick="removeModal()" aria-label="Close">&#x2715;</button>
+      </div>
+      <div class="modal-body">
+        <form id="coupon-modal-form" onsubmit="return false">
+          <div class="form-group">
+            <label for="coupon-title">Title *</label>
+            <input id="coupon-title" name="title" type="text" value="${esc(coupon?.title || '')}">
+          </div>
+          <div class="form-group">
+            <label for="coupon-code">Coupon Code *</label>
+            <input id="coupon-code" name="coupon_code" type="text" value="${esc(coupon?.coupon_code || coupon?.code || '')}">
+          </div>
+          <div class="form-group">
+            <label for="coupon-description">Description</label>
+            <textarea id="coupon-description" name="description" rows="3">${esc(coupon?.description || '')}</textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="coupon-type">Coupon For *</label>
+              <select id="coupon-type" name="coupon_type">
+                <option value="product" ${(coupon?.coupon_type || coupon?.type) === 'product' ? 'selected' : ''}>Products</option>
+                <option value="appointment" ${(coupon?.coupon_type || coupon?.type) === 'appointment' ? 'selected' : ''}>Appointments</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="coupon-status">Status *</label>
+              <select id="coupon-status" name="status">
+                <option value="active" ${(coupon?.status || 'active') === 'active' ? 'selected' : ''}>Active</option>
+                <option value="inactive" ${coupon?.status === 'inactive' ? 'selected' : ''}>Inactive</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="coupon-discount-type">Discount Type *</label>
+              <select id="coupon-discount-type" name="discount_type">
+                <option value="percentage" ${(coupon?.discount_type || coupon?.discountType || 'percentage') === 'percentage' ? 'selected' : ''}>Percentage</option>
+                <option value="fixed" ${(coupon?.discount_type || coupon?.discountType) === 'fixed' ? 'selected' : ''}>Fixed Amount</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="coupon-discount-value">Discount Value *</label>
+              <input id="coupon-discount-value" name="discount_value" type="number" min="0" step="0.01" value="${esc(coupon?.discount_value || coupon?.discountValue || '')}">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="coupon-starts-at">Start Date</label>
+              <input id="coupon-starts-at" name="starts_at" type="date" value="${esc(coupon?.starts_at || coupon?.startsAt || '')}">
+            </div>
+            <div class="form-group">
+              <label for="coupon-ends-at">End Date</label>
+              <input id="coupon-ends-at" name="ends_at" type="date" value="${esc(coupon?.ends_at || coupon?.endsAt || '')}">
+            </div>
+          </div>
+          <div class="modal-err" id="coupon-modal-err"></div>
+        </form>
+      </div>
+      <div class="modal-foot">
+        <button class="btn-secondary" type="button" onclick="removeModal()">Cancel</button>
+        <button class="btn-primary" type="button" id="coupon-save-btn">Save</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+  document.getElementById('coupon-save-btn').addEventListener('click', () => saveCoupon(coupon));
+  requestAnimationFrame(() => overlay.classList.add('modal-visible'));
+}
+
+async function saveCoupon(coupon) {
+  const form = document.getElementById('coupon-modal-form');
+  const err = document.getElementById('coupon-modal-err');
+  const saveBtn = document.getElementById('coupon-save-btn');
+  if (!form || !err || !saveBtn) return;
+
+  const payload = {
+    title: form.elements.title.value.trim(),
+    coupon_code: form.elements.coupon_code.value.trim().toUpperCase(),
+    description: form.elements.description.value.trim(),
+    coupon_type: form.elements.coupon_type.value,
+    status: form.elements.status.value,
+    discount_type: form.elements.discount_type.value,
+    discount_value: form.elements.discount_value.value,
+    starts_at: form.elements.starts_at.value,
+    ends_at: form.elements.ends_at.value,
+  };
+
+  if (!payload.title || !payload.coupon_code || !payload.discount_value) {
+    err.textContent = 'Title, code, and discount value are required.';
+    return;
+  }
+  if (coupon) payload.id = coupon.id;
+
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Saving...';
+  try {
+    const d = await adminApi(coupon ? 'admin_edit_coupon' : 'admin_add_coupon', payload);
+    if (!d.ok) {
+      err.textContent = d.errors ? d.errors.join(' ') : (d.message || 'Unable to save coupon.');
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save';
+      return;
+    }
+
+    _adminData.coupons = _adminData.coupons || [];
+    if (coupon) {
+      const index = _adminData.coupons.findIndex(item => String(item.id) === String(coupon.id));
+      if (index >= 0) _adminData.coupons[index] = d.coupon;
+    } else {
+      _adminData.coupons.unshift(d.coupon);
+    }
+    renderAdminCoupons(_adminData.coupons);
+    showToast(d.message || 'Coupon saved.');
+    removeModal();
+  } catch {
+    err.textContent = 'Network error. Could not save coupon.';
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Save';
+  }
+}
+
+async function changeCouponStatus(id, status, selectEl) {
+  const prev = selectEl.dataset.current;
+  try {
+    const d = await adminApi('admin_update_coupon_status', { id, status });
+    if (d.ok) {
+      const coupon = (_adminData.coupons || []).find(item => String(item.id) === String(id));
+      if (coupon) coupon.status = status;
+      selectEl.dataset.current = status;
+      renderAdminCoupons(_adminData.coupons || []);
+      showToast(d.message || 'Coupon status updated.');
+    } else {
+      selectEl.value = prev;
+      showToast(d.message || 'Failed to update coupon status.', false);
+    }
+  } catch {
+    selectEl.value = prev;
+    showToast('Network error.', false);
+  }
+}
+
+function confirmDeleteCoupon(id) {
+  const coupon = (_adminData.coupons || []).find(item => String(item.id) === String(id));
+  confirmAdminAction({
+    title: 'Delete Coupon',
+    message: `Delete coupon ${coupon?.coupon_code || coupon?.code || '#' + id}? This also removes its claim records.`,
+    confirmText: 'Yes, Delete',
+    loadingText: 'Deleting...',
+    confirmClass: 'cancel',
+    onConfirm: () => deleteCoupon(id),
+  });
+}
+
+async function deleteCoupon(id) {
+  try {
+    const d = await adminApi('admin_delete_coupon', { id });
+    if (d.ok) {
+      _adminData.coupons = (_adminData.coupons || []).filter(item => String(item.id) !== String(id));
+      renderAdminCoupons(_adminData.coupons);
+      showToast(d.message || 'Coupon deleted.');
+      return true;
+    }
+    showToast(d.message || 'Failed to delete coupon.', false);
+  } catch {
+    showToast('Network error.', false);
+  }
+  return false;
 }
 
 function renderNotifications(notifications) {

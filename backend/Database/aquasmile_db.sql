@@ -424,7 +424,7 @@ CREATE TABLE IF NOT EXISTS `promos` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`promo_id`),
   UNIQUE KEY `promo_code` (`promo_code`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `promos`
@@ -432,7 +432,26 @@ CREATE TABLE IF NOT EXISTS `promos` (
 
 INSERT INTO `promos` (`promo_id`, `promo_code`, `promo_name`, `description`, `promo_target`, `discount_type`, `discount_value`, `original_price`, `promo_price`, `image_path`, `status`, `start_date`, `end_date`, `created_at`) VALUES
 (1, 'APPT10', 'Appointment Discount', 'Hidden appointment promo code.', 'appointment', 'percentage', 10.00, NULL, NULL, NULL, 'active', '2026-06-01', '2026-06-30', '2026-06-17 12:03:00'),
-(2, 'SHOP10', 'Shop Discount', 'Hidden shop promo code.', 'shop', 'percentage', 10.00, NULL, NULL, NULL, 'active', '2026-06-01', '2026-06-30', '2026-06-17 12:03:00');
+(2, 'SHOP10', 'Shop Discount', 'Hidden shop promo code.', 'shop', 'percentage', 10.00, NULL, NULL, NULL, 'active', '2026-06-01', '2026-06-30', '2026-06-17 12:03:00'),
+(5, 'APPT20', '20% Discount', 'Get a 20% discount if you book now!', 'appointment', 'percentage', 20.00, NULL, NULL, NULL, 'active', '2026-06-18', '2026-06-19', '2026-06-18 01:28:33');
+
+-- --------------------------------------------------------
+
+DROP TABLE IF EXISTS `claimed_coupons`;
+
+--
+-- Table structure for table `claimed_coupons`
+--
+
+CREATE TABLE IF NOT EXISTS `claimed_coupons` (
+  `claimed_coupon_id` int(11) NOT NULL AUTO_INCREMENT,
+  `promo_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `claimed_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`claimed_coupon_id`),
+  UNIQUE KEY `claimed_promo_user_unique` (`promo_id`,`user_id`),
+  KEY `claimed_coupons_user_fk` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -529,6 +548,13 @@ ALTER TABLE `appointments`
 ALTER TABLE `cart_items`
   ADD CONSTRAINT `cart_items_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE,
   ADD CONSTRAINT `cart_items_ibfk_2` FOREIGN KEY (`product_id`) REFERENCES `products` (`product_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `claimed_coupons`
+--
+ALTER TABLE `claimed_coupons`
+  ADD CONSTRAINT `claimed_coupons_promo_fk` FOREIGN KEY (`promo_id`) REFERENCES `promos` (`promo_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `claimed_coupons_user_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `feedback`

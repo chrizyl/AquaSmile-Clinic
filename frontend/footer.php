@@ -88,7 +88,7 @@
         </li>
         <li class="footer-contact-item">
           <span class="contact-label">Email</span>
-          <a href="mailto:hello@aquasmile.ph" class="contact-value contact-link">hello@aquasmile.ph</a>
+          <a href="mailto:aquasmileclinic@gmail.com" class="contact-value contact-link">aquasmileclinic@gmail.com</a>
         </li>
         <li class="footer-contact-item">
           <span class="contact-label">Hours</span>
@@ -105,9 +105,9 @@
         &copy; 2026 AquaSmile Dental Clinic. All rights reserved.
       </p>
       <div class="footer-bottom-links">
-        <a href="#" class="footer-bottom-link">Privacy Policy</a>
+        <a href="privacy.php" class="footer-bottom-link">Privacy Policy</a>
         <span class="footer-bottom-sep" aria-hidden="true"></span>
-        <a href="#" class="footer-bottom-link">Terms of Service</a>
+        <a href="terms.php" class="footer-bottom-link">Terms and Conditions</a>
       </div>
     </div>
   </div>
