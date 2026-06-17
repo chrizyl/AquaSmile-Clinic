@@ -299,7 +299,7 @@ requireAdminPage();
   </main>
 
   <script src="js/main.js?v=20260616a"></script>
-  <script src="js/admin.js?v=20260617a"></script>
+  <script src="js/admin.js?v=20260617c"></script>
 </body>
 
 </html>

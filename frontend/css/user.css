@@ -113,6 +113,12 @@
 .detail-row strong { display:block; color:var(--text-dark); font-size:.84rem; font-weight:500; line-height:1.55; overflow-wrap:anywhere; }
 .detail-total { color:var(--aqua-dark); font-weight:800; font-size:1.02rem; }
 .history-detail-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:10px; margin-top:auto; padding-top:22px; }
+.history-detail-actions:empty { display:none; }
+.panel-products-title { margin:24px 0 8px; padding-top:2px; color:var(--text-dark); font:600 1.22rem 'Cormorant Garamond',serif; }
+.panel-products-list { display:grid; gap:0; margin-top:0; border-top:1px solid #dbe5e2; }
+.panel-products-list .empty-history { margin-top:10px; padding:24px 16px; }
+.order-preview-panel .order-product { padding:13px 0; }
+.order-preview-panel .order-product:last-child { border-bottom:0; }
 .history-item,.notification-item { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:24px; padding:22px 24px; border:1px solid #dbe5e2; border-radius:20px; background:rgba(255,255,255,.9); box-shadow:0 4px 18px rgba(0,0,0,.03); transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
 .history-item:hover { transform:translateY(-2px); border-color:rgba(124,165,163,.36); box-shadow:0 10px 28px rgba(124,165,163,.10); }
 .history-side { align-self:center; min-width:142px; display:flex; flex-direction:column; align-items:flex-end; justify-content:center; gap:10px; text-align:right; }

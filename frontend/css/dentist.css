@@ -22,6 +22,7 @@
 
 /* ── DENTIST CARD ── */
 .dentist-card-full {
+  height: 100%;
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   backdrop-filter: blur(12px);
@@ -30,6 +31,8 @@
   overflow: hidden;
   box-shadow: var(--shadow-card);
   transition: all 0.28s ease;
+  display: flex;
+  flex-direction: column;
 }
 
 .dentist-card-full:hover {
@@ -78,6 +81,9 @@
 /* Card body */
 .dentist-card-body {
   padding: 24px 26px 28px;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
 }
 
 .dentist-card-name {
@@ -100,15 +106,19 @@
 .dentist-card-desc {
   font-size: 0.88rem;
   color: var(--text-mid);
-  line-height: 1.7;
+  line-height: 1.5;
   font-weight: 300;
   margin-bottom: 20px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Card actions */
 .dentist-card-actions {
   display: flex;
   gap: 10px;
+  margin-top: auto;
 }
 
 .btn-view-profile {
@@ -171,16 +181,16 @@
 }
 
 .modal-card {
-  background: var(--glass-bg);
+  background: linear-gradient(180deg, rgba(255,255,255,0.94), rgba(246,251,250,0.9));
   border: 1px solid var(--glass-border);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-radius: var(--radius-lg);
-  max-width: 620px;
+  border-radius: 26px;
+  max-width: 640px;
   width: 100%;
   max-height: 88vh;
   overflow-y: auto;
-  box-shadow: 0 24px 64px rgba(44,62,62,0.2);
+  box-shadow: 0 28px 76px rgba(44,62,62,0.22);
   position: relative;
   animation: modalIn 0.3s ease;
 }
@@ -215,48 +225,109 @@
 }
 
 /* Modal body layout */
+.modal-photo-wrap {
+  padding: 18px 18px 0;
+}
+
 .modal-photo {
   width: 100%;
-  height: 260px;
+  height: 292px;
   object-fit: cover;
   object-position: center;
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  border-radius: 22px;
   display: block;
+  box-shadow: 0 15px 34px rgba(90,121,120,0.14);
 }
 
 .modal-info {
-  padding: 28px 32px 36px;
+  margin: -28px 22px 22px;
+  padding: 30px 32px 34px;
+  position: relative;
+  border: 1px solid rgba(255,255,255,0.88);
+  border-radius: 22px;
+  background: rgba(255,255,255,0.9);
+  box-shadow: 0 14px 34px rgba(90,121,120,0.12);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.modal-profile-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 20px;
 }
 
 .modal-name {
   font-family: 'Cormorant Garamond', serif;
-  font-size: 1.7rem;
+  font-size: 2.05rem;
+  line-height: 1;
   font-weight: 600;
   color: var(--text-dark);
-  margin-bottom: 4px;
+  margin-bottom: 8px;
 }
 
 .modal-cred {
   font-size: 0.8rem;
-  color: var(--aqua);
-  font-weight: 500;
+  color: var(--aqua-dark);
+  font-weight: 600;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  margin-bottom: 6px;
 }
 
 .modal-spec {
-  font-size: 0.85rem;
-  color: var(--text-mid);
-  margin-bottom: 20px;
+  flex: 0 0 auto;
+  max-width: 220px;
+  padding: 8px 13px;
+  border-radius: 99px;
+  background: var(--peach-light);
+  color: var(--aqua-dark);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
 }
 
 .modal-desc {
-  font-size: 0.9rem;
+  padding: 0 0 22px;
+  border-bottom: 1px solid rgba(120,154,153,0.16);
+  font-size: 0.92rem;
   color: var(--text-mid);
   line-height: 1.75;
   font-weight: 300;
-  margin-bottom: 28px;
+  margin: 0 0 22px;
+}
+
+.dentist-modal-sections {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0 0 28px;
+}
+
+.dentist-modal-section {
+  min-width: 0;
+  padding: 0 0 0 14px;
+  border-left: 3px solid rgba(120,154,153,0.32);
+  background: transparent;
+}
+
+.dentist-modal-label {
+  margin-bottom: 6px;
+  color: var(--aqua-dark);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dentist-modal-value {
+  color: var(--text-mid);
+  font-size: 0.88rem;
+  line-height: 1.55;
+  font-weight: 400;
+  overflow-wrap: anywhere;
 }
 
 .modal-book-btn {
@@ -346,6 +417,30 @@
   }
 
   .modal-info {
-    padding: 20px 22px 28px;
+    margin: -22px 14px 16px;
+    padding: 26px 22px 28px;
+  }
+
+  .modal-photo-wrap {
+    padding: 14px 14px 0;
+  }
+
+  .modal-photo {
+    height: 240px;
+  }
+
+  .modal-profile-head {
+    display: block;
+  }
+
+  .modal-spec {
+    display: inline-flex;
+    max-width: 100%;
+    margin-top: 4px;
+    text-align: left;
+  }
+
+  .dentist-modal-sections {
+    grid-template-columns: 1fr;
   }
 }

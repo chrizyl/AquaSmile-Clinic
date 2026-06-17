@@ -46,18 +46,42 @@ function openDentistModal(did) {
 
   const imgSrc = dentistImage(dentist);
   const firstName = dentist.firstName || dentist.name.replace(/^Dr\.\s*/i, '').split(/\s+/)[0] || 'this dentist';
+  const credentials = String(dentist.cred || '').trim();
+  const bio = String(dentist.desc || '').trim();
+  const sections = [
+    ['Specialization', dentist.spec],
+    ['Education', dentist.education],
+    ['Languages', dentist.languages],
+    ['Practicing Since', dentist.practicingSince || dentist.practicing_since],
+  ].filter(([, value]) => String(value || '').trim() !== '');
+  const sectionMarkup = sections.length
+    ? `<div class="dentist-modal-sections">
+        ${sections.map(([label, value]) => `
+          <section class="dentist-modal-section">
+            <div class="dentist-modal-label">${escHtml(label)}</div>
+            <div class="dentist-modal-value">${escHtml(value)}</div>
+          </section>
+        `).join('')}
+      </div>`
+    : '';
 
   document.getElementById('modal-body').innerHTML = `
-    <img
-      src="${escHtml(imgSrc)}"
-      alt="${escHtml(dentist.name)}"
-      class="modal-photo"
-    >
+    <div class="modal-photo-wrap">
+      <img
+        src="${escHtml(imgSrc)}"
+        alt="${escHtml(dentist.name)}"
+        class="modal-photo"
+      >
+    </div>
     <div class="modal-info">
-      <div class="modal-name">${escHtml(dentist.name)}</div>
-      ${dentist.cred ? `<div class="modal-cred">${escHtml(dentist.cred)}</div>` : ''}
-      ${dentist.spec ? `<div class="modal-spec">${escHtml(dentist.spec)}</div>` : ''}
-      ${dentist.desc ? `<div class="modal-desc">${escHtml(dentist.desc)}</div>` : ''}
+      <div class="modal-profile-head">
+        <div>
+          <div class="modal-name">${escHtml(dentist.name)}</div>
+          ${credentials ? `<div class="modal-cred">${escHtml(credentials)}</div>` : ''}
+        </div>
+      </div>
+      ${bio ? `<p class="modal-desc">${escHtml(bio)}</p>` : ''}
+      ${sectionMarkup}
 
       <button class="modal-book-btn ${isAdmin() ? 'admin-disabled' : ''}" onclick="${isAdmin() ? 'return false;' : `bookWithDentist('${escAttr(did)}')`}" ${isAdmin() ? 'disabled' : ''}>
         Book an Appointment with ${escHtml(firstName)}

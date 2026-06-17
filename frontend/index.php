@@ -96,7 +96,7 @@ require_once 'includes/navbar-auth.php';
   <div class="divider"></div>
 
   <!-- PROMO & DEALS SECTION -->
-  <div class="section" id="promos">
+  <div class="section" id="promos" hidden>
     <div class="section-label">Limited-Time Offers</div>
     <div class="section-title">Smile more,<br>spend less.</div>
     <p class="section-sub">Exclusive promos updated monthly — grab a deal before time runs out.</p>
@@ -138,7 +138,7 @@ require_once 'includes/navbar-auth.php';
   <div class="clinic-stats-strip" id="clinic-stats-strip"></div>
 
   <script src="js/auth.js?v=20260523"></script>
-  <script src="js/main.js?v=20260616a"></script>
+  <script src="js/main.js?v=20260617b"></script>
   <script src="js/notifications.js?v=20260615"></script>
 
   <div id="site-footer-root"></div>

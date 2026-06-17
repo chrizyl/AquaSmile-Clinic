@@ -194,6 +194,9 @@ function renderAppointmentPreview(appointment) {
   const cancelledDetails = appointment.status === 'cancelled'
     ? `${appointment.cancellationReason ? detailRow('Cancellation Reason', appointment.cancellationReason) : ''}${appointment.cancelledBy ? detailRow('Cancelled By', appointment.cancelledBy) : ''}`
     : '';
+  const createdDate = appointment.createdAt || appointment.created_at
+    ? detailRow('Created Date', formatAccountDate(appointment.createdAt || appointment.created_at, true))
+    : '';
 
   return `
     <aside class="history-detail-panel" aria-live="polite">
@@ -209,9 +212,9 @@ function renderAppointmentPreview(appointment) {
         ${detailRow('Status', statusBadge(appointment.status), true)}
         ${detailRow('Notes', appointment.notes || 'None')}
         ${cancelledDetails}
+        ${createdDate}
       </div>
       <div class="history-detail-actions">
-        <button class="history-action-btn" type="button" data-appointment-details="${escapeHtml(appointment.id)}">View Details</button>
         ${appointment.status === 'pending'
           ? `<button class="history-action-btn cancel" type="button" data-cancel-appointment="${escapeHtml(appointment.id)}">Cancel Appointment</button>`
           : ''}
@@ -250,6 +253,21 @@ function renderOrders() {
 
 function renderOrderPreview(order) {
   if (!order) return '';
+  const discount = Number(order.discount_amount ?? order.discountAmount ?? 0);
+  const products = order.items?.length
+    ? order.items.map(item => `
+        <div class="order-product">
+          <div>
+            <div class="order-product-name">${escapeHtml(item.name || 'Product')}</div>
+            <div class="order-product-meta">Qty: ${escapeHtml(item.quantity)} &times; ${escapeHtml(formatMoney(item.unit_price))}</div>
+          </div>
+          <div class="order-product-price">
+            <span>Subtotal</span><br>
+            <strong>${escapeHtml(formatMoney(item.subtotal))}</strong>
+          </div>
+        </div>`).join('')
+    : emptyState('No product details are available for this order.');
+
   return `
     <aside class="history-detail-panel order-preview-panel" aria-live="polite">
       <div class="history-detail-head">
@@ -262,11 +280,11 @@ function renderOrderPreview(order) {
         ${detailRow('Payment Method', formatPaymentMethod(order.payment_method))}
         ${detailRow('Status', statusBadge(order.status), true)}
         ${detailRow('Total Amount', `<span class="detail-total">${escapeHtml(formatMoney(order.total))}</span>`, true)}
+        ${discount > 0 ? detailRow('Discount', formatMoney(discount)) : ''}
         ${detailRow('Delivery Address', formatDeliveryAddress(order))}
       </div>
-      <div class="history-detail-actions">
-        <button class="history-action-btn" type="button" data-order-details="${escapeHtml(order.id)}">View Details</button>
-      </div>
+      <h4 class="panel-products-title">Ordered Products</h4>
+      <div class="panel-products-list">${products}</div>
     </aside>`;
 }
 
@@ -299,75 +317,6 @@ function openCancellationModal(appointmentId) {
     `${appointment.serviceName || 'Dental Service'} on ${formatAccountDate(appointment.date)} at ${formatAppointmentTime(appointment.time)}.`;
   openModal('cancel-modal');
   setTimeout(() => document.getElementById('cancellation-reason').focus(), 0);
-}
-
-function openOrderDetails(orderId) {
-  const order = accountData.orders.find(item => String(item.id) === String(orderId));
-  if (!order) {
-    accountMessage('Order details could not be found.');
-    return;
-  }
-
-  document.getElementById('order-modal-title').textContent = `Order #${order.id}`;
-  const products = order.items?.length
-    ? order.items.map(item => `
-        <div class="order-product">
-          <div>
-            <div class="order-product-name">${escapeHtml(item.name || 'Product')}</div>
-            <div class="order-product-meta">Qty: ${escapeHtml(item.quantity)} &times; ${escapeHtml(formatMoney(item.unit_price))}</div>
-          </div>
-          <div class="order-product-price">
-            <span>Subtotal</span><br>
-            <strong>${escapeHtml(formatMoney(item.subtotal))}</strong>
-          </div>
-        </div>`).join('')
-    : emptyState('No product details are available for this order.');
-
-  document.getElementById('order-detail-content').innerHTML = `
-    <div class="order-info-grid">
-      <div class="order-info"><span>Order Date</span><strong>${escapeHtml(formatAccountDate(order.created_at,true))}</strong></div>
-      <div class="order-info"><span>Payment Method</span><strong>${escapeHtml(formatPaymentMethod(order.payment_method))}</strong></div>
-      <div class="order-info"><span>Status</span><strong>${statusBadge(order.status)}</strong></div>
-      <div class="order-info"><span>Total Amount</span><strong>${escapeHtml(formatMoney(order.total))}</strong></div>
-      <div class="order-info"><span>Delivery Address</span><strong>${escapeHtml(formatDeliveryAddress(order))}</strong></div>
-      <div class="order-info"><span>Notes</span><strong>${escapeHtml(order.notes || 'None')}</strong></div>
-    </div>
-    <h3 class="order-products-title">Ordered Products</h3>
-    ${products}
-    <div class="order-total-row"><span>Total</span><strong>${escapeHtml(formatMoney(order.total))}</strong></div>`;
-  openModal('order-modal');
-}
-
-function detailInfo(label, value, allowHtml = false) {
-  const content = allowHtml ? value : escapeHtml(value || '-');
-  return `<div class="order-info"><span>${escapeHtml(label)}</span><strong>${content}</strong></div>`;
-}
-
-function openAppointmentDetails(appointmentId) {
-  const appointment = accountData.appointments.find(item => String(item.id) === String(appointmentId));
-  if (!appointment) {
-    accountMessage('Appointment details could not be found.');
-    return;
-  }
-
-  document.getElementById('appointment-modal-title').textContent = `Appointment #${appointment.id}`;
-  const cancelledDetails = appointment.status === 'cancelled'
-    ? `${appointment.cancellationReason ? detailInfo('Cancellation Reason', appointment.cancellationReason) : ''}${appointment.cancelledBy ? detailInfo('Cancelled By', appointment.cancelledBy) : ''}`
-    : '';
-
-  document.getElementById('appointment-detail-content').innerHTML = `
-    <div class="order-info-grid">
-      ${detailInfo('Appointment ID', `#${appointment.id}`)}
-      ${detailInfo('Service Name', appointment.serviceName || 'Dental Service')}
-      ${detailInfo('Dentist Name', appointment.dentistName || 'Dentist to be assigned')}
-      ${detailInfo('Appointment Date', formatAccountDate(appointment.date))}
-      ${detailInfo('Appointment Time', formatAppointmentTime(appointment.time))}
-      ${detailInfo('Status', statusBadge(appointment.status), true)}
-      ${detailInfo('Notes', appointment.notes || 'None')}
-      ${cancelledDetails}
-      ${detailInfo('Created Date', formatAccountDate(appointment.createdAt || appointment.created_at, true))}
-    </div>`;
-  openModal('appointment-modal');
 }
 
 function updateNotificationCounts() {
@@ -435,11 +384,13 @@ async function markSingleNotificationRead(notificationId) {
 function openNotificationTarget(notification) {
   if (!notification) return;
   if (notification.appointment_id) {
+    selectedAppointmentId = notification.appointment_id;
     switchSection('appointments');
-    openAppointmentDetails(notification.appointment_id);
+    renderAppointments();
   } else if (notification.order_id) {
+    selectedOrderId = notification.order_id;
     switchSection('orders');
-    openOrderDetails(notification.order_id);
+    renderOrders();
   }
 }
 
@@ -457,11 +408,13 @@ function handleStoredNotificationTarget() {
     if (target.notificationId) {
       window.openUserNotificationTarget(target.notificationId);
     } else if (target.appointmentId) {
+      selectedAppointmentId = target.appointmentId;
       switchSection('appointments');
-      openAppointmentDetails(target.appointmentId);
+      renderAppointments();
     } else if (target.orderId) {
+      selectedOrderId = target.orderId;
       switchSection('orders');
-      openOrderDetails(target.orderId);
+      renderOrders();
     }
   } catch (error) {
     console.warn('Notification target could not be opened:', error.message);
@@ -553,11 +506,6 @@ document.getElementById('cancel-profile-btn').addEventListener('click', () => {
 });
 
 document.getElementById('appointment-list').addEventListener('click', event => {
-  const detailButton = event.target.closest('[data-appointment-details]');
-  if (detailButton) {
-    openAppointmentDetails(detailButton.dataset.appointmentDetails);
-    return;
-  }
   const cancelButton = event.target.closest('[data-cancel-appointment]');
   if (cancelButton) {
     openCancellationModal(cancelButton.dataset.cancelAppointment);
@@ -580,11 +528,6 @@ document.getElementById('appointment-list').addEventListener('keydown', event =>
 });
 
 document.getElementById('order-list').addEventListener('click', event => {
-  const button = event.target.closest('[data-order-details]');
-  if (button) {
-    openOrderDetails(button.dataset.orderDetails);
-    return;
-  }
   const selected = event.target.closest('[data-select-order]');
   if (selected) {
     selectedOrderId = selected.dataset.selectOrder;

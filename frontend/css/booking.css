@@ -490,6 +490,59 @@
 }
 
 /* ── STEP NAVIGATION ── */
+.booking-promo-applied {
+  margin-top: 14px;
+  padding: 16px;
+  border: 1px solid rgba(120,154,153,0.18);
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, rgba(255,255,255,0.72), rgba(232,201,176,0.16));
+}
+
+.booking-promo-kicker {
+  color: var(--aqua);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.booking-promo-name {
+  margin: 4px 0 8px;
+  color: var(--text-dark);
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.22rem;
+  font-weight: 600;
+}
+
+.booking-promo-entry {
+  margin-bottom: 22px;
+}
+
+.booking-promo-row {
+  display: flex;
+  gap: 10px;
+}
+
+.booking-promo-row .form-input {
+  min-width: 0;
+  text-transform: uppercase;
+}
+
+.booking-promo-message {
+  min-height: 18px;
+  margin-top: 8px;
+  color: var(--text-light);
+  font-size: 0.78rem;
+}
+
+.booking-promo-message.success {
+  color: var(--aqua-dark);
+}
+
+.booking-promo-message.error {
+  color: #c0392b;
+}
+
 .step-nav {
   display: flex;
   gap: 12px;

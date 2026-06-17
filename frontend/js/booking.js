@@ -39,6 +39,77 @@ function isActiveAppointmentStatus(status) {
 }
 
 // ── STATE ──
+function parsePesoAmount(value) {
+  return Number(String(value || '').replace(/[^\d.]/g, '')) || 0;
+}
+
+function formatBookingMoney(amount) {
+  return 'PHP ' + Number(amount || 0).toLocaleString('en-PH', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+}
+
+function promoDiscountText(promo) {
+  const type = String(promo?.discount_type || promo?.discountType || '').toLowerCase();
+  const value = Number(promo?.discount_value || promo?.discountValue || 0);
+  if (type === 'percentage') return `${value}%`;
+  if (type === 'fixed') return formatBookingMoney(value);
+  return value ? String(value) : '-';
+}
+
+async function loadBookingPromoFromUrl() {
+  const code = new URLSearchParams(window.location.search).get('promo');
+  if (!code) return;
+
+  try {
+    const data = await apiRequest('validate_promo', { promo_code: code, target: 'appointment' });
+    activeBookingPromo = data.promo || null;
+    const input = document.getElementById('booking-promo-code');
+    if (input) input.value = String(code).toUpperCase();
+    showToast('Promo code applied successfully.');
+  } catch (err) {
+    activeBookingPromo = null;
+    showToast('Invalid or expired promo code.');
+  }
+}
+
+function setBookingPromoMessage(message, type = '') {
+  const el = document.getElementById('booking-promo-message');
+  if (!el) return;
+  el.textContent = message;
+  el.className = 'booking-promo-message ' + type;
+}
+
+async function applyBookingPromo() {
+  const input = document.getElementById('booking-promo-code');
+  const code = input ? input.value.trim().toUpperCase() : '';
+  const svc = SERVICES.find(s => s.id === booking.service);
+  const serviceFee = parsePesoAmount(svc?.rawPrice || svc?.price || 0);
+
+  if (!code || !svc) {
+    activeBookingPromo = null;
+    setBookingPromoMessage('Invalid or expired promo code.', 'error');
+    renderConfirmSummary();
+    return;
+  }
+
+  try {
+    const data = await apiRequest('validate_promo', {
+      promo_code: code,
+      target: 'appointment',
+      subtotal: serviceFee,
+    });
+    activeBookingPromo = data.promo || null;
+    if (input) input.value = code;
+    setBookingPromoMessage('Promo code applied successfully.', 'success');
+  } catch (err) {
+    activeBookingPromo = null;
+    setBookingPromoMessage('Invalid or expired promo code.', 'error');
+  }
+  renderConfirmSummary();
+}
+
 let booking = {
   service:  null,
   date:     null,
@@ -54,6 +125,7 @@ let calMonth = new Date().getMonth();
 let ratingStars    = 0;
 let ratingAspects  = [];
 let currentAppointmentId = null;
+let activeBookingPromo = null;
 
 // ── GUARD: Redirect if not logged in ──
 function guardAuth() {
@@ -333,6 +405,15 @@ function renderConfirmSummary() {
   const dateStr = dateObj.toLocaleDateString('en-PH', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
   });
+  const promo = activeBookingPromo;
+  const originalFee = promo ? Number(promo.original_price || promo.originalPrice || parsePesoAmount(svc.price)) : 0;
+  const explicitPromoPrice = promo ? Number(promo.promo_price || promo.promoPrice || 0) : 0;
+  const discountType = String(promo?.discount_type || promo?.discountType || '').toLowerCase();
+  const discountValue = Number(promo?.discount_value || promo?.discountValue || 0);
+  const computedDiscount = discountType === 'percentage'
+    ? originalFee * (discountValue / 100)
+    : (discountType === 'fixed' ? discountValue : 0);
+  const promoPrice = explicitPromoPrice > 0 ? explicitPromoPrice : Math.max(0, originalFee - computedDiscount);
 
   const ICON = {
     service:  `<svg style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;vertical-align:middle;margin-right:6px;" viewBox="0 0 24 24"><path d="M12 2C9.5 2 7 4 7 7c0 2.5.5 5 1.5 7.5C9.5 17 10.5 22 12 22s2.5-5 3.5-7.5C16.5 12 17 9.5 17 7c0-3-2.5-5-5-5z"/><path d="M9 7c0-1.7 1.3-3 3-3"/></svg>`,
@@ -362,7 +443,24 @@ function renderConfirmSummary() {
     <div class="confirm-row">
       <span class="confirm-label">${ICON.fee} Fee</span>
       <span class="confirm-value">${svc.price}</span>
-    </div>`;
+    </div>
+    ${promo ? `
+      <div class="booking-promo-applied">
+        <div class="booking-promo-kicker">Promo Applied</div>
+        <div class="booking-promo-name">${escapeHtml(promo.promo_name || promo.name || '')}</div>
+        <div class="confirm-row">
+          <span class="confirm-label">Original Fee:</span>
+          <span class="confirm-value">${formatBookingMoney(originalFee)}</span>
+        </div>
+        <div class="confirm-row">
+          <span class="confirm-label">Discount:</span>
+          <span class="confirm-value">${promoDiscountText(promo)}</span>
+        </div>
+        <div class="confirm-row">
+          <span class="confirm-label">Final Fee:</span>
+          <span class="confirm-value">${formatBookingMoney(promoPrice)}</span>
+        </div>
+      </div>` : ''}`;
 }
 
 
@@ -397,6 +495,7 @@ async function confirmBooking() {
     date:         booking.date,
     time:         booking.time,
     notes:        notes,
+    promo_code:   activeBookingPromo?.promo_code || activeBookingPromo?.code || null,
     status:       'pending',
     createdAt:    new Date().toISOString(),
   };
@@ -543,6 +642,7 @@ function closeBookingPopups() {
 async function initBooking() {
   if (!guardAuth()) return;
   await syncCatalogFromDatabase();
+  await loadBookingPromoFromUrl();
   try {
     const data = await apiGet('appointments');
     DB.set('appointments', data.appointments || []);

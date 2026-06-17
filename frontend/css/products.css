@@ -376,9 +376,9 @@ nav {
 
 .pd-modal {
   position: fixed;
-  top: 84px;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%) translateY(-6px) scale(0.97);
+  transform: translate(-50%, -50%) scale(0.97);
   z-index: 301;
   width: min(420px, calc(100vw - 40px));
   max-height: calc(100vh - 104px);
@@ -391,7 +391,7 @@ nav {
 }
 .pd-modal.open {
   opacity: 1; pointer-events: all;
-  transform: translateX(-50%) translateY(0) scale(1);
+  transform: translate(-50%, -50%) scale(1);
 }
 
 .pd-close {
@@ -488,7 +488,7 @@ nav {
 }
 
 @media (max-width: 768px) {
-  .pd-modal { top: 80px; max-height: calc(100vh - 96px); }
+  .pd-modal { top: 50%; max-height: calc(100vh - 32px); }
   .pd-body { padding: 18px 18px 24px; }
   .pd-name { font-size: 1.2rem; }
 }

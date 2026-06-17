@@ -331,6 +331,44 @@ requirePatientPage();
       margin: 14px 0;
     }
 
+    .checkout-promo-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .checkout-promo-row .form-input {
+      min-width: 0;
+      text-transform: uppercase;
+    }
+
+    .btn-apply-promo {
+      flex: 0 0 auto;
+      padding: 0 14px;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: var(--aqua);
+      color: #fff;
+      font: 600 0.78rem 'DM Sans', sans-serif;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.18s;
+    }
+
+    .btn-apply-promo:hover {
+      background: var(--aqua-dark);
+      transform: translateY(-1px);
+    }
+
+    .checkout-promo-message {
+      min-height: 18px;
+      margin: -4px 0 12px;
+      font-size: 0.74rem;
+      color: var(--text-light);
+    }
+
+    .checkout-promo-message.success { color: var(--aqua-dark); }
+    .checkout-promo-message.error { color: #c0392b; }
+
     .order-total-row {
       display: flex;
       justify-content: space-between;
@@ -1114,6 +1152,12 @@ requirePatientPage();
 
           <div class="order-divider"></div>
 
+          <div class="checkout-promo-row">
+            <input class="form-input" type="text" id="checkout-promo-code" placeholder="Promo code" maxlength="32" />
+            <button class="btn-apply-promo" type="button" onclick="applyCheckoutPromo()">Apply</button>
+          </div>
+          <div class="checkout-promo-message" id="checkout-promo-message"></div>
+
           <div id="co-order-totals">
             <!-- Populated by JS -->
           </div>
@@ -1255,6 +1299,8 @@ requirePatientPage();
 
     /* ── CART DATA (loaded from the logged-in user's server cart) ── */
     let checkoutCart = [];
+    let appliedCheckoutPromo = null;
+    let checkoutSelectedIds = [];
 
     /* ── LOGIN + EMPTY CART GUARD ── */
     (function() {
@@ -1276,6 +1322,11 @@ requirePatientPage();
     }
 
     async function loadCheckoutCart() {
+      checkoutSelectedIds = readCheckoutSelectedIds();
+      if (!checkoutSelectedIds.length) {
+        window.location.href = 'cart.php';
+        return false;
+      }
       try {
         const response = await fetch(new URL('../backend/api/index.php', window.location.href).pathname + '?action=cart_items', { cache: 'no-store' });
         const payload = await response.json();
@@ -1303,7 +1354,7 @@ requirePatientPage();
         id: normalizeProductId(item.id),
         qty: Math.max(1, Number(item.qty || 1)),
         price: Number(item.price || 0),
-      }));
+      })).filter(item => checkoutSelectedIds.includes(String(item.id)));
 
       if (!checkoutCart.length) {
         window.location.href = 'cart.php';
@@ -1340,6 +1391,55 @@ requirePatientPage();
     }
 
     /* ── RENDER ORDER SUMMARY SIDEBAR ── */
+    function checkoutSubtotal() {
+      return checkoutCart.reduce((s, i) => s + i.price * i.qty, 0);
+    }
+
+    function readCheckoutSelectedIds() {
+      try {
+        return JSON.parse(sessionStorage.getItem('aqsmile_checkout_selected_ids') || '[]').map(id => String(normalizeProductId(id)));
+      } catch {
+        return [];
+      }
+    }
+
+    function formatCheckoutMoney(amount) {
+      return '₱' + Number(amount || 0).toLocaleString('en-PH', { maximumFractionDigits: 2 });
+    }
+
+    function setCheckoutPromoMessage(message, type = '') {
+      const el = document.getElementById('checkout-promo-message');
+      if (!el) return;
+      el.textContent = message;
+      el.className = 'checkout-promo-message ' + type;
+    }
+
+    async function applyCheckoutPromo() {
+      const input = document.getElementById('checkout-promo-code');
+      const code = input ? input.value.trim().toUpperCase() : '';
+      if (!code) {
+        appliedCheckoutPromo = null;
+        setCheckoutPromoMessage('Invalid or expired promo code.', 'error');
+        renderOrderSummary();
+        return;
+      }
+
+      try {
+        const data = await apiRequest('validate_promo', {
+          promo_code: code,
+          target: 'shop',
+          subtotal: checkoutSubtotal(),
+        });
+        appliedCheckoutPromo = data.promo || null;
+        if (input) input.value = code;
+        setCheckoutPromoMessage('Promo code applied successfully.', 'success');
+      } catch (err) {
+        appliedCheckoutPromo = null;
+        setCheckoutPromoMessage('Invalid or expired promo code.', 'error');
+      }
+      renderOrderSummary();
+    }
+
     function renderOrderSummary() {
       const itemsEl  = document.getElementById('co-order-items');
       const totalsEl = document.getElementById('co-order-totals');
@@ -1361,8 +1461,11 @@ requirePatientPage();
           <div class="order-item-price">₱${(item.price * item.qty).toLocaleString()}</div>
         </div>`).join('');
 
-      const subtotal = checkoutCart.reduce((s, i) => s + i.price * i.qty, 0);
-      const total    = subtotal; // free delivery
+      const subtotal = checkoutSubtotal();
+      const discount = appliedCheckoutPromo
+        ? Math.min(subtotal, Number(appliedCheckoutPromo.discount_amount || appliedCheckoutPromo.discountAmount || 0))
+        : 0;
+      const total = Math.max(0, subtotal - discount); // free delivery
 
       totalsEl.innerHTML = `
         <div class="order-total-row">
@@ -1380,6 +1483,23 @@ requirePatientPage();
         <div class="order-grand-row">
           <span class="grand-lbl">Total</span>
           <span class="grand-val">₱${total.toLocaleString()}</span>
+        </div>`;
+      totalsEl.innerHTML = `
+        <div class="order-total-row">
+          <span class="lbl">Subtotal</span>
+          <span class="val">${formatCheckoutMoney(subtotal)}</span>
+        </div>
+        <div class="order-total-row">
+          <span class="lbl">Delivery</span>
+          <span class="val">Free</span>
+        </div>
+        <div class="order-total-row">
+          <span class="lbl">Discount</span>
+          <span class="val" style="color:var(--peach-dark);">-${formatCheckoutMoney(discount)}</span>
+        </div>
+        <div class="order-grand-row">
+          <span class="grand-lbl">Total</span>
+          <span class="grand-val">${formatCheckoutMoney(total)}</span>
         </div>`;
     }
 
@@ -1461,7 +1581,11 @@ requirePatientPage();
         }
       }
 
-      const subtotal = checkoutCart.reduce((s, i) => s + i.price * i.qty, 0);
+      const subtotal = checkoutSubtotal();
+      const discount = appliedCheckoutPromo
+        ? Math.min(subtotal, Number(appliedCheckoutPromo.discount_amount || appliedCheckoutPromo.discountAmount || 0))
+        : 0;
+      const total = Math.max(0, subtotal - discount);
 
       return {
         first_name:     firstName,
@@ -1480,8 +1604,9 @@ requirePatientPage();
         items:          checkoutCart.map(i => ({ name: i.name, qty: i.qty, unit_price: i.price })),
         subtotal:       subtotal,
         shipping:       0,
-        discount:       0,
-        total:          subtotal
+        discount:       discount,
+        total:          total,
+        promo_code:     appliedCheckoutPromo?.promo_code || appliedCheckoutPromo?.code || null
       };
     }
 
@@ -1510,6 +1635,7 @@ requirePatientPage();
             price: i.price
           })),
           total: formData.total,
+          promo_code: formData.promo_code,
         });
         currentOrderId = result.orderId || result.order_id || null;
       } catch (err) {
@@ -1527,6 +1653,8 @@ requirePatientPage();
         const key = currentUserCartCacheKey();
         if (key) localStorage.removeItem(key);
       } catch(e) {}
+      appliedCheckoutPromo = null;
+      sessionStorage.removeItem('aqsmile_checkout_selected_ids');
 
       overlay.classList.add('show');
     }

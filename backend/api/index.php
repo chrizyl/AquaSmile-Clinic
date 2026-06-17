@@ -41,6 +41,12 @@ try {
         case 'catalog':
             catalog();
             break;
+        case 'homepage_promos':
+            homepage_promos();
+            break;
+        case 'validate_promo':
+            validate_promo();
+            break;
         case 'dashboard':
             dashboard();
             break;
@@ -461,6 +467,9 @@ function admin_add_dentist()
     $specialization = trim($data['specialization'] ?? '');
     $credentials    = trim($data['credentials'] ?? '');
     $bio            = trim($data['bio'] ?? '');
+    $education      = trim($data['education'] ?? '');
+    $languages      = trim($data['languages'] ?? '');
+    $practicingSince = trim($data['practicing_since'] ?? '');
     $errors         = [];
 
     if ($firstName === '') $errors[] = 'Dentist first name is required.';
@@ -472,8 +481,8 @@ function admin_add_dentist()
     $imagePath = upload_catalog_image('dentists');
 
     execute_sql(
-        "INSERT INTO dentists (first_name, last_name, specialization, credentials, bio, image_path, status) VALUES (?, ?, ?, ?, ?, ?, 'available')",
-        [$firstName, $lastName, $specialization, $credentials, $bio, $imagePath]
+        "INSERT INTO dentists (first_name, last_name, specialization, credentials, bio, education, languages, practicing_since, image_path, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'available')",
+        [$firstName, $lastName, $specialization, $credentials, $bio, $education, $languages, $practicingSince, $imagePath]
     );
     $id  = (int)db()->lastInsertId();
     $row = fetch_one('SELECT * FROM dentists WHERE dentist_id = ?', [$id]);
@@ -489,6 +498,9 @@ function admin_edit_dentist()
     $specialization = trim($data['specialization'] ?? '');
     $credentials    = trim($data['credentials'] ?? '');
     $bio            = trim($data['bio'] ?? '');
+    $education      = trim($data['education'] ?? '');
+    $languages      = trim($data['languages'] ?? '');
+    $practicingSince = trim($data['practicing_since'] ?? '');
     $errors         = [];
 
     if ($id <= 0)     $errors[] = 'Invalid dentist ID.';
@@ -505,8 +517,8 @@ function admin_edit_dentist()
     $imagePath = upload_catalog_image('dentists', $existing['image_path'] ?? null);
 
     execute_sql(
-        'UPDATE dentists SET first_name = ?, last_name = ?, specialization = ?, credentials = ?, bio = ?, image_path = ? WHERE dentist_id = ?',
-        [$firstName, $lastName, $specialization, $credentials, $bio, $imagePath, $id]
+        'UPDATE dentists SET first_name = ?, last_name = ?, specialization = ?, credentials = ?, bio = ?, education = ?, languages = ?, practicing_since = ?, image_path = ? WHERE dentist_id = ?',
+        [$firstName, $lastName, $specialization, $credentials, $bio, $education, $languages, $practicingSince, $imagePath, $id]
     );
     $row = fetch_one('SELECT * FROM dentists WHERE dentist_id = ?', [$id]);
     json_response(['ok' => true, 'message' => 'Dentist updated successfully.', 'dentist' => normalize_dentist($row)]);
@@ -661,6 +673,10 @@ function normalize_dentist($row)
         'cred' => $row['credentials'] ?? '',
         'spec' => $row['specialization'] ?? '',
         'desc' => $row['bio'] ?? '',
+        'education' => $row['education'] ?? '',
+        'languages' => $row['languages'] ?? '',
+        'practicingSince' => $row['practicing_since'] ?? '',
+        'practicing_since' => $row['practicing_since'] ?? '',
         'imagePath' => $imagePath,
         'photo' => $photo,
         'status' => $row['status'] ?? 'available',
@@ -732,6 +748,36 @@ function normalize_product($row)
     ];
 }
 
+function normalize_promo($row)
+{
+    $original = (float) ($row['original_price'] ?? 0);
+    $promoPrice = (float) ($row['promo_price'] ?? 0);
+    $discountValue = (float) ($row['discount_value'] ?? 0);
+
+    return [
+        'id' => (string) ($row['promo_id'] ?? ''),
+        'promo_id' => (string) ($row['promo_id'] ?? ''),
+        'code' => $row['promo_code'] ?? '',
+        'promo_code' => $row['promo_code'] ?? '',
+        'name' => $row['promo_name'] ?? '',
+        'promo_name' => $row['promo_name'] ?? '',
+        'description' => $row['description'] ?? '',
+        'imagePath' => $row['image_path'] ?? '',
+        'image_path' => $row['image_path'] ?? '',
+        'originalPrice' => $original,
+        'original_price' => $original,
+        'promoPrice' => $promoPrice,
+        'promo_price' => $promoPrice,
+        'discountType' => $row['discount_type'] ?? '',
+        'discount_type' => $row['discount_type'] ?? '',
+        'discountValue' => $discountValue,
+        'discount_value' => $discountValue,
+        'promoTarget' => $row['promo_target'] ?? '',
+        'promo_target' => $row['promo_target'] ?? '',
+        'status' => $row['status'] ?? '',
+    ];
+}
+
 function normalize_appointment($row)
 {
     return [
@@ -752,6 +798,48 @@ function normalize_appointment($row)
         'cancelledBy' => $row['cancelled_by'] ?? '',
         'createdAt' => $row['created_at'] ?? '',
     ];
+}
+
+function find_active_promo($code, $target)
+{
+    $code = strtoupper(trim((string) $code));
+    if ($code === '' || !in_array($target, ['appointment', 'shop'], true)) {
+        return null;
+    }
+
+    return fetch_one(
+        "SELECT *
+         FROM promos
+         WHERE promo_code = ?
+           AND promo_target = ?
+           AND status = 'active'
+           AND (start_date IS NULL OR start_date <= CURDATE())
+           AND (end_date IS NULL OR end_date >= CURDATE())
+         LIMIT 1",
+        [$code, $target]
+    );
+}
+
+function calculate_promo_discount($subtotal, $promo)
+{
+    $subtotal = max(0, (float) $subtotal);
+    if (!$promo || $subtotal <= 0) return 0.0;
+
+    $type = strtolower(trim((string) ($promo['discount_type'] ?? '')));
+    $value = max(0, (float) ($promo['discount_value'] ?? 0));
+    if ($type === 'percentage') {
+        return min($subtotal, round($subtotal * ($value / 100), 2));
+    }
+    if ($type === 'fixed') {
+        return min($subtotal, round($value, 2));
+    }
+
+    $promoPrice = (float) ($promo['promo_price'] ?? 0);
+    if ($promoPrice > 0) {
+        return min($subtotal, round($subtotal - $promoPrice, 2));
+    }
+
+    return 0.0;
 }
 
 function normalize_feedback($row)
@@ -800,6 +888,43 @@ function catalog()
         'products' => array_map('normalize_product', fetch_all("SELECT * FROM products WHERE status = 'available' ORDER BY product_name")),
         'dentists' => array_map('normalize_dentist', fetch_all("SELECT * FROM dentists WHERE status != 'archived' ORDER BY first_name, last_name")),
     ]);
+}
+
+function homepage_promos()
+{
+    $rows = fetch_all(
+        "SELECT *
+         FROM promos
+         WHERE promo_target IN ('appointment', 'both')
+           AND status = 'active'
+         ORDER BY promo_id DESC"
+    );
+
+    json_response(['ok' => true, 'promos' => array_map('normalize_promo', $rows)]);
+}
+
+function validate_promo()
+{
+    $data = request_json();
+    $code = $data['promo_code'] ?? $data['code'] ?? $_GET['promo_code'] ?? $_GET['code'] ?? '';
+    $target = $data['target'] ?? $_GET['target'] ?? 'appointment';
+    $subtotal = (float) ($data['subtotal'] ?? $_GET['subtotal'] ?? 0);
+    $promo = find_active_promo($code, $target);
+
+    if (!$promo) {
+        json_response(['ok' => false, 'message' => 'Invalid or expired promo code.'], 404);
+    }
+
+    $normalized = normalize_promo($promo);
+    if ($subtotal > 0) {
+        $discount = calculate_promo_discount($subtotal, $promo);
+        $normalized['discountAmount'] = $discount;
+        $normalized['discount_amount'] = $discount;
+        $normalized['finalTotal'] = max(0, round($subtotal - $discount, 2));
+        $normalized['final_total'] = $normalized['finalTotal'];
+    }
+
+    json_response(['ok' => true, 'message' => 'Promo code applied successfully.', 'promo' => $normalized]);
 }
 
 function dashboard()
@@ -1350,6 +1475,7 @@ function create_appointment()
     $serviceId = (int) ($data['serviceId'] ?? $data['service_id'] ?? 0);
     $date = trim((string) ($data['date'] ?? $data['appointment_date'] ?? ''));
     $time = normalize_time_for_mysql((string) ($data['time'] ?? $data['appointment_time'] ?? ''));
+    $promoCode = strtoupper(trim((string) ($data['promo_code'] ?? $data['promoCode'] ?? '')));
 
     if ($userId <= 0 || $dentistId <= 0 || $serviceId <= 0 || $date === '' || $time === '') {
         json_response(['ok' => false, 'message' => 'Invalid appointment details. Please log in again and retry.'], 422);
@@ -1363,13 +1489,35 @@ function create_appointment()
         json_response(['ok' => false, 'message' => 'Selected dentist was not found. Please refresh and try again.'], 422);
     }
 
-    if (!fetch_one('SELECT service_id FROM services WHERE service_id = ?', [$serviceId])) {
+    $service = fetch_one('SELECT service_id, price FROM services WHERE service_id = ?', [$serviceId]);
+    if (!$service) {
         json_response(['ok' => false, 'message' => 'Selected service was not found. Please refresh and try again.'], 422);
     }
 
+    $promo = $promoCode !== '' ? find_active_promo($promoCode, 'appointment') : null;
+    $promoId = null;
+    $savedPromoCode = null;
+    $discountAmount = 0.0;
+    $finalFee = (float) ($service['price'] ?? 0);
+    if ($promo) {
+        $promoId = (int) $promo['promo_id'];
+        $savedPromoCode = $promo['promo_code'];
+        $originalFee = (float) ($promo['original_price'] ?? 0);
+        if ($originalFee <= 0) {
+            $originalFee = (float) ($service['price'] ?? 0);
+        }
+        $promoPrice = (float) ($promo['promo_price'] ?? 0);
+        $discountAmount = $promoPrice > 0
+            ? max(0, round($originalFee - $promoPrice, 2))
+            : calculate_promo_discount($originalFee, $promo);
+        $finalFee = $promoPrice > 0
+            ? round($promoPrice, 2)
+            : max(0, round($originalFee - $discountAmount, 2));
+    }
+
     execute_sql(
-        'INSERT INTO appointments (user_id, dentist_id, service_id, appointment_date, appointment_time, notes, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO appointments (user_id, dentist_id, service_id, appointment_date, appointment_time, notes, status, promo_id, promo_code, discount_amount, final_fee)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         [
             $userId,
             $dentistId,
@@ -1378,6 +1526,10 @@ function create_appointment()
             $time,
             $data['notes'] ?? '',
             'pending',
+            $promoId,
+            $savedPromoCode,
+            $discountAmount,
+            $finalFee,
         ]
     );
 
@@ -1671,7 +1823,6 @@ function create_order()
     $userId = require_patient();
     $data = request_json();
     $items = $data['items'] ?? [];
-    $total = (float) ($data['total'] ?? 0);
     $firstName = trim($data['first_name'] ?? '');
     $lastName = trim($data['last_name'] ?? '');
     $email = trim((string) ($data['email'] ?? ''));
@@ -1685,6 +1836,7 @@ function create_order()
     $notes = trim((string) ($data['notes'] ?? ''));
     $paymentMethod = $data['paymentMethod'] ?? $data['payment_method'] ?? 'cod';
     $gcashNumber = $data['gcash_number'] ?? '';
+    $promoCode = strtoupper(trim((string) ($data['promo_code'] ?? $data['promoCode'] ?? '')));
 
     if (
         $userId <= 0 || $firstName === '' || $lastName === '' || $email === '' || $phone === ''
@@ -1700,17 +1852,32 @@ function create_order()
         json_response(['ok' => false, 'message' => 'ZIP Code must contain numbers only.'], 422);
     }
 
+    $subtotal = 0.0;
+    foreach ($items as $item) {
+        $subtotal += (float) ($item['price'] ?? $item['unit_price'] ?? 0) * (int) ($item['qty'] ?? $item['quantity'] ?? 1);
+    }
+
+    $promo = $promoCode !== '' ? find_active_promo($promoCode, 'shop') : null;
+    $promoId = $promo ? (int) $promo['promo_id'] : null;
+    $savedPromoCode = $promo ? $promo['promo_code'] : null;
+    $discountAmount = $promo ? calculate_promo_discount($subtotal, $promo) : 0.0;
+    $total = max(0, round($subtotal - $discountAmount, 2));
+
     execute_sql(
-        'INSERT INTO orders (user_id, first_name, last_name, email, phone, house_no, street, barangay, city, province, zip, notes, payment_method, gcash_number, total_amount, status, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())',
-        [$userId ?: null, $firstName, $lastName, $email, $phone, $houseNo, $street, $barangay, $city, $province, $zip, $notes, $paymentMethod, $gcashNumber, $total, 'pending']
+        'INSERT INTO orders (user_id, first_name, last_name, email, phone, house_no, street, barangay, city, province, zip, notes, payment_method, gcash_number, total_amount, promo_id, promo_code, discount_amount, status, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())',
+        [$userId ?: null, $firstName, $lastName, $email, $phone, $houseNo, $street, $barangay, $city, $province, $zip, $notes, $paymentMethod, $gcashNumber, $total, $promoId, $savedPromoCode, $discountAmount, 'pending']
     );
 
     $orderId = (string) db()->lastInsertId();
+    $orderedProductIds = [];
     foreach ($items as $item) {
         $productId = $item['id'] ?? $item['productId'] ?? 0;
         if (is_string($productId) && preg_match('/^P(\d+)$/', $productId, $match)) {
             $productId = (int) $match[1];
+        }
+        if ((int) $productId > 0) {
+            $orderedProductIds[] = (int) $productId;
         }
 
         execute_sql(
@@ -1719,8 +1886,10 @@ function create_order()
         );
     }
 
-    if ($userId > 0) {
-        execute_sql('DELETE FROM cart_items WHERE user_id = ?', [$userId]);
+    if ($userId > 0 && $orderedProductIds) {
+        foreach (array_unique($orderedProductIds) as $orderedProductId) {
+            execute_sql('DELETE FROM cart_items WHERE user_id = ? AND product_id = ?', [$userId, $orderedProductId]);
+        }
     }
 
     $orderingUser = fetch_one('SELECT first_name, last_name FROM users WHERE user_id = ?', [$userId]);

@@ -1102,6 +1102,9 @@ function modalConfig(type, record) {
         { id:'specialization', label:'Specialization',   type:'text',    value: record?.spec  || '' },
         { id:'credentials',    label:'Credentials',      type:'text',    value: record?.cred  || '' },
         { id:'bio',            label:'Bio / Description',type:'textarea',value: record?.desc  || '' },
+        { id:'education',      label:'Education',        type:'textarea',value: record?.education || '' },
+        { id:'languages',      label:'Languages',        type:'text',    value: record?.languages || '' },
+        { id:'practicing_since',label:'Practicing Since',type:'text',    value: record?.practicingSince || record?.practicing_since || '' },
         { id:'image',          label:'Dentist Image',    type:'file',    currentPreview: record?.imagePath || '' },
       ],
       onSave: async (vals) => {

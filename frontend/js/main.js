@@ -552,6 +552,7 @@ function filterServices(category) {
 }
 
 // ── DEALS DATA (Lesson 2: Arrays, Data Types, String Manipulation) ──
+let HOME_PROMOS = [];
 const DEALS = [
   {
     id: 'DEAL1',
@@ -612,6 +613,38 @@ function formatPeso(amount) {
 function truncateStr(str, maxLen) {
   if (str.length <= maxLen) return str;           // boolean check
   return str.substring(0, maxLen) + '…';          // substring — string manipulation
+}
+
+function formatPromoMoney(amount) {
+  return 'PHP ' + Number(amount || 0).toLocaleString('en-PH', { maximumFractionDigits: 2 });
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, char => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  }[char]));
+}
+
+function promoDiscountLabel(promo) {
+  const type = String(promo.discount_type || promo.discountType || '').toLowerCase();
+  const value = Number(promo.discount_value || promo.discountValue || 0);
+  if (type === 'percentage') return `${value}% OFF`;
+  if (type === 'fixed') return `${formatPromoMoney(value)} OFF`;
+  return value ? `${value} OFF` : 'PROMO';
+}
+
+async function loadHomepagePromos() {
+  try {
+    const data = await apiGet('homepage_promos');
+    HOME_PROMOS = data.promos || [];
+  } catch (err) {
+    console.warn('Unable to load homepage promos:', err.message);
+    HOME_PROMOS = [];
+  }
 }
 
 function renderDeals() {
@@ -703,6 +736,93 @@ function applyPromoCode() {
 
 // ── COUNTDOWN TIMER (Lesson 2: Numeric operations, conditionals) ──
 // Promo ends at end of current month
+function renderDeals() {
+  const grid = document.getElementById('deals-grid');
+  if (!grid) return;
+  const adminViewing = isAdmin();
+
+  if (!HOME_PROMOS.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1;padding:28px;border:1px dashed rgba(120,154,153,.28);border-radius:18px;background:rgba(255,255,255,.58);color:var(--text-light);text-align:center;">No active promotions available.</div>';
+    return;
+  }
+
+  grid.innerHTML = HOME_PROMOS.map((promo, index) => {
+    const original = Number(promo.original_price || promo.originalPrice || 0);
+    const explicitPromoPrice = Number(promo.promo_price || promo.promoPrice || 0);
+    const discountType = String(promo.discount_type || promo.discountType || '').toLowerCase();
+    const discountValue = Number(promo.discount_value || promo.discountValue || 0);
+    const computedDiscount = discountType === 'percentage'
+      ? original * (discountValue / 100)
+      : (discountType === 'fixed' ? discountValue : 0);
+    const discounted = explicitPromoPrice > 0 ? explicitPromoPrice : Math.max(0, original - computedDiscount);
+    const savings = Math.max(0, original - discounted);
+    const code = String(promo.promo_code || promo.code || '').toUpperCase();
+    const imagePath = promo.image_path || promo.imagePath || '';
+    const badgeClass = index === 1 ? ' hot' : (index === 2 ? ' new-badge' : '');
+    return `
+      <div class="deal-card">
+        <div class="deal-badge${badgeClass}">${escapeHtml(promoDiscountLabel(promo))}</div>
+        <div class="deal-img">
+          ${imagePath ? `<img src="${escapeHtml(imagePath)}" alt="${escapeHtml(promo.promo_name || promo.name)}" onerror="this.style.display='none'" />` : ''}
+        </div>
+        <div class="deal-body">
+          <div class="deal-name">${escapeHtml(promo.promo_name || promo.name)}</div>
+          <div class="deal-desc">${escapeHtml(truncateStr(promo.description || '', 110))}</div>
+          <div class="deal-pricing">
+            <span class="deal-original">${formatPromoMoney(original)}</span>
+            <span class="deal-discounted">${formatPromoMoney(discounted)}</span>
+            <span class="deal-savings">Save ${formatPromoMoney(savings || Number(promo.discount_value || promo.discountValue || 0))}</span>
+          </div>
+          <button
+            class="deal-book-btn ${adminViewing ? 'admin-disabled' : ''}"
+            onclick="${adminViewing ? 'return false;' : `bookDeal('${escapeHtml(code)}')`}"
+            ${adminViewing ? 'disabled' : ''}
+          >${adminViewing ? 'View Only' : 'Book This Deal'}</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function bookDeal(code) {
+  if (isAdmin()) {
+    showToast('Admin accounts cannot book appointments.');
+    return;
+  }
+
+  if (!currentUser) {
+    showToast('Please log in to book a deal.');
+    setTimeout(() => window.location.href = 'login.php', 1200);
+    return;
+  }
+
+  showToast('Promo code ' + code + ' applied! Redirecting to booking...');
+  setTimeout(() => window.location.href = 'booking.php?promo=' + encodeURIComponent(code), 900);
+}
+
+async function applyPromoCode() {
+  const input = document.getElementById('promo-code-input');
+  const result = document.getElementById('promo-code-result');
+  if (!input || !result) return;
+
+  const code = input.value.trim().toUpperCase();
+  if (!code) {
+    result.innerHTML = `<div class="error-msg" style="margin-top:12px;margin-bottom:0">Please enter a promo code.</div>`;
+    return;
+  }
+
+  try {
+    const data = await apiRequest('validate_promo', { promo_code: code, target: 'appointment' });
+    const promo = data.promo || {};
+    result.innerHTML = `<div class="success-msg" style="margin-top:12px;margin-bottom:0">
+      <strong>${escapeHtml(code)}</strong> applied — ${escapeHtml(promo.description || promo.promo_name || promo.name || 'Appointment promo')}
+    </div>`;
+    showToast('Promo code applied successfully.');
+    setTimeout(() => window.location.href = 'booking.php?promo=' + encodeURIComponent(code), 900);
+  } catch (err) {
+    result.innerHTML = `<div class="error-msg" style="margin-top:12px;margin-bottom:0">Invalid or expired promo code.</div>`;
+  }
+}
+
 function getPromoEndDate() {
   const now = new Date();
   // End of current month at midnight
@@ -837,10 +957,7 @@ async function init() {
   notifyCurrentUser();
   renderHomeDentists();
   renderHomeServices();
-  renderDeals();
   renderClinicStats();
-  updateCountdown();
-  setInterval(updateCountdown, 1000);
   renderDailyTip(getRandomTip());
 }
 

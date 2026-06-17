@@ -22,7 +22,7 @@ $initialFirstName = preg_split('/\s+/', $sessionName)[0] ?? 'Patient';
   <link rel="stylesheet" href="css/style.css?v=20260614">
   <link rel="stylesheet" href="css/notifications.css?v=20260616a">
   <link rel="stylesheet" href="css/auth-nav.css?v=20260614">
-  <link rel="stylesheet" href="css/user.css?v=20260616b">
+  <link rel="stylesheet" href="css/user.css?v=20260618a">
 </head>
 <body class="account-body">
   <div class="toast" id="toast"></div>
@@ -187,28 +187,10 @@ $initialFirstName = preg_split('/\s+/', $sessionName)[0] ?? 'Patient';
     </div>
   </div>
 
-  <div class="account-modal-overlay" id="order-modal" hidden>
-    <div class="account-modal order-detail-modal" role="dialog" aria-modal="true" aria-labelledby="order-modal-title">
-      <button class="modal-close-btn" type="button" data-close-modal="order-modal" aria-label="Close">&times;</button>
-      <span class="card-kicker">Order Details</span>
-      <h2 id="order-modal-title">Order</h2>
-      <div id="order-detail-content"></div>
-    </div>
-  </div>
-
-  <div class="account-modal-overlay" id="appointment-modal" hidden>
-    <div class="account-modal order-detail-modal" role="dialog" aria-modal="true" aria-labelledby="appointment-modal-title">
-      <button class="modal-close-btn" type="button" data-close-modal="appointment-modal" aria-label="Close">&times;</button>
-      <span class="card-kicker">Appointment Details</span>
-      <h2 id="appointment-modal-title">Appointment</h2>
-      <div id="appointment-detail-content"></div>
-    </div>
-  </div>
-
   <div id="site-footer-root"></div>
   <script src="js/main.js?v=20260616a"></script>
   <script src="js/notifications.js?v=20260616a"></script>
-  <script src="js/user.js?v=20260616a"></script>
+  <script src="js/user.js?v=20260618a"></script>
   <script src="js/footer.js?v=20260608"></script>
 </body>
 </html>

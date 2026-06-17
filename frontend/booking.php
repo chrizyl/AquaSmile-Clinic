@@ -16,7 +16,7 @@ requirePatientPage();
   <title>AquaSmile — Book an Appointment</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css?v=20260523">
-  <link rel="stylesheet" href="css/booking.css?v=20260523">
+  <link rel="stylesheet" href="css/booking.css?v=20260617b">
   <link rel="stylesheet" href="css/notifications.css?v=20260616a">
   <link rel="stylesheet" href="css/auth-nav.css?v=20260614">
 
@@ -475,6 +475,15 @@ requirePatientPage();
 
       <div class="confirm-summary" id="booking-summary"></div>
 
+      <div class="booking-promo-entry">
+        <label class="form-label" for="booking-promo-code">Promo Code</label>
+        <div class="booking-promo-row">
+          <input class="form-input" type="text" id="booking-promo-code" placeholder="Enter promo code" maxlength="32">
+          <button class="btn-secondary" type="button" onclick="applyBookingPromo()">Apply</button>
+        </div>
+        <div class="booking-promo-message" id="booking-promo-message"></div>
+      </div>
+
       <div class="form-group">
         <label class="form-label" for="booking-notes">
           <svg class="label-icon-svg" viewBox="0 0 24 24">
@@ -570,8 +579,8 @@ requirePatientPage();
     </div>
   </div>
 
-  <script src="js/main.js?v=20260616a"></script>
-  <script src="js/booking.js?v=20260523"></script>
+  <script src="js/main.js?v=20260617b"></script>
+  <script src="js/booking.js?v=20260617b"></script>
   <script src="js/notifications.js?v=20260615"></script>
 
   <div id="site-footer-root"></div>

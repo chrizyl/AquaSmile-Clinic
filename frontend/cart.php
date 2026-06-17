@@ -15,7 +15,7 @@ requirePatientPage();
   <link rel="icon" type="image/svg+xml" href="images/AquaSmile_Logo.svg">
   <title>AquaSmile — Cart</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/cart.css?v=20260523">
+  <link rel="stylesheet" href="css/cart.css?v=20260617b">
   <link rel="stylesheet" href="css/notifications.css?v=20260616a">
   <link rel="stylesheet" href="css/auth-nav.css?v=20260614">
 </head>
@@ -57,7 +57,10 @@ requirePatientPage();
     <!-- LEFT: ITEMS -->
     <div class="glass-card cart-items-card" id="cart-items-card">
       <div class="cart-items-header">
-        <span class="cart-items-title">Items</span>
+        <label class="cart-select-all">
+          <input type="checkbox" id="select-all-items" onchange="toggleSelectAll(this.checked)" checked>
+          <span>Items</span>
+        </label>
         <div style="display:flex;align-items:center;gap:16px;">
           <span class="cart-items-count" id="items-count"></span>
           <button class="btn-clear-all" id="btn-clear-all" onclick="clearAll()">Clear all</button>
@@ -75,7 +78,7 @@ requirePatientPage();
       <div class="summary-title">Order Summary</div>
 
       <!-- Promo -->
-      <div class="promo-row">
+      <div class="promo-row" hidden>
         <input class="promo-input" id="promo-input" type="text" placeholder="Promo code">
         <button class="btn-apply" onclick="applyPromo()">Apply</button>
       </div>
@@ -148,7 +151,7 @@ requirePatientPage();
   const CAT_LABELS = {electric:'Electric Tools',paste:'Toothpaste',floss:'Floss & Rinse',whitening:'Whitening',accessories:'Accessories'};
 
   let cart = [];
-  let promoApplied = false;
+  let selectedItemIds = new Set();
   const pendingCartUpdates = new Set();
 
   function normalizeProductId(pid) {
@@ -185,6 +188,39 @@ requirePatientPage();
     const key = cartCacheKey();
     if (key) localStorage.setItem(key, JSON.stringify(cart));
     localStorage.removeItem('aqCart');
+  }
+
+  function syncSelectedWithCart() {
+    const cartIds = new Set(cart.map(item => String(item.id)));
+    selectedItemIds = new Set([...selectedItemIds].filter(id => cartIds.has(String(id))));
+    if (!selectedItemIds.size) {
+      selectedItemIds = new Set(cart.map(item => String(item.id)));
+    }
+    updateSelectAllState();
+  }
+
+  function selectedCartItems() {
+    return cart.filter(item => selectedItemIds.has(String(item.id)));
+  }
+
+  function updateSelectAllState() {
+    const selectAll = document.getElementById('select-all-items');
+    if (!selectAll) return;
+    selectAll.checked = cart.length > 0 && selectedItemIds.size === cart.length;
+    selectAll.indeterminate = selectedItemIds.size > 0 && selectedItemIds.size < cart.length;
+  }
+
+  function toggleSelectAll(checked) {
+    selectedItemIds = checked ? new Set(cart.map(item => String(item.id))) : new Set();
+    render();
+  }
+
+  function toggleCartItemSelection(id, checked) {
+    id = String(id);
+    if (checked) selectedItemIds.add(id);
+    else selectedItemIds.delete(id);
+    renderSummary();
+    updateSelectAllState();
   }
 
   async function apiPost(action, data) {
@@ -236,6 +272,7 @@ requirePatientPage();
         qty: Number(item.quantity || 1),
       };
     }));
+    syncSelectedWithCart();
     saveCart();
   }
 
@@ -281,6 +318,9 @@ requirePatientPage();
       const cat = product ? CAT_LABELS[product.category] || '' : '';
       return `
       <div class="cart-item" id="ci-${item.id}">
+        <label class="cart-item-select">
+          <input type="checkbox" ${selectedItemIds.has(String(item.id)) ? 'checked' : ''} onchange="toggleCartItemSelection('${item.id}', this.checked)">
+        </label>
         <div class="cart-item-thumb">
           ${item.img ? `<img src="${item.img}" alt="${item.name}">` : SVG.img}
         </div>
@@ -304,12 +344,11 @@ requirePatientPage();
 
   function renderSummary() {
     const rows = document.getElementById('summary-rows');
-    const sub = cart.reduce((s,i)=>s+i.price*i.qty,0);
-    const discount = promoApplied ? Math.round(sub*0.10) : 0;
-    const total = sub - discount;
+    const selected = selectedCartItems();
+    const sub = selected.reduce((s,i)=>s+i.price*i.qty,0);
+    const total = sub;
     rows.innerHTML = `
       <div class="summary-row"><span>Subtotal</span><span>&#8369;${sub.toLocaleString()}</span></div>
-      ${promoApplied ? `<div class="summary-row discount"><span>Promo (10% off)</span><span>&#8722;&#8369;${discount.toLocaleString()}</span></div>` : ''}
       <div class="summary-row"><span>Delivery</span><span>Free</span></div>
       <div class="summary-divider"></div>
       <div class="summary-row grand"><span>Total</span><span>&#8369;${total.toLocaleString()}</span></div>`;
@@ -364,6 +403,7 @@ requirePatientPage();
     pendingCartUpdates.add(pid);
     const previous = [...cart];
     cart = cart.filter(i=>i.id!==pid);
+    selectedItemIds.delete(String(pid));
     saveCart(); render();
     try {
       await removeCartItem(pid);
@@ -381,7 +421,9 @@ requirePatientPage();
   async function clearAll() {
     if (!confirm('Remove all items from your cart?')) return;
     const previous = [...cart];
-    cart = []; saveCart(); render();
+    cart = [];
+    selectedItemIds = new Set();
+    saveCart(); render();
     try {
       await Promise.all(previous.map(item => removeCartItem(item.id)));
       showToast('Cart cleared');
@@ -401,6 +443,7 @@ requirePatientPage();
     const ex = cart.find(i=>i.id===normalizedId);
     const previousQty = ex ? ex.qty : 0;
     if (ex) ex.qty++; else cart.push({id:normalizedId,name:p.name,price:p.price,img:p.img||'',qty:1});
+    selectedItemIds.add(String(normalizedId));
     saveCart(); render();
     try {
       await syncCartItem(normalizedId, previousQty + 1);
@@ -419,24 +462,17 @@ requirePatientPage();
   }
 
   function applyPromo() {
-    const val = document.getElementById('promo-input').value.trim().toUpperCase();
-    const success = document.getElementById('promo-success');
-    const codeUsed = document.getElementById('promo-code-used');
-    if (!cart.length) { showToast('Add items first'); return; }
-    if (val === 'AQUA10' || val === 'SMILE10') {
-      promoApplied = true;
-      codeUsed.textContent = val;
-      success.classList.add('show');
-      renderSummary();
-      showToast('Promo code applied!');
-    } else {
-      success.classList.remove('show');
-      showToast('Invalid promo code');
-    }
+    showToast('Promo codes can be applied during checkout.');
   }
 
   function checkout() {
     if (!cart.length) { showToast('Your cart is empty'); return; }
+    const selected = selectedCartItems();
+    if (!selected.length) {
+      showToast('Please select at least one item to checkout.');
+      return;
+    }
+    sessionStorage.setItem('aqsmile_checkout_selected_ids', JSON.stringify(selected.map(item => String(item.id))));
     showToast('Redirecting to checkout…');
     setTimeout(()=>{ window.location.href='checkout.php'; }, 1000);
   }
@@ -478,23 +514,25 @@ requirePatientPage();
     try { cart = normalizeCartItems(key ? JSON.parse(localStorage.getItem(key) || '[]') : []); }
     catch { cart = []; }
   }).finally(() => {
+    syncSelectedWithCart();
     render();
   });
 
   window.addEventListener('storage', function(e) {
     if (e.key === cartCacheKey() && (e.newValue === null || e.newValue === '[]')) {
       cart = [];
-      promoApplied = false;
       render();
     }
   });
 
 
   window.addEventListener('pageshow', function(e) {
-    promoApplied = false;
     loadCartFromDatabase().catch(err => {
       console.warn('Cart refresh failed:', err.message);
-    }).finally(render);
+    }).finally(() => {
+      syncSelectedWithCart();
+      render();
+    });
   });
 
   /* ── AUTH NAV ── */
