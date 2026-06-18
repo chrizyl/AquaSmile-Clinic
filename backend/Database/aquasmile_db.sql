@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 18, 2026 at 10:52 AM
+-- Generation Time: Jun 18, 2026 at 08:02 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -51,37 +51,18 @@ CREATE TABLE IF NOT EXISTS `appointments` (
   KEY `dentist_id` (`dentist_id`),
   KEY `service_id` (`service_id`),
   KEY `appointments_promo_fk` (`promo_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=34 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `appointments`
 --
 
 INSERT INTO `appointments` (`appointment_id`, `user_id`, `dentist_id`, `service_id`, `promo_id`, `promo_code`, `discount_amount`, `final_fee`, `appointment_date`, `appointment_time`, `notes`, `status`, `created_at`, `cancellation_reason`, `cancelled_by`) VALUES
-(6, 3, 1, 5, NULL, NULL, 0.00, NULL, '2026-05-23', '08:00:00', '', 'confirmed', '2026-05-23 02:54:45', NULL, NULL),
-(10, 4, 1, 2, NULL, NULL, 0.00, NULL, '2026-05-26', '15:00:00', '', 'confirmed', '2026-05-24 03:34:22', NULL, NULL),
-(11, 4, 1, 5, NULL, NULL, 0.00, NULL, '2026-05-26', '15:00:00', '', 'cancelled', '2026-05-24 03:37:23', 'due to conflict schedule', 'admin'),
-(12, 4, 1, 8, NULL, NULL, 0.00, NULL, '2026-05-28', '15:00:00', '', 'cancelled', '2026-05-24 03:41:56', 'Cancelled by patient before admin approval.', 'user'),
-(13, 5, 2, 1, NULL, NULL, 0.00, NULL, '2026-05-26', '13:00:00', '', 'cancelled', '2026-05-24 04:13:08', 'Cancelled by patient before admin approval.', 'user'),
-(14, 5, 2, 1, NULL, NULL, 0.00, NULL, '2026-05-26', '13:00:00', '', 'cancelled', '2026-05-24 04:13:08', 'Cancelled by patient before admin approval.', 'user'),
-(15, 5, 2, 6, NULL, NULL, 0.00, NULL, '2026-05-26', '11:00:00', '', 'cancelled', '2026-05-24 04:19:14', 'Cancelled by patient before admin approval.', 'user'),
-(16, 5, 2, 2, NULL, NULL, 0.00, NULL, '2026-05-27', '15:00:00', 'i have pekdsjh', 'completed', '2026-05-24 04:20:07', NULL, NULL),
-(17, 5, 3, 2, NULL, NULL, 0.00, NULL, '2026-05-25', '08:00:00', '', 'confirmed', '2026-05-24 04:49:04', NULL, NULL),
-(18, 5, 3, 2, NULL, NULL, 0.00, NULL, '2026-05-27', '15:00:00', 'peanuts\n', 'cancelled', '2026-05-26 07:17:11', 'Cancelled by patient before admin approval.', 'user'),
-(20, 5, 2, 4, NULL, NULL, 0.00, NULL, '2026-05-27', '08:00:00', '', 'pending', '2026-05-26 08:41:45', NULL, NULL),
-(21, 8, 2, 5, NULL, NULL, 0.00, NULL, '2026-06-17', '11:00:00', 'allergic sa dust', 'completed', '2026-06-14 09:33:08', NULL, NULL),
-(22, 8, 1, 1, NULL, NULL, 0.00, NULL, '2026-06-27', '09:00:00', '', 'archived', '2026-06-14 09:57:04', NULL, NULL),
-(23, 8, 3, 6, NULL, NULL, 0.00, NULL, '2026-08-07', '08:00:00', '', 'pending', '2026-06-15 09:00:19', NULL, NULL),
-(24, 8, 2, 8, NULL, NULL, 0.00, NULL, '2026-08-06', '15:00:00', '', 'pending', '2026-06-15 09:57:00', NULL, NULL),
-(25, 8, 3, 2, NULL, NULL, 0.00, NULL, '2026-08-22', '11:00:00', '', 'confirmed', '2026-06-15 20:58:56', NULL, NULL),
-(26, 8, 3, 7, NULL, NULL, 0.00, NULL, '2026-06-17', '17:00:00', '', 'pending', '2026-06-17 09:50:59', NULL, NULL),
-(27, 8, 3, 5, NULL, NULL, 0.00, NULL, '2026-06-17', '08:00:00', '', 'pending', '2026-06-17 09:51:52', NULL, NULL),
-(28, 8, 2, 4, NULL, NULL, 0.00, NULL, '2026-06-17', '11:00:00', '', 'pending', '2026-06-17 09:57:50', NULL, NULL),
-(29, 8, 1, 3, NULL, NULL, 0.00, NULL, '2026-06-17', '14:00:00', '', 'pending', '2026-06-17 09:59:32', NULL, NULL),
-(30, 8, 1, 5, NULL, NULL, 0.00, NULL, '2026-06-17', '13:00:00', '', 'pending', '2026-06-17 11:04:01', NULL, NULL),
-(31, 8, 2, 2, NULL, NULL, 0.00, NULL, '2026-06-22', '14:00:00', '', 'pending', '2026-06-17 11:28:30', NULL, NULL),
-(32, 8, 2, 5, 1, 'APPT10', 50.00, 450.00, '2026-09-01', '11:00:00', '', 'pending', '2026-06-17 15:36:36', NULL, NULL),
-(33, 8, 2, 2, NULL, NULL, 0.00, 450.00, '2026-08-31', '15:00:00', '', 'pending', '2026-06-17 16:15:41', NULL, NULL);
+(1, 2, 1, 1, NULL, NULL, 0.00, 800.00, '2026-06-19', '13:00:00', '', 'confirmed', '2026-06-15 03:15:22', NULL, NULL),
+(2, 2, 1, 8, 5, 'APPT20', 2400.00, 9600.00, '2026-06-20', '10:00:00', '', 'confirmed', '2026-06-19 13:26:35', NULL, NULL),
+(3, 2, 1, 1, NULL, NULL, 0.00, 800.00, '2026-06-19', '14:00:00', '', 'cancelled', '2026-06-14 17:37:19', 'Double Booked', 'user'),
+(4, 3, 2, 5, NULL, NULL, 0.00, 500.00, '2026-06-24', '11:00:00', '', 'pending', '2026-06-18 17:41:15', NULL, NULL),
+(5, 5, 3, 2, NULL, NULL, 0.00, 450.00, '2026-06-22', '09:00:00', '', 'pending', '2026-06-18 17:50:38', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -99,15 +80,14 @@ CREATE TABLE IF NOT EXISTS `cart_items` (
   PRIMARY KEY (`cart_item_id`),
   KEY `user_id` (`user_id`),
   KEY `product_id` (`product_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=40 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `cart_items`
 --
 
 INSERT INTO `cart_items` (`cart_item_id`, `user_id`, `product_id`, `quantity`, `added_at`) VALUES
-(9, 4, 8, 6, '2026-05-24 03:57:07'),
-(37, 8, 3, 2, '2026-06-17 11:47:18');
+(9, 5, 3, 1, '2026-06-18 17:42:37');
 
 -- --------------------------------------------------------
 
@@ -124,14 +104,16 @@ CREATE TABLE IF NOT EXISTS `claimed_coupons` (
   PRIMARY KEY (`claimed_coupon_id`),
   UNIQUE KEY `claimed_promo_user_unique` (`promo_id`,`user_id`),
   KEY `claimed_coupons_user_fk` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `claimed_coupons`
 --
 
 INSERT INTO `claimed_coupons` (`claimed_coupon_id`, `promo_id`, `user_id`, `claimed_at`) VALUES
-(1, 2, 8, '2026-06-17 20:18:58');
+(1, 5, 2, '2026-06-14 17:13:53'),
+(2, 2, 2, '2026-06-18 17:27:32'),
+(3, 2, 5, '2026-06-18 17:42:48');
 
 -- --------------------------------------------------------
 
@@ -186,15 +168,17 @@ CREATE TABLE IF NOT EXISTS `feedback` (
   KEY `user_id` (`user_id`),
   KEY `appointment_id` (`appointment_id`),
   KEY `order_id` (`order_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `feedback`
 --
 
 INSERT INTO `feedback` (`feedback_id`, `user_id`, `appointment_id`, `order_id`, `feedback_type`, `rating`, `tags`, `comment`, `created_at`) VALUES
-(1, 8, NULL, 12, 'order', 4, 'Great Value, Easy Checkout, Fast Delivery', '', '2026-06-17 10:56:11'),
-(2, 8, 30, NULL, 'appointment', 5, 'Clean Website, Fast Website', '', '2026-06-17 11:04:09');
+(1, 2, 1, NULL, 'appointment', 5, 'Easy Booking', 'Booking my appointment was quick and hassle-free. The instructions were clear, making it easy for me to complete my reservation.', '2026-06-15 03:16:45'),
+(2, 2, NULL, 1, 'order', 5, 'Easy Checkout, Good Selection', 'nice products', '2026-06-17 06:22:10'),
+(3, 3, 4, NULL, 'appointment', 4, 'Easy Booking', '', '2026-06-18 17:41:24'),
+(4, 5, NULL, 3, 'order', 5, 'Great Value, Easy Checkout', 'Easy Access', '2026-06-18 17:49:08');
 
 -- --------------------------------------------------------
 
@@ -214,44 +198,24 @@ CREATE TABLE IF NOT EXISTS `notifications` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`notification_id`),
   KEY `notifications_order_fk` (`order_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=32 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `notifications`
 --
 
 INSERT INTO `notifications` (`notification_id`, `user_id`, `appointment_id`, `order_id`, `audience`, `message`, `is_read`, `created_at`) VALUES
-(1, 3, 6, NULL, 'user', 'Your appointment for Dental Braces Consult on 2026-05-23 at 08:00 has been confirmed.', 0, '2026-05-23 02:56:45'),
-(2, 4, 10, NULL, 'user', 'Your appointment for Dental X-Ray on 2026-05-26 at 15:00 has been confirmed.', 1, '2026-05-24 03:36:15'),
-(3, 4, 10, NULL, 'user', 'Your appointment for Dental X-Ray on 2026-05-26 at 15:00 has been confirmed.', 1, '2026-05-24 03:36:15'),
-(4, 4, 11, NULL, 'user', 'Your appointment for Dental Braces Consult on 2026-05-26 at 15:00 has been cancelled. Reason: due to conflict schedule', 1, '2026-05-24 03:37:45'),
-(5, 4, 12, NULL, 'admin', 'Chrizyl Abella cancelled the appointment for Porcelain Veneers on 2026-05-28 at 15:00.', 1, '2026-05-24 03:42:03'),
-(6, 5, 15, NULL, 'admin', 'Jeonghan Jeon cancelled the appointment for Root Canal Treatment on 2026-05-26 at 11:00.', 1, '2026-05-24 04:19:39'),
-(7, 5, 14, NULL, 'admin', 'Jeonghan Jeon cancelled the appointment for Dental Cleaning on 2026-05-26 at 13:00.', 1, '2026-05-24 04:19:41'),
-(8, 5, 13, NULL, 'admin', 'Jeonghan Jeon cancelled the appointment for Dental Cleaning on 2026-05-26 at 13:00.', 1, '2026-05-24 04:19:43'),
-(9, 5, 16, NULL, 'user', 'Your appointment for Dental X-Ray on 2026-05-27 at 15:00 has been confirmed.', 1, '2026-05-24 04:20:57'),
-(10, 5, 17, NULL, 'user', 'Your appointment for Dental X-Ray on 2026-05-25 at 08:00 has been confirmed.', 1, '2026-05-24 04:49:42'),
-(11, 5, 18, NULL, 'admin', 'Jeonghan Jeon cancelled the appointment for Dental X-Ray on 2026-05-27 at 15:00.', 1, '2026-05-26 07:17:35'),
-(12, 6, 19, NULL, 'admin', 'System Admin cancelled the appointment for Porcelain Veneers on 2026-05-26 at 15:00.', 1, '2026-05-27 04:59:58'),
-(13, 8, 21, NULL, 'user', 'Your appointment for Dental Braces Consult on 2026-06-17 at 11:00 has been confirmed.', 1, '2026-06-14 09:34:18'),
-(14, 8, 22, NULL, 'admin', 'Mary Josephine Magboo cancelled the appointment for Dental Cleaning on 2026-06-27 at 09:00. Reason: had another schedule', 1, '2026-06-14 10:34:03'),
-(15, 8, 25, NULL, 'admin', 'Mary Josephine Magboo booked an appointment for Dental X-Ray on 2026-08-22 at 11:00.', 1, '2026-06-15 20:58:56'),
-(16, 8, 25, NULL, 'user', 'Your appointment for Dental X-Ray on 2026-08-22 at 11:00 has been confirmed.', 1, '2026-06-15 20:59:41'),
-(17, 8, NULL, 9, 'admin', 'New order #9 has been placed by Mary Josephine Magboo.', 1, '2026-06-17 09:50:10'),
-(18, 8, 26, NULL, 'admin', 'Mary Josephine Magboo booked an appointment for Dental Crown on 2026-06-17 at 17:00.', 1, '2026-06-17 09:50:59'),
-(19, 8, 27, NULL, 'admin', 'Mary Josephine Magboo booked an appointment for Dental Braces Consult on 2026-06-17 at 08:00.', 1, '2026-06-17 09:51:52'),
-(20, 8, NULL, 10, 'admin', 'New order #10 has been placed by Mary Josephine Magboo.', 1, '2026-06-17 09:52:32'),
-(21, 8, NULL, 11, 'admin', 'New order #11 has been placed by Mary Josephine Magboo.', 1, '2026-06-17 09:56:24'),
-(22, 8, 28, NULL, 'admin', 'Mary Josephine Magboo booked an appointment for Teeth Whitening on 2026-06-17 at 11:00.', 1, '2026-06-17 09:57:50'),
-(23, 8, 29, NULL, 'admin', 'Mary Josephine Magboo booked an appointment for Tooth Extraction on 2026-06-17 at 14:00.', 1, '2026-06-17 09:59:33'),
-(24, 8, NULL, 12, 'admin', 'New order #12 has been placed by Mary Josephine Magboo.', 1, '2026-06-17 10:55:59'),
-(25, 8, 30, NULL, 'admin', 'Mary Josephine Magboo booked an appointment for Dental Braces Consult on 2026-06-17 at 13:00.', 1, '2026-06-17 11:04:01'),
-(26, 8, 31, NULL, 'admin', 'Mary Josephine Magboo booked an appointment for Dental X-Ray on 2026-06-22 at 14:00.', 1, '2026-06-17 11:28:30'),
-(27, 8, 32, NULL, 'admin', 'Mary Josephine Magboo booked an appointment for Dental Braces Consult on 2026-09-01 at 11:00.', 1, '2026-06-17 15:36:36'),
-(28, 8, 33, NULL, 'admin', 'Mary Josephine Magboo booked an appointment for Dental X-Ray on 2026-08-31 at 15:00.', 1, '2026-06-17 16:15:41'),
-(29, 8, NULL, 13, 'admin', 'New order #13 has been placed by Mary Josephine Magboo.', 1, '2026-06-17 16:16:11'),
-(30, 8, NULL, 14, 'admin', 'New order #14 has been placed by Mary Josephine Magboo.', 1, '2026-06-17 20:51:48'),
-(31, 8, NULL, 15, 'admin', 'New order #15 has been placed by Mary Josephine Magboo.', 1, '2026-06-18 07:30:44');
+(1, 2, 1, NULL, 'admin', 'Mary Josephine Magboo booked an appointment for Dental Cleaning on 2026-06-20 at 13:00.', 1, '2026-06-15 03:15:22'),
+(2, 2, NULL, 1, 'admin', 'New order #1 has been placed by Mary Josephine Magboo.', 1, '2026-06-17 06:21:39'),
+(3, 2, 2, NULL, 'admin', 'Mary Josephine Magboo booked an appointment for Porcelain Veneers on 2026-06-20 at 10:00.', 1, '2026-06-19 13:26:35'),
+(4, 2, NULL, 2, 'admin', 'New order #2 has been placed by Mary Josephine Magboo.', 1, '2026-06-17 17:28:21'),
+(5, 2, 1, NULL, 'user', 'Your appointment for Dental Cleaning on 2026-06-19 at 13:00 has been confirmed.', 1, '2026-06-15 17:34:09'),
+(6, 2, 3, NULL, 'admin', 'Mary Josephine Magboo booked an appointment for Dental Cleaning on 2026-06-19 at 14:00.', 1, '2026-06-18 17:37:19'),
+(7, 2, 3, NULL, 'admin', 'Mary Josephine Magboo cancelled the appointment for Dental Cleaning on 2026-06-19 at 14:00. Reason: Double Booked', 1, '2026-06-18 17:38:36'),
+(8, 3, 4, NULL, 'admin', 'Jeonghan Jeon booked an appointment for Dental Braces Consult on 2026-06-24 at 11:00.', 1, '2026-06-18 17:41:15'),
+(9, 5, NULL, 3, 'admin', 'New order #3 has been placed by Hannah Cruz.', 1, '2026-06-18 17:48:40'),
+(10, 5, 5, NULL, 'admin', 'Hannah Cruz booked an appointment for Dental X-Ray on 2026-06-22 at 09:00.', 1, '2026-06-18 17:50:38'),
+(11, 2, 2, NULL, 'user', 'Your appointment for Porcelain Veneers on 2026-06-20 at 10:00 has been confirmed.', 0, '2026-06-18 17:56:48');
 
 -- --------------------------------------------------------
 
@@ -289,28 +253,16 @@ CREATE TABLE IF NOT EXISTS `orders` (
   PRIMARY KEY (`order_id`),
   KEY `user_id` (`user_id`),
   KEY `orders_promo_fk` (`promo_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `orders`
 --
 
 INSERT INTO `orders` (`order_id`, `user_id`, `promo_id`, `promo_code`, `discount_amount`, `first_name`, `last_name`, `email`, `phone`, `house_no`, `street`, `barangay`, `city`, `province`, `zip`, `notes`, `payment_method`, `gcash_number`, `total_amount`, `status`, `created_at`, `payment_receipt`, `card_number`, `card_expiry`, `card_holder`) VALUES
-(1, 3, NULL, NULL, 0.00, 'Chrizyl Abella', NULL, 'abellachrizyl@gmail.com', '+639274213879', NULL, NULL, NULL, 'STO. TOMAS CITY', NULL, '3423', '', 'cod', '', 738.00, 'pending', '2026-05-23 02:56:00', NULL, NULL, NULL, NULL),
-(2, 4, NULL, NULL, 0.00, 'Chrizyl Abella', NULL, 'abellachrizyl@gmail.com', '+639274213879', NULL, NULL, NULL, 'STO. TOMAS CITY', NULL, '3423', '', 'cod', '', 1137.00, 'pending', '2026-05-24 03:35:41', NULL, NULL, NULL, NULL),
-(3, 4, NULL, NULL, 0.00, 'Chrizyl Abella', NULL, 'abellachrizyl@gmail.com', '+639274213879', NULL, NULL, NULL, 'STO. TOMAS CITY', NULL, '3423', '', 'cod', '', 1137.00, 'pending', '2026-05-24 03:35:41', NULL, NULL, NULL, NULL),
-(4, 6, NULL, NULL, 0.00, 'Chrizyl Abella', NULL, 'abellachrizyl@gmail.com', '+639274213879', NULL, NULL, NULL, 'STO. TOMAS CITY', NULL, '3423', '', 'cod', '', 588.00, 'pending', '2026-05-26 08:22:23', NULL, NULL, NULL, NULL),
-(5, 5, NULL, NULL, 0.00, 'Chrizyl Abella', NULL, 'abellachrizyl@gmail.com', '+639274213879', NULL, NULL, NULL, 'STO. TOMAS CITY', NULL, '3423', '', 'cod', '', 1137.00, 'pending', '2026-05-26 08:42:32', NULL, NULL, NULL, NULL),
-(6, 8, NULL, NULL, 0.00, 'Mary Josephine', 'Magboo', 'magboo.mary@gmail.com', '09196882025', NULL, NULL, NULL, 'Calamba', NULL, '4027', '', 'cod', '', 567.00, 'pending', '2026-06-14 07:19:52', NULL, NULL, NULL, NULL),
-(7, 8, NULL, NULL, 0.00, 'Mary Josephine', 'Magboo', 'magboo.mary@gmail.com', '09196882025', NULL, NULL, NULL, 'Calamba', NULL, '4027', '', 'cod', '', 1137.00, 'pending', '2026-06-14 10:36:42', NULL, NULL, NULL, NULL),
-(8, 8, NULL, NULL, 0.00, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027', '', 'cod', '', 538.00, 'pending', '2026-06-15 09:55:17', NULL, NULL, NULL, NULL),
-(9, 8, NULL, NULL, 0.00, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027', '', 'cod', '', 1337.00, 'pending', '2026-06-17 09:50:10', NULL, NULL, NULL, NULL),
-(10, 8, NULL, NULL, 0.00, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027', '', 'cod', '', 777.00, 'pending', '2026-06-17 09:52:32', NULL, NULL, NULL, NULL),
-(11, 8, NULL, NULL, 0.00, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027', '', 'cod', '', 189.00, 'pending', '2026-06-17 09:56:24', NULL, NULL, NULL, NULL),
-(12, 8, NULL, NULL, 0.00, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027', '', 'cod', '', 548.00, 'pending', '2026-06-17 10:55:59', NULL, NULL, NULL, NULL),
-(13, 8, 2, 'SHOP10', 39.90, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027', '', 'cod', '', 359.10, 'pending', '2026-06-17 16:16:11', NULL, NULL, NULL, NULL),
-(14, 8, 2, 'SHOP10', 54.90, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027', '', 'cod', '', 494.10, 'pending', '2026-06-17 20:51:48', NULL, NULL, NULL, NULL),
-(15, 8, NULL, NULL, 0.00, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027', '', 'cod', '', 249.00, 'pending', '2026-06-18 07:30:44', NULL, NULL, NULL, NULL);
+(1, 2, NULL, NULL, 0.00, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027', '', 'cod', NULL, 1148.00, 'pending', '2026-06-17 06:21:39', NULL, NULL, NULL, NULL),
+(2, 2, 2, 'SHOP10', 188.70, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027', '', 'cod', NULL, 1698.30, 'pending', '2026-06-17 17:28:21', NULL, NULL, NULL, NULL),
+(3, 5, NULL, NULL, 0.00, 'Hannah', 'Cruz', 'hannie@gmail.com', '09274213879', '25', 'Mabini Street', 'San Pedro', 'Santo Tomas', 'Batangas', '4234', 'Leave with the security guard if I\'m not home.', 'card', NULL, 1197.00, 'pending', '2026-06-18 17:48:40', NULL, '**** **** **** 2989', '10 / 28', 'Hannah Cruz');
 
 -- --------------------------------------------------------
 
@@ -329,43 +281,21 @@ CREATE TABLE IF NOT EXISTS `order_items` (
   PRIMARY KEY (`order_item_id`),
   KEY `order_id` (`order_id`),
   KEY `product_id` (`product_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `order_items`
 --
 
 INSERT INTO `order_items` (`order_item_id`, `order_id`, `product_id`, `quantity`, `unit_price`, `created_at`) VALUES
-(1, 1, 8, 1, 549.00, '2026-05-23 02:56:00'),
-(2, 1, 3, 1, 189.00, '2026-05-23 02:56:00'),
-(3, 2, 7, 1, 399.00, '2026-05-24 03:35:41'),
-(4, 2, 3, 1, 189.00, '2026-05-24 03:35:41'),
-(5, 2, 8, 1, 549.00, '2026-05-24 03:35:41'),
-(6, 3, 7, 1, 399.00, '2026-05-24 03:35:41'),
-(7, 3, 3, 1, 189.00, '2026-05-24 03:35:41'),
-(8, 3, 8, 1, 549.00, '2026-05-24 03:35:41'),
-(9, 4, 3, 1, 189.00, '2026-05-26 08:22:23'),
-(10, 4, 7, 1, 399.00, '2026-05-26 08:22:23'),
-(11, 5, 3, 1, 189.00, '2026-05-26 08:42:32'),
-(12, 5, 7, 1, 399.00, '2026-05-26 08:42:32'),
-(13, 5, 8, 1, 549.00, '2026-05-26 08:42:32'),
-(14, 6, 3, 3, 189.00, '2026-06-14 07:19:52'),
-(15, 7, 8, 1, 549.00, '2026-06-14 10:36:42'),
-(16, 7, 7, 1, 399.00, '2026-06-14 10:36:42'),
-(17, 7, 3, 1, 189.00, '2026-06-14 10:36:42'),
-(18, 8, 4, 1, 349.00, '2026-06-15 09:55:17'),
-(19, 8, 3, 1, 189.00, '2026-06-15 09:55:17'),
-(20, 9, 3, 1, 189.00, '2026-06-17 09:50:10'),
-(21, 9, 6, 1, 249.00, '2026-06-17 09:50:10'),
-(22, 9, 5, 1, 899.00, '2026-06-17 09:50:10'),
-(23, 10, 7, 1, 399.00, '2026-06-17 09:52:32'),
-(24, 10, 3, 2, 189.00, '2026-06-17 09:52:32'),
-(25, 11, 3, 1, 189.00, '2026-06-17 09:56:24'),
-(26, 12, 6, 1, 249.00, '2026-06-17 10:55:59'),
-(27, 12, 2, 1, 299.00, '2026-06-17 10:55:59'),
-(28, 13, 7, 1, 399.00, '2026-06-17 16:16:11'),
-(29, 14, 8, 1, 549.00, '2026-06-17 20:51:48'),
-(30, 15, 6, 1, 249.00, '2026-06-18 07:30:44');
+(1, 1, 5, 1, 899.00, '2026-06-18 17:21:39'),
+(2, 1, 6, 1, 249.00, '2026-06-18 17:21:39'),
+(3, 2, 3, 1, 189.00, '2026-06-18 17:28:21'),
+(4, 2, 1, 1, 1299.00, '2026-06-18 17:28:21'),
+(5, 2, 7, 1, 399.00, '2026-06-18 17:28:21'),
+(6, 3, 2, 1, 299.00, '2026-06-18 17:48:40'),
+(7, 3, 4, 1, 349.00, '2026-06-18 17:48:40'),
+(8, 3, 8, 1, 549.00, '2026-06-18 17:48:40');
 
 -- --------------------------------------------------------
 
@@ -524,18 +454,18 @@ CREATE TABLE IF NOT EXISTS `users` (
   `zip_code` varchar(10) DEFAULT NULL,
   PRIMARY KEY (`user_id`),
   UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `users`
 --
 
 INSERT INTO `users` (`user_id`, `first_name`, `last_name`, `email`, `phone`, `password_hash`, `role`, `created_at`, `birthdate`, `gender`, `emergency_contact_name`, `emergency_contact_number`, `house_no`, `street`, `barangay`, `city`, `province`, `zip_code`) VALUES
-(3, 'Chrizyl', 'Abella', 'abellachrizyl@gmail.com', '09274213879', '$2y$10$SpxIEd7d0L3RQtveozevSO5GZfKVB5OVjsB3hVGRFDiBZLrMF/d1S', 'patient', '2026-05-23 02:53:53', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(4, 'Chrizyl', 'Abella', 'hannie@gmail.com', '09274213879', '$2y$10$J50O5WjgvdrIJkITMGCDKefEnNOW2EFeP0YmlGOD6eO2MDLVRwj1e', 'patient', '2026-05-24 03:33:37', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(5, 'Jeonghan', 'Jeon', 'jeon@gmail.com', '123456789', '$2y$10$y9L78.r11pQ/WOUq3psuKuw40hrIwyCiilbZqn0m.u9Q8kEKf676O', 'patient', '2026-05-24 03:40:13', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(6, 'System', 'Admin', 'admin@aquasmile.com', '0000000000', '$2y$10$qnT4XmT6G85rtdowvE8eYuy0eBNaMX69YlUDnqYqNlQljmIpLqJNG', 'admin', '2026-05-26 07:27:15', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(8, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '$2y$10$cqxtAEZuyPQtRSWolFgJye618tHSODbybdCeylU1iD2PFgoTcakE.', 'patient', '2026-06-14 06:33:02', '2006-08-07', 'Female', NULL, NULL, '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027');
+(1, 'System', 'Admin', 'admin@aquasmile.com', '09685352424', '$2y$10$qnT4XmT6G85rtdowvE8eYuy0eBNaMX69YlUDnqYqNlQljmIpLqJNG', 'admin', '2026-05-26 07:27:15', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(2, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '$2y$10$cqxtAEZuyPQtRSWolFgJye618tHSODbybdCeylU1iD2PFgoTcakE.', 'patient', '2026-06-14 06:33:02', '2006-08-07', 'Female', NULL, NULL, '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027'),
+(3, 'Jeonghan', 'Jeon', 'jeon@gmail.com', '09275643514', '$2y$10$y9L78.r11pQ/WOUq3psuKuw40hrIwyCiilbZqn0m.u9Q8kEKf676O', 'patient', '2026-05-24 03:40:13', NULL, 'Male', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(4, 'Chrizyl', 'Abella', 'abellachrizyl@gmail.com', '09274213879', '$2y$10$SpxIEd7d0L3RQtveozevSO5GZfKVB5OVjsB3hVGRFDiBZLrMF/d1S', 'patient', '2026-05-23 02:53:53', NULL, 'Female', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(5, 'Hannah', 'Cruz', 'hannie@gmail.com', '09274213879', '$2y$10$J50O5WjgvdrIJkITMGCDKefEnNOW2EFeP0YmlGOD6eO2MDLVRwj1e', 'patient', '2026-05-24 03:33:37', '2000-06-07', 'Female', NULL, NULL, '25', 'Mabini Street', 'San Pedro', 'Santo Tomas', 'Batangas', '4234');
 
 --
 -- Constraints for dumped tables
