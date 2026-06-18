@@ -49,7 +49,7 @@ requireAdminPage();
         Notifications <span class="admin-notify-badge" id="admin-notify-badge">0</span>
       </button>
       <button class="admin-side-link" type="button" data-view="feedback" onclick="showAdminView('feedback')">Feedback</button>
-      <button class="admin-side-link" type="button" data-view="reports" onclick="showAdminView('reports')">Crystal Reports</button>
+      <button class="admin-side-link" type="button" data-view="reports" onclick="showAdminView('reports')">Reports and Analytics</button>
     </aside>
 
     <section class="admin-content">
@@ -117,7 +117,7 @@ requireAdminPage();
       <section class="admin-view" id="view-reports" data-admin-view="reports">
       <header class="admin-hero report-hero">
         <div>
-          <div class="section-label">Crystal Report Panel</div>
+          <div class="section-label">Reports and Analytics</div>
           <h1>Clinic Summary</h1>
           <p>A clean overview of patients, appointments, shop activity, catalog content, coupons, feedback, and recent website operations.</p>
         </div>

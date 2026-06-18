@@ -284,11 +284,22 @@ requirePatientPage();
       width: 48px;
       height: 48px;
       border-radius: var(--radius-sm);
-      background: rgba(120,154,153,0.1);
+      background: linear-gradient(135deg, rgba(255,255,255,0.78), rgba(120,154,153,0.12));
       flex-shrink: 0;
       display: flex;
       align-items: center;
       justify-content: center;
+      overflow: hidden;
+      box-shadow: inset 0 0 0 1px rgba(120,154,153,0.14);
+    }
+
+    .order-item-img img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+      object-position: center;
+      border-radius: var(--radius-sm);
     }
 
     .order-item-img svg {
@@ -635,34 +646,70 @@ requirePatientPage();
     }
 
     /* ── RATING POPUP ── */
-    .rating-box .popup-title { font-size: 1.5rem; }
+    .rating-box {
+      max-width: 440px;
+      padding: 40px 38px 34px;
+      background: rgba(255,255,255,0.94);
+      border: 1px solid rgba(255,255,255,0.82);
+      border-radius: 24px;
+      box-shadow: 0 24px 70px rgba(44,62,56,0.18), 0 8px 24px rgba(120,154,153,0.12);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .rating-box .popup-title {
+      font-size: 1.65rem;
+      line-height: 1.12;
+      margin-bottom: 10px;
+    }
+
+    .rating-box .popup-msg {
+      max-width: 310px;
+      margin: 0 auto 24px !important;
+      color: var(--text-mid);
+      line-height: 1.65;
+    }
 
     .rating-stars {
       display: flex;
       justify-content: center;
-      gap: 10px;
-      margin: 4px 0 20px;
+      gap: 8px;
+      margin: 0 auto 18px;
+      padding: 14px 16px;
+      width: fit-content;
+      border-radius: 999px;
+      background: rgba(120,154,153,0.07);
+      border: 1px solid rgba(120,154,153,0.12);
     }
 
     .star-btn {
-      background: none;
-      border: none;
+      width: 42px;
+      height: 42px;
+      background: rgba(255,255,255,0.86);
+      border: 1px solid rgba(120,154,153,0.14);
+      border-radius: 50%;
       cursor: pointer;
-      padding: 4px;
-      transition: transform 0.15s;
+      padding: 6px;
+      display: grid;
+      place-items: center;
+      transition: transform 0.15s, border-color 0.18s, box-shadow 0.18s, background 0.18s;
     }
 
-    .star-btn:hover { transform: scale(1.18); }
+    .star-btn:hover {
+      transform: translateY(-2px);
+      border-color: rgba(212,168,130,0.55);
+      box-shadow: 0 8px 18px rgba(212,168,130,0.16);
+    }
     .star-btn:hover svg {
       fill: var(--peach);
       stroke: var(--peach-dark);
     }
 
     .star-btn svg {
-      width: 36px;
-      height: 36px;
+      width: 28px;
+      height: 28px;
       fill: rgba(120,154,153,0.14);
-      stroke: rgba(90,112,104,0.72);
+      stroke: rgba(78,113,112,0.72);
       stroke-width: 1.4;
       transition: fill 0.18s, stroke 0.18s, transform 0.18s;
     }
@@ -679,98 +726,109 @@ requirePatientPage();
       stroke: #b98266;
     }
 
+    .star-btn.active {
+      background: #fff8f2;
+      border-color: rgba(212,168,130,0.48);
+      box-shadow: 0 8px 20px rgba(212,168,130,0.14);
+    }
+
     .rating-labels {
       display: flex;
       justify-content: space-between;
       font-size: 0.72rem;
       color: var(--text-light);
       font-weight: 300;
-      margin-top: -14px;
-      margin-bottom: 22px;
-      padding: 0 4px;
+      margin: -6px auto 24px;
+      padding: 0 8px;
+      max-width: 300px;
     }
 
     .rating-aspects {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 9px;
       justify-content: center;
-      margin-bottom: 18px;
+      margin-bottom: 20px;
     }
 
     .aspect-chip {
-      padding: 6px 14px;
+      padding: 8px 14px;
       border-radius: 99px;
-      border: 1.5px solid rgba(120,154,153,0.25);
-      background: rgba(255,255,255,0.5);
+      border: 1px solid rgba(120,154,153,0.22);
+      background: rgba(255,255,255,0.78);
       font-family: 'DM Sans', sans-serif;
       font-size: 0.78rem;
       color: var(--text-mid);
       cursor: pointer;
-      transition: all 0.18s;
+      transition: background 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s, transform 0.18s;
       user-select: none;
     }
 
     .aspect-chip:hover {
       border-color: var(--aqua);
-      background: rgba(120,154,153,0.08);
+      background: rgba(120,154,153,0.06);
+      transform: translateY(-1px);
     }
 
     .aspect-chip.selected {
-      background: rgba(120,154,153,0.2);
+      background: rgba(120,154,153,0.14);
       border-color: var(--aqua);
       color: var(--aqua-dark);
-      font-weight: 700;
-      box-shadow: 0 0 0 3px rgba(120,154,153,0.1);
+      font-weight: 600;
+      box-shadow: 0 6px 16px rgba(120,154,153,0.12);
     }
 
     .rating-textarea {
       width: 100%;
-      padding: 11px 14px;
-      border: 1.5px solid rgba(120,154,153,0.25);
-      border-radius: var(--radius-sm);
-      background: rgba(255,255,255,0.6);
+      padding: 14px 16px;
+      border: 1px solid rgba(120,154,153,0.24);
+      border-radius: 16px;
+      background: rgba(250,253,252,0.9);
       font-family: 'DM Sans', sans-serif;
       font-size: 0.86rem;
       color: var(--text-dark);
       resize: vertical;
-      min-height: 80px;
+      min-height: 96px;
       outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
-      margin-bottom: 18px;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+      margin-bottom: 20px;
+      line-height: 1.55;
     }
 
     .rating-textarea::placeholder { color: var(--text-light); }
 
     .rating-textarea:focus {
       border-color: var(--aqua);
+      background: #fff;
       box-shadow: 0 0 0 3px rgba(120,154,153,0.12);
     }
 
     .btn-submit-rating {
       width: 100%;
-      padding: 13px 20px;
+      padding: 14px 22px;
       border: none;
-      border-radius: var(--radius-md);
-      background: var(--aqua);
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--aqua), var(--aqua-dark));
       color: #fff;
       font-family: 'DM Sans', sans-serif;
       font-size: 0.92rem;
-      font-weight: 500;
+      font-weight: 600;
       cursor: pointer;
-      transition: background 0.22s, transform 0.18s;
-      margin-bottom: 10px;
+      transition: box-shadow 0.22s, transform 0.18s, opacity 0.18s;
+      margin-bottom: 12px;
+      box-shadow: 0 12px 24px rgba(78,113,112,0.22);
     }
 
     .btn-submit-rating:hover {
-      background: var(--aqua-dark);
       transform: translateY(-1px);
+      box-shadow: 0 16px 28px rgba(78,113,112,0.26);
     }
 
     .btn-submit-rating:disabled {
-      background: var(--aqua-light);
+      background: rgba(120,154,153,0.38);
       cursor: not-allowed;
       transform: none;
+      box-shadow: none;
     }
 
     .rating-skip-link {
@@ -783,6 +841,7 @@ requirePatientPage();
       border: none;
       font-family: 'DM Sans', sans-serif;
       transition: color 0.18s;
+      padding: 4px 8px;
     }
 
     .rating-skip-link:hover { color: var(--text-mid); }
@@ -1373,6 +1432,52 @@ requirePatientPage();
       return user ? 'aqCart_user_' + user.id : null;
     }
 
+    const checkoutProductFallbacks = {
+      1: 'images/toothbrush.avif',
+      2: 'images/toothpaste.jpg',
+      3: 'images/floss.jpg',
+      4: 'images/mouthwash.jpg',
+      5: 'images/whitening strips.jpg',
+      6: 'images/scraper set.jpg',
+      7: 'images/gum gel.png',
+      8: 'images/bamboo toothbrush.webp',
+      9: 'images/elite flosser.jpg',
+      10: 'images/enamel repair.jpg',
+      11: 'images/charcoal kit.png',
+      12: 'images/dental kit.jpg',
+    };
+
+    const checkoutImagePlaceholder = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2.5"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
+
+    function checkoutDefaultImageForItem(item) {
+      return checkoutProductFallbacks[normalizeProductId(item.id)] || '';
+    }
+
+    function checkoutImageForItem(item) {
+      const imagePath = String(item.image_path || item.imagePath || item.img || item.photo || '').trim();
+      return imagePath || checkoutDefaultImageForItem(item);
+    }
+
+    function showCheckoutImageFallback(img) {
+      const fallback = String(img.dataset.fallback || '').trim();
+      if (fallback) {
+        img.dataset.fallback = '';
+        img.src = fallback;
+        return;
+      }
+      const wrap = img.closest('.order-item-img');
+      if (wrap) wrap.innerHTML = checkoutImagePlaceholder;
+    }
+
+    function checkoutImageMarkup(item) {
+      const src = checkoutImageForItem(item);
+      if (!src) return checkoutImagePlaceholder;
+
+      const fallback = checkoutDefaultImageForItem(item);
+      const fallbackAttr = fallback && fallback !== src ? ` data-fallback="${fallback}"` : '';
+      return `<img src="${src}" alt="${item.name}"${fallbackAttr} onerror="showCheckoutImageFallback(this)">`;
+    }
+
     async function loadCheckoutCart() {
       checkoutSelectedIds = readCheckoutSelectedIds();
       if (!checkoutSelectedIds.length) {
@@ -1388,7 +1493,13 @@ requirePatientPage();
           id: String(item.product_id),
           name: item.name || 'Product',
           price: Number(item.price || 0),
-          img: item.image_path || '',
+          image_path: item.image_path || '',
+          img: checkoutImageForItem({
+            id: item.product_id,
+            image_path: item.image_path,
+            img: item.img,
+            photo: item.photo,
+          }),
           qty: Number(item.quantity || 1),
         }));
 
@@ -1497,14 +1608,10 @@ requirePatientPage();
       const totalsEl = document.getElementById('co-order-totals');
       if (!itemsEl || !totalsEl) return;
 
-      const imgSVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2.5"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
-
       itemsEl.innerHTML = checkoutCart.map(item => `
         <div class="order-item">
           <div class="order-item-img">
-            ${item.img
-              ? `<img src="${item.img}" alt="${item.name}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">`
-              : imgSVG}
+            ${checkoutImageMarkup(item)}
           </div>
           <div class="order-item-info">
             <div class="order-item-name">${item.name}</div>

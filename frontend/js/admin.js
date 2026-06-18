@@ -63,7 +63,7 @@ async function adminRefresh() {
     if (!d.ok) { showToast(d.message || 'Failed to load dashboard.', false); return; }
     _adminData = d;
     renderOverview(d);
-    renderCrystalReports(d);
+    renderReportsandAnalytics(d);
     renderAppointmentsManage(d.appointments || []);
     renderUsers(d.users || []);
     renderDentistCalendar();
@@ -792,7 +792,7 @@ async function changeStatus(action, id, status, selectEl, dataKey) {
   }
 }
 
-function renderCrystalReports(d) {
+function renderReportsandAnalytics(d) {
   const kpiGrid = document.getElementById('report-kpi-grid');
   if (!kpiGrid) return;
 

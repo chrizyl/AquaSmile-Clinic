@@ -201,10 +201,15 @@ function renderCookieConsentBanner() {
   banner.className = 'cookie-consent-banner';
   banner.id = 'cookie-consent-banner';
   banner.innerHTML = `
-    <div class="cookie-consent-text">Do you want to accept cookies?</div>
+    <div class="cookie-consent-head">
+      <span class="cookie-consent-icon" aria-hidden="true">🍪</span>
+      <div class="cookie-consent-title">We value your privacy</div>
+    </div>
+    <p class="cookie-consent-text">AquaSmile uses cookies to improve your browsing experience, remember your preferences, keep your account secure, and analyze website traffic. By clicking "Accept", you agree to our use of cookies.</p>
+    <p class="cookie-consent-note">You can change your cookie preferences anytime in your account settings.</p>
     <div class="cookie-consent-actions">
-      <button type="button" class="btn-secondary" onclick="saveCookieConsent('declined')">Decline</button>
-      <button type="button" class="btn-primary" onclick="saveCookieConsent('accepted')">Accept</button>
+      <button type="button" class="btn-secondary" onclick="saveCookieConsent('declined')">Reject</button>
+      <button type="button" class="btn-primary" onclick="saveCookieConsent('accepted')">Accept All</button>
     </div>`;
   document.body.appendChild(banner);
 }

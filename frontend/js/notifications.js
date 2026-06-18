@@ -220,6 +220,121 @@
     });
   }
 
+  function setupPatientSessionTimeout() {
+    const protectedPages = ['index.php', '', 'dentists.php', 'services.php', 'products.php', 'cart.php', 'checkout.php', 'booking.php', 'user.php'];
+    const page = window.location.pathname.split('/').pop().toLowerCase();
+    const user = getCurrentUser();
+    const admin = readCookie('currentAdmin');
+    if (!protectedPages.includes(page) || !user || admin || window.AquaPatientTimeoutStarted) return;
+
+    window.AquaPatientTimeoutStarted = true;
+
+    const timeoutSeconds = 60;
+    const warningAfterSeconds = 5;
+    let secondsLeft = timeoutSeconds;
+    let intervalId = null;
+
+    let toast = document.getElementById('session-timeout-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'session-timeout-toast';
+      toast.setAttribute('role', 'status');
+      toast.setAttribute('aria-live', 'polite');
+      toast.style.cssText = 'position:fixed;right:24px;bottom:24px;z-index:3000;display:block;width:360px;max-width:calc(100vw - 32px);padding:16px 17px 14px;border-radius:20px;background:rgba(255,255,255,.98);border:1px solid rgba(120,154,153,.22);box-shadow:0 18px 44px rgba(44,62,62,.16),0 5px 16px rgba(120,154,153,.12);pointer-events:none;opacity:0;transform:translateY(12px);transition:opacity .22s ease,transform .22s ease;';
+      toast.innerHTML = `
+        <div style="display:flex;align-items:flex-start;gap:12px;">
+          <span style="flex:0 0 38px;width:38px;height:38px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,rgba(120,154,153,.16),rgba(255,232,223,.68));color:var(--aqua-dark,#5A7978);box-shadow:inset 0 0 0 1px rgba(120,154,153,.12);" aria-hidden="true">
+            <svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5v5l3.2 2"></path></svg>
+          </span>
+          <div style="min-width:0;flex:1;">
+            <strong style="display:block;margin:1px 0 5px;color:var(--text-dark,#2C3E3E);font:800 .95rem 'DM Sans',sans-serif;letter-spacing:.01em;">Session timeout</strong>
+            <p id="session-timeout-countdown" style="margin:0;color:var(--text-mid,#4A6363);font:400 .84rem/1.55 'DM Sans',sans-serif;">You will be logged out in 60 seconds due to inactivity.</p>
+          </div>
+        </div>
+        <div style="height:5px;margin-top:14px;overflow:hidden;border-radius:999px;background:rgba(120,154,153,.12);">
+          <span id="session-timeout-progress" style="display:block;width:100%;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--aqua,#789A99),var(--aqua-dark,#5A7978));transition:width .35s linear;"></span>
+        </div>
+        <style>
+          @media (max-width: 560px) {
+            #session-timeout-toast {
+              right: 50% !important;
+              bottom: 18px !important;
+              transform: translate(50%, 12px) !important;
+            }
+            #session-timeout-toast.is-visible {
+              transform: translate(50%, 0) !important;
+            }
+          }
+        </style>`;
+      document.body.appendChild(toast);
+    }
+
+    const countdown = document.getElementById('session-timeout-countdown');
+    const progress = document.getElementById('session-timeout-progress');
+
+    function renderCountdown() {
+      if (countdown) {
+        countdown.textContent = `You will be logged out in ${secondsLeft} second${secondsLeft === 1 ? '' : 's'} due to inactivity.`;
+      }
+      if (progress) {
+        progress.style.width = Math.max(0, Math.min(100, (secondsLeft / timeoutSeconds) * 100)) + '%';
+      }
+    }
+
+    function logoutForTimeout() {
+      if (typeof window.logout === 'function') {
+        window.logout();
+        return;
+      }
+      window.location.href = 'logout.php';
+    }
+
+    function showToast() {
+      toast.classList.add('is-visible');
+      toast.style.opacity = '1';
+      toast.style.transform = 'translateY(0)';
+      renderCountdown();
+    }
+
+    function hideToast() {
+      toast.classList.remove('is-visible');
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(12px)';
+    }
+
+    function resetTimer() {
+      secondsLeft = timeoutSeconds;
+      hideToast();
+      renderCountdown();
+    }
+
+    function startCountdown() {
+      clearInterval(intervalId);
+      intervalId = setInterval(() => {
+        secondsLeft -= 1;
+        if (secondsLeft <= timeoutSeconds - warningAfterSeconds) {
+          showToast();
+        }
+        renderCountdown();
+        if (secondsLeft <= 0) {
+          clearInterval(intervalId);
+          logoutForTimeout();
+        }
+      }, 1000);
+    }
+
+    function resetForActivity() {
+      resetTimer();
+      startCountdown();
+    }
+
+    resetTimer();
+    startCountdown();
+    ['click', 'keydown', 'mousemove', 'scroll', 'touchstart', 'input'].forEach(eventName => {
+      document.addEventListener(eventName, resetForActivity, { passive: true });
+    });
+  }
+
   async function markOneRead(notificationId) {
     const user = getCurrentUser();
     const all = readStorage('notifications') || [];
@@ -338,6 +453,7 @@
 
   document.addEventListener('DOMContentLoaded', async () => {
     setupMobileNav();
+    setupPatientSessionTimeout();
     await syncFromApi();
     render();
     if (typeof window.showNextUnreadNotificationToast === 'function') {
