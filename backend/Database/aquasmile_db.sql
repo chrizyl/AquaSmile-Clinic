@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 17, 2026 at 06:21 PM
+-- Generation Time: Jun 18, 2026 at 10:52 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -68,7 +68,6 @@ INSERT INTO `appointments` (`appointment_id`, `user_id`, `dentist_id`, `service_
 (16, 5, 2, 2, NULL, NULL, 0.00, NULL, '2026-05-27', '15:00:00', 'i have pekdsjh', 'completed', '2026-05-24 04:20:07', NULL, NULL),
 (17, 5, 3, 2, NULL, NULL, 0.00, NULL, '2026-05-25', '08:00:00', '', 'confirmed', '2026-05-24 04:49:04', NULL, NULL),
 (18, 5, 3, 2, NULL, NULL, 0.00, NULL, '2026-05-27', '15:00:00', 'peanuts\n', 'cancelled', '2026-05-26 07:17:11', 'Cancelled by patient before admin approval.', 'user'),
-(19, 6, 2, 8, NULL, NULL, 0.00, NULL, '2026-05-26', '15:00:00', '', 'cancelled', '2026-05-26 08:21:57', 'Cancelled by patient before admin approval.', 'user'),
 (20, 5, 2, 4, NULL, NULL, 0.00, NULL, '2026-05-27', '08:00:00', '', 'pending', '2026-05-26 08:41:45', NULL, NULL),
 (21, 8, 2, 5, NULL, NULL, 0.00, NULL, '2026-06-17', '11:00:00', 'allergic sa dust', 'completed', '2026-06-14 09:33:08', NULL, NULL),
 (22, 8, 1, 1, NULL, NULL, 0.00, NULL, '2026-06-27', '09:00:00', '', 'archived', '2026-06-14 09:57:04', NULL, NULL),
@@ -100,7 +99,7 @@ CREATE TABLE IF NOT EXISTS `cart_items` (
   PRIMARY KEY (`cart_item_id`),
   KEY `user_id` (`user_id`),
   KEY `product_id` (`product_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=38 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=40 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `cart_items`
@@ -109,6 +108,30 @@ CREATE TABLE IF NOT EXISTS `cart_items` (
 INSERT INTO `cart_items` (`cart_item_id`, `user_id`, `product_id`, `quantity`, `added_at`) VALUES
 (9, 4, 8, 6, '2026-05-24 03:57:07'),
 (37, 8, 3, 2, '2026-06-17 11:47:18');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `claimed_coupons`
+--
+
+DROP TABLE IF EXISTS `claimed_coupons`;
+CREATE TABLE IF NOT EXISTS `claimed_coupons` (
+  `claimed_coupon_id` int(11) NOT NULL AUTO_INCREMENT,
+  `promo_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `claimed_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`claimed_coupon_id`),
+  UNIQUE KEY `claimed_promo_user_unique` (`promo_id`,`user_id`),
+  KEY `claimed_coupons_user_fk` (`user_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `claimed_coupons`
+--
+
+INSERT INTO `claimed_coupons` (`claimed_coupon_id`, `promo_id`, `user_id`, `claimed_at`) VALUES
+(1, 2, 8, '2026-06-17 20:18:58');
 
 -- --------------------------------------------------------
 
@@ -191,7 +214,7 @@ CREATE TABLE IF NOT EXISTS `notifications` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`notification_id`),
   KEY `notifications_order_fk` (`order_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=32 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `notifications`
@@ -221,12 +244,14 @@ INSERT INTO `notifications` (`notification_id`, `user_id`, `appointment_id`, `or
 (21, 8, NULL, 11, 'admin', 'New order #11 has been placed by Mary Josephine Magboo.', 1, '2026-06-17 09:56:24'),
 (22, 8, 28, NULL, 'admin', 'Mary Josephine Magboo booked an appointment for Teeth Whitening on 2026-06-17 at 11:00.', 1, '2026-06-17 09:57:50'),
 (23, 8, 29, NULL, 'admin', 'Mary Josephine Magboo booked an appointment for Tooth Extraction on 2026-06-17 at 14:00.', 1, '2026-06-17 09:59:33'),
-(24, 8, NULL, 12, 'admin', 'New order #12 has been placed by Mary Josephine Magboo.', 0, '2026-06-17 10:55:59'),
-(25, 8, 30, NULL, 'admin', 'Mary Josephine Magboo booked an appointment for Dental Braces Consult on 2026-06-17 at 13:00.', 0, '2026-06-17 11:04:01'),
-(26, 8, 31, NULL, 'admin', 'Mary Josephine Magboo booked an appointment for Dental X-Ray on 2026-06-22 at 14:00.', 0, '2026-06-17 11:28:30'),
-(27, 8, 32, NULL, 'admin', 'Mary Josephine Magboo booked an appointment for Dental Braces Consult on 2026-09-01 at 11:00.', 0, '2026-06-17 15:36:36'),
-(28, 8, 33, NULL, 'admin', 'Mary Josephine Magboo booked an appointment for Dental X-Ray on 2026-08-31 at 15:00.', 0, '2026-06-17 16:15:41'),
-(29, 8, NULL, 13, 'admin', 'New order #13 has been placed by Mary Josephine Magboo.', 0, '2026-06-17 16:16:11');
+(24, 8, NULL, 12, 'admin', 'New order #12 has been placed by Mary Josephine Magboo.', 1, '2026-06-17 10:55:59'),
+(25, 8, 30, NULL, 'admin', 'Mary Josephine Magboo booked an appointment for Dental Braces Consult on 2026-06-17 at 13:00.', 1, '2026-06-17 11:04:01'),
+(26, 8, 31, NULL, 'admin', 'Mary Josephine Magboo booked an appointment for Dental X-Ray on 2026-06-22 at 14:00.', 1, '2026-06-17 11:28:30'),
+(27, 8, 32, NULL, 'admin', 'Mary Josephine Magboo booked an appointment for Dental Braces Consult on 2026-09-01 at 11:00.', 1, '2026-06-17 15:36:36'),
+(28, 8, 33, NULL, 'admin', 'Mary Josephine Magboo booked an appointment for Dental X-Ray on 2026-08-31 at 15:00.', 1, '2026-06-17 16:15:41'),
+(29, 8, NULL, 13, 'admin', 'New order #13 has been placed by Mary Josephine Magboo.', 1, '2026-06-17 16:16:11'),
+(30, 8, NULL, 14, 'admin', 'New order #14 has been placed by Mary Josephine Magboo.', 1, '2026-06-17 20:51:48'),
+(31, 8, NULL, 15, 'admin', 'New order #15 has been placed by Mary Josephine Magboo.', 1, '2026-06-18 07:30:44');
 
 -- --------------------------------------------------------
 
@@ -257,29 +282,35 @@ CREATE TABLE IF NOT EXISTS `orders` (
   `total_amount` decimal(10,2) DEFAULT NULL,
   `status` enum('pending','processing','out_for_delivery','delivered','completed','cancelled','archived') NOT NULL DEFAULT 'pending',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `payment_receipt` varchar(255) DEFAULT NULL,
+  `card_number` varchar(20) DEFAULT NULL,
+  `card_expiry` varchar(10) DEFAULT NULL,
+  `card_holder` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`order_id`),
   KEY `user_id` (`user_id`),
   KEY `orders_promo_fk` (`promo_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `orders`
 --
 
-INSERT INTO `orders` (`order_id`, `user_id`, `promo_id`, `promo_code`, `discount_amount`, `first_name`, `last_name`, `email`, `phone`, `house_no`, `street`, `barangay`, `city`, `province`, `zip`, `notes`, `payment_method`, `gcash_number`, `total_amount`, `status`, `created_at`) VALUES
-(1, 3, NULL, NULL, 0.00, 'Chrizyl Abella', NULL, 'abellachrizyl@gmail.com', '+639274213879', NULL, NULL, NULL, 'STO. TOMAS CITY', NULL, '3423', '', 'cod', '', 738.00, 'pending', '2026-05-23 02:56:00'),
-(2, 4, NULL, NULL, 0.00, 'Chrizyl Abella', NULL, 'abellachrizyl@gmail.com', '+639274213879', NULL, NULL, NULL, 'STO. TOMAS CITY', NULL, '3423', '', 'cod', '', 1137.00, 'pending', '2026-05-24 03:35:41'),
-(3, 4, NULL, NULL, 0.00, 'Chrizyl Abella', NULL, 'abellachrizyl@gmail.com', '+639274213879', NULL, NULL, NULL, 'STO. TOMAS CITY', NULL, '3423', '', 'cod', '', 1137.00, 'pending', '2026-05-24 03:35:41'),
-(4, 6, NULL, NULL, 0.00, 'Chrizyl Abella', NULL, 'abellachrizyl@gmail.com', '+639274213879', NULL, NULL, NULL, 'STO. TOMAS CITY', NULL, '3423', '', 'cod', '', 588.00, 'pending', '2026-05-26 08:22:23'),
-(5, 5, NULL, NULL, 0.00, 'Chrizyl Abella', NULL, 'abellachrizyl@gmail.com', '+639274213879', NULL, NULL, NULL, 'STO. TOMAS CITY', NULL, '3423', '', 'cod', '', 1137.00, 'pending', '2026-05-26 08:42:32'),
-(6, 8, NULL, NULL, 0.00, 'Mary Josephine', 'Magboo', 'magboo.mary@gmail.com', '09196882025', NULL, NULL, NULL, 'Calamba', NULL, '4027', '', 'cod', '', 567.00, 'pending', '2026-06-14 07:19:52'),
-(7, 8, NULL, NULL, 0.00, 'Mary Josephine', 'Magboo', 'magboo.mary@gmail.com', '09196882025', NULL, NULL, NULL, 'Calamba', NULL, '4027', '', 'cod', '', 1137.00, 'pending', '2026-06-14 10:36:42'),
-(8, 8, NULL, NULL, 0.00, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027', '', 'cod', '', 538.00, 'pending', '2026-06-15 09:55:17'),
-(9, 8, NULL, NULL, 0.00, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027', '', 'cod', '', 1337.00, 'pending', '2026-06-17 09:50:10'),
-(10, 8, NULL, NULL, 0.00, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027', '', 'cod', '', 777.00, 'pending', '2026-06-17 09:52:32'),
-(11, 8, NULL, NULL, 0.00, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027', '', 'cod', '', 189.00, 'pending', '2026-06-17 09:56:24'),
-(12, 8, NULL, NULL, 0.00, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027', '', 'cod', '', 548.00, 'pending', '2026-06-17 10:55:59'),
-(13, 8, 2, 'SHOP10', 39.90, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027', '', 'cod', '', 359.10, 'pending', '2026-06-17 16:16:11');
+INSERT INTO `orders` (`order_id`, `user_id`, `promo_id`, `promo_code`, `discount_amount`, `first_name`, `last_name`, `email`, `phone`, `house_no`, `street`, `barangay`, `city`, `province`, `zip`, `notes`, `payment_method`, `gcash_number`, `total_amount`, `status`, `created_at`, `payment_receipt`, `card_number`, `card_expiry`, `card_holder`) VALUES
+(1, 3, NULL, NULL, 0.00, 'Chrizyl Abella', NULL, 'abellachrizyl@gmail.com', '+639274213879', NULL, NULL, NULL, 'STO. TOMAS CITY', NULL, '3423', '', 'cod', '', 738.00, 'pending', '2026-05-23 02:56:00', NULL, NULL, NULL, NULL),
+(2, 4, NULL, NULL, 0.00, 'Chrizyl Abella', NULL, 'abellachrizyl@gmail.com', '+639274213879', NULL, NULL, NULL, 'STO. TOMAS CITY', NULL, '3423', '', 'cod', '', 1137.00, 'pending', '2026-05-24 03:35:41', NULL, NULL, NULL, NULL),
+(3, 4, NULL, NULL, 0.00, 'Chrizyl Abella', NULL, 'abellachrizyl@gmail.com', '+639274213879', NULL, NULL, NULL, 'STO. TOMAS CITY', NULL, '3423', '', 'cod', '', 1137.00, 'pending', '2026-05-24 03:35:41', NULL, NULL, NULL, NULL),
+(4, 6, NULL, NULL, 0.00, 'Chrizyl Abella', NULL, 'abellachrizyl@gmail.com', '+639274213879', NULL, NULL, NULL, 'STO. TOMAS CITY', NULL, '3423', '', 'cod', '', 588.00, 'pending', '2026-05-26 08:22:23', NULL, NULL, NULL, NULL),
+(5, 5, NULL, NULL, 0.00, 'Chrizyl Abella', NULL, 'abellachrizyl@gmail.com', '+639274213879', NULL, NULL, NULL, 'STO. TOMAS CITY', NULL, '3423', '', 'cod', '', 1137.00, 'pending', '2026-05-26 08:42:32', NULL, NULL, NULL, NULL),
+(6, 8, NULL, NULL, 0.00, 'Mary Josephine', 'Magboo', 'magboo.mary@gmail.com', '09196882025', NULL, NULL, NULL, 'Calamba', NULL, '4027', '', 'cod', '', 567.00, 'pending', '2026-06-14 07:19:52', NULL, NULL, NULL, NULL),
+(7, 8, NULL, NULL, 0.00, 'Mary Josephine', 'Magboo', 'magboo.mary@gmail.com', '09196882025', NULL, NULL, NULL, 'Calamba', NULL, '4027', '', 'cod', '', 1137.00, 'pending', '2026-06-14 10:36:42', NULL, NULL, NULL, NULL),
+(8, 8, NULL, NULL, 0.00, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027', '', 'cod', '', 538.00, 'pending', '2026-06-15 09:55:17', NULL, NULL, NULL, NULL),
+(9, 8, NULL, NULL, 0.00, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027', '', 'cod', '', 1337.00, 'pending', '2026-06-17 09:50:10', NULL, NULL, NULL, NULL),
+(10, 8, NULL, NULL, 0.00, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027', '', 'cod', '', 777.00, 'pending', '2026-06-17 09:52:32', NULL, NULL, NULL, NULL),
+(11, 8, NULL, NULL, 0.00, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027', '', 'cod', '', 189.00, 'pending', '2026-06-17 09:56:24', NULL, NULL, NULL, NULL),
+(12, 8, NULL, NULL, 0.00, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027', '', 'cod', '', 548.00, 'pending', '2026-06-17 10:55:59', NULL, NULL, NULL, NULL),
+(13, 8, 2, 'SHOP10', 39.90, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027', '', 'cod', '', 359.10, 'pending', '2026-06-17 16:16:11', NULL, NULL, NULL, NULL),
+(14, 8, 2, 'SHOP10', 54.90, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027', '', 'cod', '', 494.10, 'pending', '2026-06-17 20:51:48', NULL, NULL, NULL, NULL),
+(15, 8, NULL, NULL, 0.00, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027', '', 'cod', '', 249.00, 'pending', '2026-06-18 07:30:44', NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -298,7 +329,7 @@ CREATE TABLE IF NOT EXISTS `order_items` (
   PRIMARY KEY (`order_item_id`),
   KEY `order_id` (`order_id`),
   KEY `product_id` (`product_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `order_items`
@@ -332,7 +363,9 @@ INSERT INTO `order_items` (`order_item_id`, `order_id`, `product_id`, `quantity`
 (25, 11, 3, 1, 189.00, '2026-06-17 09:56:24'),
 (26, 12, 6, 1, 249.00, '2026-06-17 10:55:59'),
 (27, 12, 2, 1, 299.00, '2026-06-17 10:55:59'),
-(28, 13, 7, 1, 399.00, '2026-06-17 16:16:11');
+(28, 13, 7, 1, 399.00, '2026-06-17 16:16:11'),
+(29, 14, 8, 1, 549.00, '2026-06-17 20:51:48'),
+(30, 15, 6, 1, 249.00, '2026-06-18 07:30:44');
 
 -- --------------------------------------------------------
 
@@ -357,14 +390,7 @@ CREATE TABLE IF NOT EXISTS `otp_verifications` (
   PRIMARY KEY (`otp_id`),
   UNIQUE KEY `email` (`email`),
   KEY `idx_expires_at` (`expires_at`)
-) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `otp_verifications`
---
-
-INSERT INTO `otp_verifications` (`otp_id`, `email`, `first_name`, `last_name`, `phone`, `password_hash`, `otp_code`, `expires_at`, `attempts`, `created_at`, `updated_at`, `last_otp_sent_at`) VALUES
-(15, 'marymagboo901@gmail.com', 'Mary', 'Jo', '09771367371', '$2y$10$tTBMncegrUPdnlG786sSsu55fABJsKH80JVRRCglYmNLAcEbmiRpa', '998953', '2026-06-15 17:37:10', 0, '2026-06-15 15:27:10', '2026-06-15 15:27:10', '2026-06-15 23:27:10');
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -434,24 +460,6 @@ INSERT INTO `promos` (`promo_id`, `promo_code`, `promo_name`, `description`, `pr
 (1, 'APPT10', 'Appointment Discount', 'Hidden appointment promo code.', 'appointment', 'percentage', 10.00, NULL, NULL, NULL, 'active', '2026-06-01', '2026-06-30', '2026-06-17 12:03:00'),
 (2, 'SHOP10', 'Shop Discount', 'Hidden shop promo code.', 'shop', 'percentage', 10.00, NULL, NULL, NULL, 'active', '2026-06-01', '2026-06-30', '2026-06-17 12:03:00'),
 (5, 'APPT20', '20% Discount', 'Get a 20% discount if you book now!', 'appointment', 'percentage', 20.00, NULL, NULL, NULL, 'active', '2026-06-18', '2026-06-19', '2026-06-18 01:28:33');
-
--- --------------------------------------------------------
-
-DROP TABLE IF EXISTS `claimed_coupons`;
-
---
--- Table structure for table `claimed_coupons`
---
-
-CREATE TABLE IF NOT EXISTS `claimed_coupons` (
-  `claimed_coupon_id` int(11) NOT NULL AUTO_INCREMENT,
-  `promo_id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `claimed_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`claimed_coupon_id`),
-  UNIQUE KEY `claimed_promo_user_unique` (`promo_id`,`user_id`),
-  KEY `claimed_coupons_user_fk` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -527,7 +535,7 @@ INSERT INTO `users` (`user_id`, `first_name`, `last_name`, `email`, `phone`, `pa
 (4, 'Chrizyl', 'Abella', 'hannie@gmail.com', '09274213879', '$2y$10$J50O5WjgvdrIJkITMGCDKefEnNOW2EFeP0YmlGOD6eO2MDLVRwj1e', 'patient', '2026-05-24 03:33:37', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (5, 'Jeonghan', 'Jeon', 'jeon@gmail.com', '123456789', '$2y$10$y9L78.r11pQ/WOUq3psuKuw40hrIwyCiilbZqn0m.u9Q8kEKf676O', 'patient', '2026-05-24 03:40:13', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (6, 'System', 'Admin', 'admin@aquasmile.com', '0000000000', '$2y$10$qnT4XmT6G85rtdowvE8eYuy0eBNaMX69YlUDnqYqNlQljmIpLqJNG', 'admin', '2026-05-26 07:27:15', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(8, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '$2y$10$cqxtAEZuyPQtRSWolFgJye618tHSODbybdCeylU1iD2PFgoTcakE.', 'patient', '2026-06-14 06:33:02', NULL, 'Female', NULL, NULL, '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027');
+(8, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '$2y$10$cqxtAEZuyPQtRSWolFgJye618tHSODbybdCeylU1iD2PFgoTcakE.', 'patient', '2026-06-14 06:33:02', '2006-08-07', 'Female', NULL, NULL, '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027');
 
 --
 -- Constraints for dumped tables

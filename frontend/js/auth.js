@@ -42,6 +42,12 @@ function sanitizeDigitsOnly(value) {
   return value.replace(/[^0-9]/g, '');
 }
 
+function sanitizeOtpInput(input) {
+  if (!input) return '';
+  input.value = sanitizeDigitsOnly(input.value).slice(0, 6);
+  return input.value;
+}
+
 async function register(event) {
   event.preventDefault();
 
@@ -113,10 +119,16 @@ async function verifyRegistrationOtp(event) {
   const errEl = document.getElementById('register-error');
   const sucEl = document.getElementById('register-success');
   const email = window.pendingRegistrationEmail || document.getElementById('reg-email').value.trim();
-  const otp = otpInput.value.trim();
+  const otp = sanitizeOtpInput(otpInput);
 
   hideMessage(errEl);
   hideMessage(sucEl);
+
+  if (!/^\d{6}$/.test(otp)) {
+    otpInput.focus();
+    showMessage(errEl, 'Please enter the 6-digit OTP code.');
+    return;
+  }
 
   try {
     const result = await apiRequest('verify_registration_otp', { email, otp });
@@ -265,6 +277,19 @@ if (contactInput) {
 const otpForm = document.getElementById('otp-form');
 if (otpForm) {
   otpForm.addEventListener('submit', verifyRegistrationOtp);
+}
+
+const otpInput = document.getElementById('reg-otp');
+if (otpInput) {
+  otpInput.setAttribute('inputmode', 'numeric');
+  otpInput.setAttribute('maxlength', '6');
+  otpInput.setAttribute('pattern', '[0-9]{6}');
+  otpInput.addEventListener('input', event => sanitizeOtpInput(event.target));
+  otpInput.addEventListener('paste', event => {
+    event.preventDefault();
+    const pasted = (event.clipboardData || window.clipboardData).getData('text');
+    event.target.value = sanitizeDigitsOnly(pasted).slice(0, 6);
+  });
 }
 
 const resendOtpBtn = document.getElementById('resend-otp-btn');

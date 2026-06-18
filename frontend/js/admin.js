@@ -48,7 +48,7 @@ function formatOrderAddress(order) {
 
 async function adminApi(action, body = null) {
   const isFormData = body instanceof FormData;
-  const opts = { method: body ? 'POST' : 'GET', headers: {} };
+  const opts = { method: body ? 'POST' : 'GET', headers: {}, cache: 'no-store' };
   if (body) {
     opts.body = isFormData ? body : JSON.stringify(body);
     if (!isFormData) opts.headers['Content-Type'] = 'application/json';
@@ -563,8 +563,7 @@ function renderOrderDetails(orders, orderItems) {
       ${orderPanelItem('Email', order.email || 'Not provided')}
       ${orderPanelItem('Phone', order.phone || 'Not provided')}
       ${orderPanelItem('Delivery Address', formatOrderAddress(order), true)}
-      ${orderPanelItem('Payment Method', statusLabel(order.paymentMethod || 'cod').toUpperCase())}
-      ${(order.paymentMethod || '').toLowerCase() === 'gcash' ? orderPanelItem('GCash Number', order.gcashNumber || 'Not provided') : ''}
+      ${orderPaymentDetails(order)}
       ${orderPanelItem('Total Amount', formatMoney(order.total))}
       ${orderPanelItem('Status', statusLabel(order.status))}
       ${orderPanelItem('Date Created', formatDate(order.created_at))}
@@ -593,6 +592,30 @@ function renderOrderDetails(orders, orderItems) {
 
 function orderPanelItem(label, value, wide = false) {
   return `<div class="order-panel-item ${wide ? 'wide' : ''}"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`;
+}
+
+function orderPaymentDetails(order) {
+  const method = String(order.paymentMethod || 'cod').toLowerCase();
+  const rows = [orderPanelItem('Payment Method', method === 'cod' ? 'COD' : paymentMethodLabel(method))];
+
+  if (method === 'gcash') {
+    rows.push(orderPanelItem('GCash Number', order.gcashNumber || 'Not provided'));
+    rows.push(orderPaymentReceiptItem(order.paymentReceipt));
+  } else if (method === 'card') {
+    rows.push(orderPanelItem('Card Number', order.cardNumber || 'Not provided'));
+    rows.push(orderPanelItem('Card Holder', order.cardHolder || 'Not provided'));
+    rows.push(orderPanelItem('Expiry', order.cardExpiry || 'Not provided'));
+  } else {
+    rows.push(orderPanelItem('Payment Proof', 'N/A'));
+  }
+
+  return rows.join('');
+}
+
+function orderPaymentReceiptItem(receiptPath) {
+  if (!receiptPath) return orderPanelItem('Payment Proof', 'N/A');
+  const safePath = esc(receiptPath);
+  return `<div class="order-panel-item"><span>Payment Proof</span><strong><a href="../${safePath}" target="_blank" rel="noopener">View Receipt</a></strong></div>`;
 }
 
 function orderActionButtons(order) {
@@ -642,6 +665,7 @@ async function updateOrderStatus(id, status) {
       if (status === 'archived' && !_showArchived.orders) _selectedOrderId = null;
       renderOrders(_adminData.orders || [], _adminData.orderItems || []);
       renderOverview(_adminData);
+      renderReportsandAnalytics(_adminData);
       return true;
     } else {
       showToast(d.message || 'Failed to update order status.', false);
@@ -797,7 +821,7 @@ function renderReportsandAnalytics(d) {
   if (!kpiGrid) return;
 
   const appointments = d.appointments || [];
-  const orders = d.orders || [];
+  const orders = reportOrders(d.orders || []);
   const users = d.users || [];
   const products = d.products || [];
   const services = d.services || [];
@@ -806,10 +830,10 @@ function renderReportsandAnalytics(d) {
   const feedback = d.feedback || [];
   const patients = users.filter(user => (user.role || 'patient') !== 'admin');
   const revenue = orders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
-  const paidOrders = orders.filter(order => !['pending', 'cancelled', 'archived'].includes(String(order.status || '').toLowerCase())).length;
-  const completedOrders = orders.filter(order => String(order.status || '').toLowerCase() === 'completed').length;
+  const paidOrders = orders.filter(isPaidReportOrder).length;
+  const completedOrders = orders.filter(order => ['completed', 'delivered'].includes(reportStatus(order))).length;
   const customerOrderCounts = orders.reduce((counts, order) => {
-    const key = String(order.email || order.phone || order.customer || '').trim().toLowerCase();
+    const key = reportCustomerKey(order);
     if (key) counts[key] = (counts[key] || 0) + 1;
     return counts;
   }, {});
@@ -821,7 +845,7 @@ function renderReportsandAnalytics(d) {
 
   const kpis = [
     { label: 'Paid Payment Rate', value: percentOf(paidOrders, orders.length), meta: `${paidOrders} of ${orders.length} order payments are paid`, tone: 'aqua' },
-    { label: 'Completion Rate', value: percentOf(completedOrders, orders.length), meta: `${completedOrders} completed from ${orders.length} orders`, tone: 'green' },
+    { label: 'Completion Rate', value: percentOf(completedOrders, orders.length), meta: `${completedOrders} delivered/completed from ${orders.length} orders`, tone: 'green' },
     { label: 'Repeat Customer Rate', value: percentOf(repeatCustomers, orderCustomers), meta: `${repeatCustomers} repeat buyers from ${orderCustomers} customers`, tone: 'blue' },
   ];
 
@@ -843,9 +867,34 @@ function renderReportsandAnalytics(d) {
   renderReportCoupons(coupons);
 }
 
+function reportOrders(orders) {
+  return (orders || []).filter(order => reportStatus(order) !== 'archived');
+}
+
+function reportStatus(order) {
+  return String(order?.status || '').toLowerCase();
+}
+
+function reportPaymentMethod(order) {
+  const method = String(order?.paymentMethod || order?.payment_method || 'cod').toLowerCase();
+  return ['cod', 'gcash', 'card'].includes(method) ? method : 'cod';
+}
+
+function isPaidReportOrder(order) {
+  const method = reportPaymentMethod(order);
+  const status = reportStatus(order);
+  if (method === 'gcash' || method === 'card') return true;
+  if (method === 'cod') return ['delivered', 'completed'].includes(status);
+  return false;
+}
+
+function reportCustomerKey(order) {
+  return String(order?.userId || order?.user_id || order?.email || order?.phone || order?.customer || '').trim().toLowerCase();
+}
+
 function countBy(items, key) {
   return (items || []).reduce((counts, item) => {
-    const value = item[key] || 'unknown';
+    const value = String(item[key] || 'unknown').toLowerCase();
     counts[value] = (counts[value] || 0) + 1;
     return counts;
   }, {});
@@ -865,24 +914,24 @@ function paymentMethodLabel(method) {
   const value = String(method || 'cod').toLowerCase();
   if (value === 'cod') return 'Cash on Delivery';
   if (value === 'gcash') return 'GCash';
+  if (value === 'card') return 'Card';
   return statusLabel(value || 'Unknown');
 }
 
 function renderPaymentMix(orders, revenue) {
   const wrap = document.getElementById('report-payment-mix');
   if (!wrap) return;
-  const totals = (orders || []).reduce((groups, order) => {
-    const key = String(order.paymentMethod || 'cod').toLowerCase();
-    if (!groups[key]) groups[key] = { count: 0, total: 0 };
-    groups[key].count += 1;
-    groups[key].total += Number(order.total) || 0;
-    return groups;
-  }, {});
-  const entries = Object.entries(totals).sort((a, b) => b[1].total - a[1].total);
-  if (!entries.length) {
-    wrap.innerHTML = '<div class="empty-state-card">No payment records yet.</div>';
-    return;
-  }
+  const totals = {
+    cod: { count: 0, total: 0 },
+    gcash: { count: 0, total: 0 },
+    card: { count: 0, total: 0 },
+  };
+  (orders || []).forEach(order => {
+    const key = reportPaymentMethod(order);
+    totals[key].count += 1;
+    totals[key].total += Number(order.total) || 0;
+  });
+  const entries = Object.entries(totals);
   const stops = [];
   let offset = 0;
   entries.forEach(([method, item], index) => {
@@ -938,7 +987,14 @@ function renderRevenueChart(orders) {
 
   const months = Object.keys(monthMap).sort().slice(-6);
   if (!months.length) {
-    chart.innerHTML = '<div class="empty-state-card">No order revenue yet.</div>';
+    chart.innerHTML = `
+      <div class="report-chart-summary">
+        <div><span>Total</span><strong>${esc(formatMoneyCompact(0))}</strong></div>
+        <div><span>Monthly Avg</span><strong>${esc(formatMoneyCompact(0))}</strong></div>
+        <div><span>Latest Month</span><strong>${esc(formatMoneyCompact(0))}</strong></div>
+        <div><span>Trend</span><strong>0%</strong></div>
+      </div>
+      <div class="empty-state-card">No order revenue yet.</div>`;
     setText('report-revenue-range', 'No data');
     return;
   }
@@ -986,7 +1042,7 @@ function renderReportBars(id, counts, total) {
     return;
   }
   const top = entries[0];
-  const completed = counts.completed || 0;
+  const completed = (counts.completed || 0) + (counts.delivered || 0);
   const pending = counts.pending || 0;
   wrap.innerHTML = entries.map(([label, count]) => {
     const pct = total ? Math.round((count / total) * 100) : 0;
@@ -995,7 +1051,7 @@ function renderReportBars(id, counts, total) {
       <div class="report-status-summary">
         <div><span>Total</span><strong>${total}</strong></div>
         <div><span>Top Status</span><strong>${esc(statusLabel(top[0]))}</strong></div>
-        <div><span>Completed</span><strong>${completed}</strong></div>
+        <div><span>Done</span><strong>${completed}</strong></div>
         <div><span>Pending</span><strong>${pending}</strong></div>
       </div>` : ''}
       <div class="report-bar-row">
@@ -1013,11 +1069,11 @@ function renderContentInventory(groups) {
   const grid = document.getElementById('report-content-grid');
   if (!grid) return;
   const rows = [
-    ['Products', groups.products.length, groups.products.filter(item => item.status === 'available').length + ' available'],
-    ['Services', groups.services.length, groups.services.filter(item => item.status === 'available').length + ' available'],
-    ['Dentists', groups.dentists.length, groups.dentists.filter(item => item.status === 'available').length + ' available'],
+    ['Products', groups.products.length, groups.products.filter(item => String(item.status || '').toLowerCase() === 'available').length + ' available'],
+    ['Services', groups.services.length, groups.services.filter(item => String(item.status || '').toLowerCase() === 'available').length + ' available'],
+    ['Dentists', groups.dentists.length, groups.dentists.filter(item => String(item.status || '').toLowerCase() === 'available').length + ' available'],
     ['Patients', groups.users.length, 'registered'],
-    ['Coupons', groups.coupons.length, groups.coupons.filter(item => item.status === 'active').length + ' active'],
+    ['Coupons', groups.coupons.length, groups.coupons.filter(item => String(item.status || '').toLowerCase() === 'active').length + ' active'],
   ];
 
   grid.innerHTML = rows.map(([label, value, meta]) => `
@@ -1037,6 +1093,7 @@ function renderReportFeedback(feedback, averageRating) {
     <div class="report-score">${averageRating ? averageRating.toFixed(1) : '0.0'}</div>
     <div class="report-stars">${renderStars(Math.round(averageRating || 0))}</div>
     <div class="report-mini-grid">
+      <span>Total Reviews <strong>${feedback.length}</strong></span>
       <span>Appointment Reviews <strong>${appointment}</strong></span>
       <span>Order Reviews <strong>${order}</strong></span>
     </div>`;
@@ -1046,14 +1103,14 @@ function renderReportCoupons(coupons) {
   const wrap = document.getElementById('report-coupon-list');
   if (!wrap) return;
   const list = coupons || [];
-  const sorted = list.slice().sort((a, b) => Number(b.claimCount || 0) - Number(a.claimCount || 0));
+  const sorted = list.slice().sort((a, b) => couponClaimCount(b) - couponClaimCount(a));
   if (!sorted.length) {
     wrap.innerHTML = '<div class="empty-state-card">No coupons yet.</div>';
     return;
   }
-  const totalClaims = list.reduce((sum, coupon) => sum + Number(coupon.claimCount || coupon.claim_count || 0), 0);
+  const totalClaims = list.reduce((sum, coupon) => sum + couponClaimCount(coupon), 0);
   const active = list.filter(coupon => String(coupon.status || '').toLowerCase() === 'active').length;
-  const unused = list.filter(coupon => !Number(coupon.claimCount || coupon.claim_count || 0)).length;
+  const unused = list.filter(coupon => !couponClaimCount(coupon)).length;
   const top = sorted[0];
   const typeCounts = countBy(list, 'coupon_type');
   const discountCounts = countBy(list, 'discount_type');
@@ -1061,7 +1118,7 @@ function renderReportCoupons(coupons) {
     <div class="report-coupon-summary">
       <div><span>Total Claims</span><strong>${totalClaims}</strong></div>
       <div><span>Active Promos</span><strong>${active}</strong></div>
-      <div><span>Top Coupon</span><strong>${esc(top.coupon_code || top.code || '-')}</strong><small>${Number(top.claimCount || 0)} claims</small></div>
+      <div><span>Top Coupon</span><strong>${esc(top.coupon_code || top.code || '-')}</strong><small>${couponClaimCount(top)} claims</small></div>
       <div><span>Unused</span><strong>${unused}</strong></div>
     </div>
     <div class="report-coupon-splits">
@@ -1075,9 +1132,13 @@ function renderReportCoupons(coupons) {
             <strong>${esc(coupon.coupon_code || coupon.code || '-')}</strong>
             <span>${esc(coupon.title || 'Promo')}</span>
           </div>
-          <small>${Number(coupon.claimCount || 0)} claims</small>
+          <small>${couponClaimCount(coupon)} claims</small>
         </div>`).join('')}
     </div>`;
+}
+
+function couponClaimCount(coupon) {
+  return Number(coupon?.claimCount || coupon?.claim_count || 0);
 }
 
 function renderReportSplit(title, counts, total) {
@@ -1291,6 +1352,7 @@ async function saveCoupon(coupon) {
       _adminData.coupons.unshift(d.coupon);
     }
     renderAdminCoupons(_adminData.coupons);
+    renderReportsandAnalytics(_adminData);
     showToast(d.message || 'Coupon saved.');
     removeModal();
   } catch {
@@ -1309,6 +1371,7 @@ async function changeCouponStatus(id, status, selectEl) {
       if (coupon) coupon.status = status;
       selectEl.dataset.current = status;
       renderAdminCoupons(_adminData.coupons || []);
+      renderReportsandAnalytics(_adminData);
       showToast(d.message || 'Coupon status updated.');
     } else {
       selectEl.value = prev;
@@ -1338,6 +1401,7 @@ async function deleteCoupon(id) {
     if (d.ok) {
       _adminData.coupons = (_adminData.coupons || []).filter(item => String(item.id) !== String(id));
       renderAdminCoupons(_adminData.coupons);
+      renderReportsandAnalytics(_adminData);
       showToast(d.message || 'Coupon deleted.');
       return true;
     }

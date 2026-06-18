@@ -1175,7 +1175,7 @@ requirePatientPage();
                  ondragover="handleDragOver(event)"
                  ondragleave="handleDragLeave(event)"
                  ondrop="handleDrop(event)">
-              <input type="file" id="gcash-receipt" name="gcash_receipt" accept="image/*" onchange="handleReceiptUpload(this)" />
+              <input type="file" id="gcash-receipt" name="gcash_receipt" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" onchange="handleReceiptUpload(this)" />
               <div class="upload-icon">
                 <svg viewBox="0 0 24 24">
                   <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
@@ -1184,7 +1184,7 @@ requirePatientPage();
                 </svg>
               </div>
               <p class="upload-label"><span>Click to upload</span> or drag & drop</p>
-              <p class="upload-sub">PNG, JPG, or JPEG · Max 5MB</p>
+              <p class="upload-sub">PNG, JPG, JPEG, or WEBP · Max 5MB</p>
             </div>
 
             <div class="upload-preview" id="gcash-preview">
@@ -1378,6 +1378,10 @@ requirePatientPage();
     document.getElementById('card-number').addEventListener('input', function () {
       let v = this.value.replace(/\D/g, '').substring(0, 16);
       this.value = v.replace(/(.{4})/g, '$1 ').trim();
+    });
+
+    document.getElementById('card-cvv').addEventListener('input', function () {
+      this.value = this.value.replace(/\D/g, '').slice(0, 4);
     });
 
     document.getElementById('card-expiry').addEventListener('input', function () {
@@ -1747,6 +1751,12 @@ requirePatientPage();
           document.getElementById('gcash-upload-area').scrollIntoView({ behavior: 'smooth', block: 'center' });
           return null;
         }
+        const receiptError = validateReceiptFile(receiptFile);
+        if (receiptError) {
+          alert(receiptError);
+          document.getElementById('gcash-upload-area').scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return null;
+        }
       }
 
       if (payment === 'card') {
@@ -1757,6 +1767,21 @@ requirePatientPage();
         if (!cardNum || !cardExp || !cardCvv || !cardName) {
           alert('Please complete your card details.');
           document.getElementById('card-number').focus();
+          return null;
+        }
+        if (!/^\d{4}( \d{4}){3}$/.test(cardNum)) {
+          alert('Please enter a valid 16-digit card number.');
+          document.getElementById('card-number').focus();
+          return null;
+        }
+        if (!/^\d{2} \/ \d{2}$/.test(cardExp)) {
+          alert('Please enter a valid expiry date.');
+          document.getElementById('card-expiry').focus();
+          return null;
+        }
+        if (!/^\d{3,4}$/.test(cardCvv)) {
+          alert('Please enter a valid CVV.');
+          document.getElementById('card-cvv').focus();
           return null;
         }
       }
@@ -1781,6 +1806,10 @@ requirePatientPage();
         notes:          notes,
         payment_method: payment,
         gcash_number:   payment === 'gcash' ? document.getElementById('gcash-number').value.trim() : null,
+        card_number:    payment === 'card' ? document.getElementById('card-number').value.trim() : null,
+        card_expiry:    payment === 'card' ? document.getElementById('card-expiry').value.trim() : null,
+        card_holder:    payment === 'card' ? document.getElementById('card-name').value.trim() : null,
+        card_cvv:       payment === 'card' ? document.getElementById('card-cvv').value.trim() : null,
         items:          checkoutCart.map(i => ({ name: i.name, qty: i.qty, unit_price: i.price })),
         subtotal:       subtotal,
         shipping:       0,
@@ -1794,29 +1823,45 @@ requirePatientPage();
       const formData = collectFormData();
       if (!formData) return;
       try {
-        const result = await apiRequest('create_order', {
-          first_name: formData.first_name,
-          last_name: formData.last_name,
-          email: formData.email,
-          phone: formData.phone,
-          house_no: formData.house_no,
-          street: formData.street,
-          barangay: formData.barangay,
-          city: formData.city,
-          province: formData.province,
-          zip: formData.zip,
-          notes: formData.notes,
-          paymentMethod: formData.payment_method,
-          gcash_number: formData.gcash_number,
-          items: checkoutCart.map(i => ({
-            id: i.id,
-            name: i.name,
-            qty: i.qty,
-            price: i.price
-          })),
-          total: formData.total,
-          promo_code: formData.promo_code,
+        const orderData = new FormData();
+        orderData.append('first_name', formData.first_name);
+        orderData.append('last_name', formData.last_name);
+        orderData.append('email', formData.email);
+        orderData.append('phone', formData.phone);
+        orderData.append('house_no', formData.house_no);
+        orderData.append('street', formData.street);
+        orderData.append('barangay', formData.barangay);
+        orderData.append('city', formData.city);
+        orderData.append('province', formData.province);
+        orderData.append('zip', formData.zip);
+        orderData.append('notes', formData.notes);
+        orderData.append('paymentMethod', formData.payment_method);
+        orderData.append('gcash_number', formData.gcash_number || '');
+        orderData.append('card_number', formData.card_number || '');
+        orderData.append('card_expiry', formData.card_expiry || '');
+        orderData.append('card_holder', formData.card_holder || '');
+        orderData.append('card_cvv', formData.card_cvv || '');
+        orderData.append('items', JSON.stringify(checkoutCart.map(i => ({
+          id: i.id,
+          name: i.name,
+          qty: i.qty,
+          price: i.price
+        }))));
+        orderData.append('total', formData.total);
+        orderData.append('promo_code', formData.promo_code || '');
+        if (formData.payment_method === 'gcash') {
+          orderData.append('gcash_receipt', document.getElementById('gcash-receipt').files[0]);
+        }
+
+        const response = await fetch(API_BASE + '?action=create_order', {
+          method: 'POST',
+          body: orderData,
+          cache: 'no-store'
         });
+        const result = await parseApiResponse(response);
+        if (!response.ok || !result.ok) {
+          throw new Error(result.message || 'Unable to place your order. Please try again.');
+        }
         currentOrderId = result.orderId || result.order_id || null;
       } catch (err) {
         alert(err.message || 'Unable to place your order. Please try again.');
@@ -1962,13 +2007,24 @@ requirePatientPage();
       applyReceiptFile(file);
     }
 
-    function applyReceiptFile(file) {
-      if (!file.type.startsWith('image/')) {
-        alert('Please upload an image file (PNG, JPG, or JPEG).');
-        return;
+    function validateReceiptFile(file) {
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+      const allowedExts = ['jpg', 'jpeg', 'png', 'webp'];
+      const ext = (file.name.split('.').pop() || '').toLowerCase();
+      if (!allowedTypes.includes(file.type) || !allowedExts.includes(ext)) {
+        return 'Please upload a JPG, JPEG, PNG, or WEBP receipt image.';
       }
       if (file.size > 5 * 1024 * 1024) {
-        alert('File is too large. Please upload an image under 5MB.');
+        return 'File is too large. Please upload an image under 5MB.';
+      }
+      return '';
+    }
+
+    function applyReceiptFile(file) {
+      const receiptError = validateReceiptFile(file);
+      if (receiptError) {
+        alert(receiptError);
+        removeReceipt();
         return;
       }
 

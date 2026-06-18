@@ -1357,6 +1357,7 @@ function dashboard()
     $orders = array_map(function ($row) {
         return array(
             'id' => (string) $row['order_id'],
+            'userId' => $row['user_id'] !== null ? (string) $row['user_id'] : '',
             'customer' => $row['customer_name'] ?: 'Customer',
             'email' => $row['email'] ?? '',
             'phone' => $row['phone'] ?? '',
@@ -1369,6 +1370,10 @@ function dashboard()
             'notes' => $row['notes'] ?? '',
             'paymentMethod' => $row['payment_method'] ?? 'cod',
             'gcashNumber' => $row['gcash_number'] ?? '',
+            'paymentReceipt' => $row['payment_receipt'] ?? '',
+            'cardNumber' => $row['card_number'] ?? '',
+            'cardExpiry' => $row['card_expiry'] ?? '',
+            'cardHolder' => $row['card_holder'] ?? '',
             'total' => (float) $row['total_amount'],
             'status' => $row['status'],
             'created_at' => $row['created_at'],
@@ -2253,11 +2258,62 @@ function remove_cart_item()
     json_response(['ok' => true]);
 }
 
+function mask_card_number($cardDigits)
+{
+    return '**** **** **** ' . substr($cardDigits, -4);
+}
+
+function save_gcash_receipt_upload()
+{
+    if (empty($_FILES['gcash_receipt']) || !is_array($_FILES['gcash_receipt'])) {
+        json_response(['ok' => false, 'message' => 'Please upload your GCash payment receipt.'], 422);
+    }
+
+    $file = $_FILES['gcash_receipt'];
+    if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+        json_response(['ok' => false, 'message' => 'Please upload your GCash payment receipt.'], 422);
+    }
+    if (($file['size'] ?? 0) > 5 * 1024 * 1024) {
+        json_response(['ok' => false, 'message' => 'Receipt file must be 5MB or smaller.'], 422);
+    }
+
+    $originalName = (string) ($file['name'] ?? '');
+    $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+    $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+    if (!in_array($extension, $allowedExtensions, true)) {
+        json_response(['ok' => false, 'message' => 'Receipt must be a JPG, JPEG, PNG, or WEBP image.'], 422);
+    }
+
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mimeType = $finfo->file($file['tmp_name']);
+    $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!in_array($mimeType, $allowedMimeTypes, true)) {
+        json_response(['ok' => false, 'message' => 'Receipt must be a JPG, JPEG, PNG, or WEBP image.'], 422);
+    }
+
+    $uploadDir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'receipts';
+    if (!is_dir($uploadDir) && !mkdir($uploadDir, 0755, true)) {
+        json_response(['ok' => false, 'message' => 'Unable to prepare receipt upload folder.'], 500);
+    }
+
+    $filename = 'gcash_' . date('YmdHis') . '_' . bin2hex(random_bytes(8)) . '.' . $extension;
+    $destination = $uploadDir . DIRECTORY_SEPARATOR . $filename;
+    if (!move_uploaded_file($file['tmp_name'], $destination)) {
+        json_response(['ok' => false, 'message' => 'Unable to save receipt upload.'], 500);
+    }
+
+    return 'uploads/receipts/' . $filename;
+}
+
 function create_order()
 {
     $userId = require_patient();
     $data = request_json();
     $items = $data['items'] ?? [];
+    if (is_string($items)) {
+        $decodedItems = json_decode($items, true);
+        $items = is_array($decodedItems) ? $decodedItems : [];
+    }
     $firstName = trim($data['first_name'] ?? '');
     $lastName = trim($data['last_name'] ?? '');
     $email = trim((string) ($data['email'] ?? ''));
@@ -2269,8 +2325,12 @@ function create_order()
     $province = trim((string) ($data['province'] ?? ''));
     $zip = trim((string) ($data['zip'] ?? ''));
     $notes = trim((string) ($data['notes'] ?? ''));
-    $paymentMethod = $data['paymentMethod'] ?? $data['payment_method'] ?? 'cod';
-    $gcashNumber = $data['gcash_number'] ?? '';
+    $paymentMethod = strtolower(trim((string) ($data['paymentMethod'] ?? $data['payment_method'] ?? 'cod')));
+    $gcashNumber = trim((string) ($data['gcash_number'] ?? ''));
+    $paymentReceipt = null;
+    $cardNumber = null;
+    $cardExpiry = null;
+    $cardHolder = null;
     $promoCode = strtoupper(trim((string) ($data['promo_code'] ?? $data['promoCode'] ?? '')));
 
     if (
@@ -2295,6 +2355,40 @@ function create_order()
     if (!preg_match('/^\d+$/', $zip)) {
         json_response(['ok' => false, 'message' => 'ZIP Code must contain numbers only.'], 422);
     }
+    if (!in_array($paymentMethod, ['cod', 'gcash', 'card'], true)) {
+        json_response(['ok' => false, 'message' => 'Please select a valid payment method.'], 422);
+    }
+
+    if ($paymentMethod === 'cod') {
+        $gcashNumber = null;
+    } elseif ($paymentMethod === 'gcash') {
+        if (!is_valid_phone($gcashNumber)) {
+            json_response(['ok' => false, 'message' => 'Please enter your valid 11-digit GCash number.'], 422);
+        }
+        $paymentReceipt = save_gcash_receipt_upload();
+    } elseif ($paymentMethod === 'card') {
+        $rawCardNumber = (string) ($data['card_number'] ?? '');
+        $cardDigits = preg_replace('/\D/', '', $rawCardNumber);
+        $cardExpiry = trim((string) ($data['card_expiry'] ?? ''));
+        $cardHolder = trim((string) ($data['card_holder'] ?? $data['card_name'] ?? ''));
+        $cardCvv = trim((string) ($data['card_cvv'] ?? ''));
+
+        if (!preg_match('/^\d{16}$/', $cardDigits)) {
+            json_response(['ok' => false, 'message' => 'Please enter a valid 16-digit card number.'], 422);
+        }
+        if (!preg_match('/^\d{2}\s*\/\s*\d{2}$/', $cardExpiry)) {
+            json_response(['ok' => false, 'message' => 'Please enter a valid expiry date.'], 422);
+        }
+        if ($cardHolder === '') {
+            json_response(['ok' => false, 'message' => 'Please enter the name on card.'], 422);
+        }
+        if (!preg_match('/^\d{3,4}$/', $cardCvv)) {
+            json_response(['ok' => false, 'message' => 'Please enter a valid CVV.'], 422);
+        }
+
+        $cardNumber = mask_card_number($cardDigits);
+        $gcashNumber = null;
+    }
 
     $subtotal = 0.0;
     foreach ($items as $item) {
@@ -2311,9 +2405,9 @@ function create_order()
     $total = max(0, round($subtotal - $discountAmount, 2));
 
     execute_sql(
-        'INSERT INTO orders (user_id, first_name, last_name, email, phone, house_no, street, barangay, city, province, zip, notes, payment_method, gcash_number, total_amount, promo_id, promo_code, discount_amount, status, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())',
-        [$userId ?: null, $firstName, $lastName, $email, $phone, $houseNo, $street, $barangay, $city, $province, $zip, $notes, $paymentMethod, $gcashNumber, $total, $promoId, $savedPromoCode, $discountAmount, 'pending']
+        'INSERT INTO orders (user_id, first_name, last_name, email, phone, house_no, street, barangay, city, province, zip, notes, payment_method, gcash_number, payment_receipt, card_number, card_expiry, card_holder, total_amount, promo_id, promo_code, discount_amount, status, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())',
+        [$userId ?: null, $firstName, $lastName, $email, $phone, $houseNo, $street, $barangay, $city, $province, $zip, $notes, $paymentMethod, $gcashNumber, $paymentReceipt, $cardNumber, $cardExpiry, $cardHolder, $total, $promoId, $savedPromoCode, $discountAmount, 'pending']
     );
 
     $orderId = (string) db()->lastInsertId();
