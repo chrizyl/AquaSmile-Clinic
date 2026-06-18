@@ -118,8 +118,8 @@ requireAdminPage();
       <header class="admin-hero report-hero">
         <div>
           <div class="section-label">Reports and Analytics</div>
-          <h1>Clinic Summary</h1>
-          <p>A clean overview of patients, appointments, shop activity, catalog content, coupons, feedback, and recent website operations.</p>
+          <h1>Executive Dashboard</h1>
+          <p>Focused clinic, revenue, order, coupon, and content insights for faster operational decisions.</p>
         </div>
         <div class="admin-hero-actions">
           <button class="btn-secondary" type="button" onclick="adminRefresh()">Refresh Report</button>
@@ -133,8 +133,19 @@ requireAdminPage();
         <article class="admin-panel report-panel report-wide">
           <div class="panel-head">
             <div>
+              <div class="section-label">Payment Mix</div>
+              <h2>Revenue by Channel</h2>
+            </div>
+            <span class="admin-badge">payment mix</span>
+          </div>
+          <div class="report-bars" id="report-payment-mix"></div>
+        </article>
+
+        <article class="admin-panel report-panel report-wide">
+          <div class="panel-head">
+            <div>
               <div class="section-label">Performance</div>
-              <h2>Monthly Order Revenue</h2>
+              <h2>Monthly Revenue</h2>
             </div>
             <span class="admin-badge" id="report-revenue-range">Latest months</span>
           </div>
@@ -154,7 +165,7 @@ requireAdminPage();
         <article class="admin-panel report-panel">
           <div class="panel-head">
             <div>
-              <div class="section-label">Shop</div>
+              <div class="section-label">Shop Flow</div>
               <h2>Order Status</h2>
             </div>
           </div>
@@ -165,7 +176,7 @@ requireAdminPage();
           <div class="panel-head">
             <div>
               <div class="section-label">Website Content</div>
-              <h2>Content Inventory</h2>
+              <h2>Catalog Coverage</h2>
             </div>
           </div>
           <div class="report-content-grid" id="report-content-grid"></div>
@@ -185,7 +196,7 @@ requireAdminPage();
           <div class="panel-head">
             <div>
               <div class="section-label">Coupons</div>
-              <h2>Claim Activity</h2>
+              <h2>Coupon Performance</h2>
             </div>
           </div>
           <div class="report-coupon-list" id="report-coupon-list"></div>

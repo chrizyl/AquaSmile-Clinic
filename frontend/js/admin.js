@@ -806,28 +806,35 @@ function renderReportsandAnalytics(d) {
   const feedback = d.feedback || [];
   const patients = users.filter(user => (user.role || 'patient') !== 'admin');
   const revenue = orders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
-  const pendingAppointments = appointments.filter(item => item.status === 'pending').length;
-  const activeCoupons = coupons.filter(item => item.status === 'active').length;
+  const paidOrders = orders.filter(order => !['pending', 'cancelled', 'archived'].includes(String(order.status || '').toLowerCase())).length;
+  const completedOrders = orders.filter(order => String(order.status || '').toLowerCase() === 'completed').length;
+  const customerOrderCounts = orders.reduce((counts, order) => {
+    const key = String(order.email || order.phone || order.customer || '').trim().toLowerCase();
+    if (key) counts[key] = (counts[key] || 0) + 1;
+    return counts;
+  }, {});
+  const repeatCustomers = Object.values(customerOrderCounts).filter(count => count > 1).length;
+  const orderCustomers = Object.keys(customerOrderCounts).length;
   const averageRating = feedback.length
     ? feedback.reduce((sum, item) => sum + (Number(item.rating) || 0), 0) / feedback.length
     : 0;
 
   const kpis = [
-    { label: 'Revenue', value: formatMoney(revenue), meta: `${orders.length} orders`, tone: 'aqua' },
-    { label: 'Patients', value: patients.length, meta: `${users.length} total accounts`, tone: 'peach' },
-    { label: 'Appointments', value: appointments.length, meta: `${pendingAppointments} pending`, tone: 'green' },
-    { label: 'Catalog Items', value: products.length + services.length + dentists.length, meta: `${products.length} products, ${services.length} services`, tone: 'violet' },
-    { label: 'Active Coupons', value: activeCoupons, meta: `${coupons.length} total promos`, tone: 'aqua' },
-    { label: 'Avg. Rating', value: averageRating ? averageRating.toFixed(1) + '/5' : '0.0/5', meta: `${feedback.length} reviews`, tone: 'peach' },
+    { label: 'Paid Payment Rate', value: percentOf(paidOrders, orders.length), meta: `${paidOrders} of ${orders.length} order payments are paid`, tone: 'aqua' },
+    { label: 'Completion Rate', value: percentOf(completedOrders, orders.length), meta: `${completedOrders} completed from ${orders.length} orders`, tone: 'green' },
+    { label: 'Repeat Customer Rate', value: percentOf(repeatCustomers, orderCustomers), meta: `${repeatCustomers} repeat buyers from ${orderCustomers} customers`, tone: 'blue' },
   ];
 
   kpiGrid.innerHTML = kpis.map(item => `
-    <article class="report-kpi-card ${item.tone}">
+    <article class="report-kpi-card ${item.tone}" style="--gauge-value:${item.value.toFixed(1)}%;">
       <span>${esc(item.label)}</span>
-      <strong>${esc(item.value)}</strong>
+      <div class="report-gauge" aria-label="${esc(item.label)} ${item.value.toFixed(1)} percent">
+        <strong>${item.value.toFixed(1)}%</strong>
+      </div>
       <small>${esc(item.meta)}</small>
     </article>`).join('');
 
+  renderPaymentMix(orders, revenue);
   renderRevenueChart(orders);
   renderReportBars('report-appointment-bars', countBy(appointments, 'status'), appointments.length);
   renderReportBars('report-order-bars', countBy(orders, 'status'), orders.length);
@@ -844,6 +851,78 @@ function countBy(items, key) {
   }, {});
 }
 
+function percentOf(value, total) {
+  return total ? Math.min(100, Math.max(0, (Number(value) || 0) / total * 100)) : 0;
+}
+
+function trendText(changePct, suffix) {
+  const value = Number(changePct) || 0;
+  if (!value) return `0% ${suffix}`;
+  return `${value > 0 ? '+' : ''}${value.toFixed(0)}% ${suffix}`;
+}
+
+function paymentMethodLabel(method) {
+  const value = String(method || 'cod').toLowerCase();
+  if (value === 'cod') return 'Cash on Delivery';
+  if (value === 'gcash') return 'GCash';
+  return statusLabel(value || 'Unknown');
+}
+
+function renderPaymentMix(orders, revenue) {
+  const wrap = document.getElementById('report-payment-mix');
+  if (!wrap) return;
+  const totals = (orders || []).reduce((groups, order) => {
+    const key = String(order.paymentMethod || 'cod').toLowerCase();
+    if (!groups[key]) groups[key] = { count: 0, total: 0 };
+    groups[key].count += 1;
+    groups[key].total += Number(order.total) || 0;
+    return groups;
+  }, {});
+  const entries = Object.entries(totals).sort((a, b) => b[1].total - a[1].total);
+  if (!entries.length) {
+    wrap.innerHTML = '<div class="empty-state-card">No payment records yet.</div>';
+    return;
+  }
+  const stops = [];
+  let offset = 0;
+  entries.forEach(([method, item], index) => {
+    const pct = percentOf(item.total, revenue);
+    const color = index % 2 === 0 ? '#5A7978' : '#9DB5B4';
+    stops.push(`${color} ${offset}% ${offset + pct}%`);
+    offset += pct;
+  });
+  const donutBg = stops.length ? `conic-gradient(${stops.join(', ')}, rgba(120,154,153,.12) ${offset}% 100%)` : 'rgba(120,154,153,.12)';
+  wrap.innerHTML = `
+    <div class="report-channel-card">
+      <div class="report-panel-summary">
+        <span>Total Volume</span>
+        <strong>${esc(formatMoneyCompact(revenue))}</strong>
+        <small>${orders.length} order${orders.length === 1 ? '' : 's'} across ${entries.length} channel${entries.length === 1 ? '' : 's'}</small>
+      </div>
+      <div class="report-donut" style="--donut-bg:${donutBg};">
+        <strong>${orders.length}</strong>
+        <span>orders</span>
+      </div>
+      <div class="report-channel-list">
+        ${entries.map(([method, item], index) => {
+          const pct = percentOf(item.total, revenue);
+          return `
+            <div class="report-channel-row">
+              <i style="background:${index % 2 === 0 ? '#5A7978' : '#9DB5B4'}"></i>
+              <div>
+                <strong>${esc(paymentMethodLabel(method))}</strong>
+                <span>${item.count} order${item.count === 1 ? '' : 's'}</span>
+              </div>
+              <div class="report-channel-amount">
+                <strong>${pct.toFixed(1)}%</strong>
+                <span>${esc(formatMoneyCompact(item.total))}</span>
+              </div>
+            </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
+
 function renderRevenueChart(orders) {
   const chart = document.getElementById('report-revenue-chart');
   if (!chart) return;
@@ -857,7 +936,7 @@ function renderRevenueChart(orders) {
     monthMap[key] = (monthMap[key] || 0) + (Number(order.total) || 0);
   });
 
-  const months = Object.keys(monthMap).sort().slice(-7);
+  const months = Object.keys(monthMap).sort().slice(-6);
   if (!months.length) {
     chart.innerHTML = '<div class="empty-state-card">No order revenue yet.</div>';
     setText('report-revenue-range', 'No data');
@@ -866,39 +945,36 @@ function renderRevenueChart(orders) {
 
   const values = months.map(month => monthMap[month]);
   const max = Math.max(...values, 1);
-  const width = 720;
-  const height = 260;
-  const padding = 34;
-  const step = months.length > 1 ? (width - padding * 2) / (months.length - 1) : 0;
-  const points = values.map((value, index) => {
-    const x = padding + step * index;
-    const y = height - padding - ((height - padding * 2) * value / max);
-    return [x, y];
-  });
-  const line = points.map(point => point.join(',')).join(' ');
-  const area = `${padding},${height - padding} ${line} ${width - padding},${height - padding}`;
   const labels = months.map(month => {
     const date = new Date(month + '-01T00:00:00');
-    return date.toLocaleString('en-PH', { month: 'short' });
+    return date.toLocaleString('en-PH', { month: 'short', year: 'numeric' });
   });
 
-  setText('report-revenue-range', months[0] + ' to ' + months[months.length - 1]);
+  const total = values.reduce((sum, value) => sum + value, 0);
+  const average = total / values.length;
+  const latest = values[values.length - 1] || 0;
+  const previous = values.length > 1 ? values[values.length - 2] : 0;
+  const changePct = previous ? ((latest - previous) / previous) * 100 : (latest ? 100 : 0);
+
+  setText('report-revenue-range', 'last 6 months');
   chart.innerHTML = `
-    <svg class="report-line-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Monthly revenue chart">
-      <defs>
-        <linearGradient id="reportAreaGradient" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#789A99" stop-opacity="0.42"/>
-          <stop offset="100%" stop-color="#789A99" stop-opacity="0"/>
-        </linearGradient>
-      </defs>
-      <polygon points="${area}" fill="url(#reportAreaGradient)" stroke="none"></polygon>
-      <polyline points="${line}" fill="none" stroke="#5A7978" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></polyline>
-      ${points.map((point, index) => `
-        <g>
-          <circle cx="${point[0]}" cy="${point[1]}" r="5" fill="#5A7978"></circle>
-          <text x="${point[0]}" y="${height - 9}" text-anchor="middle">${esc(labels[index])}</text>
-        </g>`).join('')}
-    </svg>`;
+    <div class="report-chart-summary">
+      <div><span>Total</span><strong>${esc(formatMoneyCompact(total))}</strong></div>
+      <div><span>Monthly Avg</span><strong>${esc(formatMoneyCompact(average))}</strong></div>
+      <div><span>Latest Month</span><strong>${esc(formatMoneyCompact(latest))}</strong></div>
+      <div><span>Trend</span><strong>${esc(trendText(changePct, ''))}</strong></div>
+    </div>
+    <div class="report-revenue-bars" role="img" aria-label="Monthly revenue chart">
+      ${values.map((value, index) => {
+        const pct = Math.max(6, Math.round((value / max) * 100));
+        return `
+          <div class="report-revenue-month">
+            <strong>${esc(formatMoneyCompact(value))}</strong>
+            <div class="report-revenue-track"><i style="height:${pct}%"></i></div>
+            <span>${esc(labels[index])}</span>
+          </div>`;
+      }).join('')}
+    </div>`;
 }
 
 function renderReportBars(id, counts, total) {
@@ -909,9 +985,19 @@ function renderReportBars(id, counts, total) {
     wrap.innerHTML = '<div class="empty-state-card">No records yet.</div>';
     return;
   }
+  const top = entries[0];
+  const completed = counts.completed || 0;
+  const pending = counts.pending || 0;
   wrap.innerHTML = entries.map(([label, count]) => {
     const pct = total ? Math.round((count / total) * 100) : 0;
     return `
+      ${label === top[0] ? `
+      <div class="report-status-summary">
+        <div><span>Total</span><strong>${total}</strong></div>
+        <div><span>Top Status</span><strong>${esc(statusLabel(top[0]))}</strong></div>
+        <div><span>Completed</span><strong>${completed}</strong></div>
+        <div><span>Pending</span><strong>${pending}</strong></div>
+      </div>` : ''}
       <div class="report-bar-row">
         <div class="report-bar-head">
           <span>${esc(statusLabel(label))}</span>
@@ -959,19 +1045,57 @@ function renderReportFeedback(feedback, averageRating) {
 function renderReportCoupons(coupons) {
   const wrap = document.getElementById('report-coupon-list');
   if (!wrap) return;
-  const sorted = (coupons || []).slice().sort((a, b) => Number(b.claimCount || 0) - Number(a.claimCount || 0)).slice(0, 5);
+  const list = coupons || [];
+  const sorted = list.slice().sort((a, b) => Number(b.claimCount || 0) - Number(a.claimCount || 0));
   if (!sorted.length) {
     wrap.innerHTML = '<div class="empty-state-card">No coupons yet.</div>';
     return;
   }
-  wrap.innerHTML = sorted.map(coupon => `
-    <div class="report-coupon-item">
-      <div>
-        <strong>${esc(coupon.coupon_code || coupon.code || '-')}</strong>
-        <span>${esc(coupon.title || 'Promo')}</span>
-      </div>
-      <small>${Number(coupon.claimCount || 0)} claims</small>
-    </div>`).join('');
+  const totalClaims = list.reduce((sum, coupon) => sum + Number(coupon.claimCount || coupon.claim_count || 0), 0);
+  const active = list.filter(coupon => String(coupon.status || '').toLowerCase() === 'active').length;
+  const unused = list.filter(coupon => !Number(coupon.claimCount || coupon.claim_count || 0)).length;
+  const top = sorted[0];
+  const typeCounts = countBy(list, 'coupon_type');
+  const discountCounts = countBy(list, 'discount_type');
+  wrap.innerHTML = `
+    <div class="report-coupon-summary">
+      <div><span>Total Claims</span><strong>${totalClaims}</strong></div>
+      <div><span>Active Promos</span><strong>${active}</strong></div>
+      <div><span>Top Coupon</span><strong>${esc(top.coupon_code || top.code || '-')}</strong><small>${Number(top.claimCount || 0)} claims</small></div>
+      <div><span>Unused</span><strong>${unused}</strong></div>
+    </div>
+    <div class="report-coupon-splits">
+      ${renderReportSplit('Coupon Category', typeCounts, list.length)}
+      ${renderReportSplit('Discount Type', discountCounts, list.length)}
+    </div>
+    <div class="report-coupon-top">
+      ${sorted.slice(0, 4).map(coupon => `
+        <div class="report-coupon-item">
+          <div>
+            <strong>${esc(coupon.coupon_code || coupon.code || '-')}</strong>
+            <span>${esc(coupon.title || 'Promo')}</span>
+          </div>
+          <small>${Number(coupon.claimCount || 0)} claims</small>
+        </div>`).join('')}
+    </div>`;
+}
+
+function renderReportSplit(title, counts, total) {
+  const entries = Object.entries(counts || {}).sort((a, b) => b[1] - a[1]);
+  if (!entries.length) return '';
+  return `
+    <div class="report-split-card">
+      <strong>${esc(title)}</strong>
+      ${entries.map(([label, count]) => {
+        const pct = Math.round(percentOf(count, total));
+        return `
+          <div class="report-split-row">
+            <span>${esc(statusLabel(label || 'unknown'))}</span>
+            <em>${pct}%</em>
+            <i><b style="width:${pct}%"></b></i>
+          </div>`;
+      }).join('')}
+    </div>`;
 }
 
 function renderAdminCoupons(coupons) {
@@ -1810,6 +1934,9 @@ function initials(name) {
 }
 function formatMoney(value) {
   return 'PHP ' + (parseFloat(value) || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 });
+}
+function formatMoneyCompact(value) {
+  return 'PHP ' + (parseFloat(value) || 0).toLocaleString('en-PH', { maximumFractionDigits: 0 });
 }
 function formatSchedule(date, time) {
   if (!date) return '-';
