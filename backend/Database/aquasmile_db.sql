@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 18, 2026 at 08:02 PM
+-- Generation Time: Jun 19, 2026 at 01:57 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -20,8 +20,6 @@ SET time_zone = "+00:00";
 --
 -- Database: `aquasmile_db`
 --
-CREATE DATABASE IF NOT EXISTS `aquasmile_db` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-USE `aquasmile_db`;
 
 -- --------------------------------------------------------
 
@@ -29,9 +27,8 @@ USE `aquasmile_db`;
 -- Table structure for table `appointments`
 --
 
-DROP TABLE IF EXISTS `appointments`;
-CREATE TABLE IF NOT EXISTS `appointments` (
-  `appointment_id` int(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `appointments` (
+  `appointment_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `dentist_id` int(11) DEFAULT NULL,
   `service_id` int(11) DEFAULT NULL,
@@ -45,13 +42,8 @@ CREATE TABLE IF NOT EXISTS `appointments` (
   `status` enum('pending','confirmed','completed','cancelled','archived') NOT NULL DEFAULT 'pending',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `cancellation_reason` text DEFAULT NULL,
-  `cancelled_by` enum('admin','user') DEFAULT NULL,
-  PRIMARY KEY (`appointment_id`),
-  KEY `user_id` (`user_id`),
-  KEY `dentist_id` (`dentist_id`),
-  KEY `service_id` (`service_id`),
-  KEY `appointments_promo_fk` (`promo_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `cancelled_by` enum('admin','user') DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `appointments`
@@ -70,24 +62,21 @@ INSERT INTO `appointments` (`appointment_id`, `user_id`, `dentist_id`, `service_
 -- Table structure for table `cart_items`
 --
 
-DROP TABLE IF EXISTS `cart_items`;
-CREATE TABLE IF NOT EXISTS `cart_items` (
-  `cart_item_id` int(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `cart_items` (
+  `cart_item_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `product_id` int(11) NOT NULL,
   `quantity` int(11) NOT NULL DEFAULT 1,
-  `added_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`cart_item_id`),
-  KEY `user_id` (`user_id`),
-  KEY `product_id` (`product_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `added_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `cart_items`
 --
 
 INSERT INTO `cart_items` (`cart_item_id`, `user_id`, `product_id`, `quantity`, `added_at`) VALUES
-(9, 5, 3, 1, '2026-06-18 17:42:37');
+(9, 5, 3, 1, '2026-06-18 17:42:37'),
+(10, 3, 4, 1, '2026-06-19 08:35:10');
 
 -- --------------------------------------------------------
 
@@ -95,16 +84,12 @@ INSERT INTO `cart_items` (`cart_item_id`, `user_id`, `product_id`, `quantity`, `
 -- Table structure for table `claimed_coupons`
 --
 
-DROP TABLE IF EXISTS `claimed_coupons`;
-CREATE TABLE IF NOT EXISTS `claimed_coupons` (
-  `claimed_coupon_id` int(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `claimed_coupons` (
+  `claimed_coupon_id` int(11) NOT NULL,
   `promo_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
-  `claimed_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`claimed_coupon_id`),
-  UNIQUE KEY `claimed_promo_user_unique` (`promo_id`,`user_id`),
-  KEY `claimed_coupons_user_fk` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `claimed_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `claimed_coupons`
@@ -121,9 +106,8 @@ INSERT INTO `claimed_coupons` (`claimed_coupon_id`, `promo_id`, `user_id`, `clai
 -- Table structure for table `dentists`
 --
 
-DROP TABLE IF EXISTS `dentists`;
-CREATE TABLE IF NOT EXISTS `dentists` (
-  `dentist_id` int(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `dentists` (
+  `dentist_id` int(11) NOT NULL,
   `first_name` varchar(100) DEFAULT NULL,
   `last_name` varchar(100) DEFAULT NULL,
   `specialization` varchar(100) DEFAULT NULL,
@@ -134,9 +118,8 @@ CREATE TABLE IF NOT EXISTS `dentists` (
   `practicing_since` varchar(100) DEFAULT NULL,
   `image_path` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `status` enum('available','unavailable') NOT NULL DEFAULT 'available',
-  PRIMARY KEY (`dentist_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `status` enum('available','unavailable') NOT NULL DEFAULT 'available'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `dentists`
@@ -153,9 +136,8 @@ INSERT INTO `dentists` (`dentist_id`, `first_name`, `last_name`, `specialization
 -- Table structure for table `feedback`
 --
 
-DROP TABLE IF EXISTS `feedback`;
-CREATE TABLE IF NOT EXISTS `feedback` (
-  `feedback_id` int(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `feedback` (
+  `feedback_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `appointment_id` int(11) DEFAULT NULL,
   `order_id` int(11) DEFAULT NULL,
@@ -163,12 +145,8 @@ CREATE TABLE IF NOT EXISTS `feedback` (
   `rating` tinyint(1) NOT NULL,
   `tags` text DEFAULT NULL,
   `comment` text DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`feedback_id`),
-  KEY `user_id` (`user_id`),
-  KEY `appointment_id` (`appointment_id`),
-  KEY `order_id` (`order_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `feedback`
@@ -186,19 +164,16 @@ INSERT INTO `feedback` (`feedback_id`, `user_id`, `appointment_id`, `order_id`, 
 -- Table structure for table `notifications`
 --
 
-DROP TABLE IF EXISTS `notifications`;
-CREATE TABLE IF NOT EXISTS `notifications` (
-  `notification_id` int(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `notifications` (
+  `notification_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `appointment_id` int(11) DEFAULT NULL,
   `order_id` int(11) DEFAULT NULL,
   `audience` enum('user','admin') NOT NULL DEFAULT 'user',
   `message` text NOT NULL,
   `is_read` tinyint(1) NOT NULL DEFAULT 0,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`notification_id`),
-  KEY `notifications_order_fk` (`order_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `notifications`
@@ -223,9 +198,8 @@ INSERT INTO `notifications` (`notification_id`, `user_id`, `appointment_id`, `or
 -- Table structure for table `orders`
 --
 
-DROP TABLE IF EXISTS `orders`;
-CREATE TABLE IF NOT EXISTS `orders` (
-  `order_id` int(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `orders` (
+  `order_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `promo_id` int(11) DEFAULT NULL,
   `promo_code` varchar(50) DEFAULT NULL,
@@ -249,11 +223,8 @@ CREATE TABLE IF NOT EXISTS `orders` (
   `payment_receipt` varchar(255) DEFAULT NULL,
   `card_number` varchar(20) DEFAULT NULL,
   `card_expiry` varchar(10) DEFAULT NULL,
-  `card_holder` varchar(100) DEFAULT NULL,
-  PRIMARY KEY (`order_id`),
-  KEY `user_id` (`user_id`),
-  KEY `orders_promo_fk` (`promo_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `card_holder` varchar(100) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `orders`
@@ -270,18 +241,14 @@ INSERT INTO `orders` (`order_id`, `user_id`, `promo_id`, `promo_code`, `discount
 -- Table structure for table `order_items`
 --
 
-DROP TABLE IF EXISTS `order_items`;
-CREATE TABLE IF NOT EXISTS `order_items` (
-  `order_item_id` int(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `order_items` (
+  `order_item_id` int(11) NOT NULL,
   `order_id` int(11) NOT NULL,
   `product_id` int(11) NOT NULL,
   `quantity` int(11) NOT NULL,
   `unit_price` decimal(10,2) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`order_item_id`),
-  KEY `order_id` (`order_id`),
-  KEY `product_id` (`product_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `order_items`
@@ -303,9 +270,8 @@ INSERT INTO `order_items` (`order_item_id`, `order_id`, `product_id`, `quantity`
 -- Table structure for table `otp_verifications`
 --
 
-DROP TABLE IF EXISTS `otp_verifications`;
-CREATE TABLE IF NOT EXISTS `otp_verifications` (
-  `otp_id` int(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `otp_verifications` (
+  `otp_id` int(11) NOT NULL,
   `email` varchar(120) NOT NULL,
   `first_name` varchar(100) NOT NULL,
   `last_name` varchar(100) NOT NULL,
@@ -316,11 +282,15 @@ CREATE TABLE IF NOT EXISTS `otp_verifications` (
   `attempts` tinyint(3) UNSIGNED NOT NULL DEFAULT 0,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `last_otp_sent_at` datetime DEFAULT NULL,
-  PRIMARY KEY (`otp_id`),
-  UNIQUE KEY `email` (`email`),
-  KEY `idx_expires_at` (`expires_at`)
-) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `last_otp_sent_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `otp_verifications`
+--
+
+INSERT INTO `otp_verifications` (`otp_id`, `email`, `first_name`, `last_name`, `phone`, `password_hash`, `otp_code`, `expires_at`, `attempts`, `created_at`, `updated_at`, `last_otp_sent_at`) VALUES
+(18, 'abellachrizyl008@gmail.com', 'Maria', 'Abella', '09274213879', '$2y$10$RYk74ObIZnAX7w3HyT0MmO/9FqMVyItfo9q0iBxNb/Mjm7Ulb77LO', '664437', '2026-06-19 12:03:56', 0, '2026-06-19 09:53:56', '2026-06-19 09:53:56', '2026-06-19 17:53:56');
 
 -- --------------------------------------------------------
 
@@ -328,9 +298,8 @@ CREATE TABLE IF NOT EXISTS `otp_verifications` (
 -- Table structure for table `products`
 --
 
-DROP TABLE IF EXISTS `products`;
-CREATE TABLE IF NOT EXISTS `products` (
-  `product_id` int(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `products` (
+  `product_id` int(11) NOT NULL,
   `product_name` varchar(150) NOT NULL,
   `category` varchar(50) DEFAULT NULL,
   `description` text DEFAULT NULL,
@@ -338,9 +307,8 @@ CREATE TABLE IF NOT EXISTS `products` (
   `price` decimal(10,2) DEFAULT NULL,
   `stock_quantity` int(11) DEFAULT 0,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `status` enum('available','sold_out') NOT NULL DEFAULT 'available',
-  PRIMARY KEY (`product_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `status` enum('available','sold_out') NOT NULL DEFAULT 'available'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `products`
@@ -362,9 +330,8 @@ INSERT INTO `products` (`product_id`, `product_name`, `category`, `description`,
 -- Table structure for table `promos`
 --
 
-DROP TABLE IF EXISTS `promos`;
-CREATE TABLE IF NOT EXISTS `promos` (
-  `promo_id` int(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `promos` (
+  `promo_id` int(11) NOT NULL,
   `promo_code` varchar(50) NOT NULL,
   `promo_name` varchar(150) NOT NULL,
   `description` text DEFAULT NULL,
@@ -377,10 +344,8 @@ CREATE TABLE IF NOT EXISTS `promos` (
   `status` enum('active','inactive','expired') NOT NULL DEFAULT 'active',
   `start_date` date DEFAULT NULL,
   `end_date` date DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`promo_id`),
-  UNIQUE KEY `promo_code` (`promo_code`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `promos`
@@ -397,9 +362,8 @@ INSERT INTO `promos` (`promo_id`, `promo_code`, `promo_name`, `description`, `pr
 -- Table structure for table `services`
 --
 
-DROP TABLE IF EXISTS `services`;
-CREATE TABLE IF NOT EXISTS `services` (
-  `service_id` int(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `services` (
+  `service_id` int(11) NOT NULL,
   `service_name` varchar(150) NOT NULL,
   `description` text DEFAULT NULL,
   `image_path` varchar(255) DEFAULT NULL,
@@ -407,9 +371,8 @@ CREATE TABLE IF NOT EXISTS `services` (
   `category` varchar(50) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `daily_slots` int(11) NOT NULL DEFAULT 0,
-  `status` enum('available','unavailable') NOT NULL DEFAULT 'available',
-  PRIMARY KEY (`service_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `status` enum('available','unavailable') NOT NULL DEFAULT 'available'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `services`
@@ -432,9 +395,8 @@ INSERT INTO `services` (`service_id`, `service_name`, `description`, `image_path
 -- Table structure for table `users`
 --
 
-DROP TABLE IF EXISTS `users`;
-CREATE TABLE IF NOT EXISTS `users` (
-  `user_id` int(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `users` (
+  `user_id` int(11) NOT NULL,
   `first_name` varchar(100) NOT NULL,
   `last_name` varchar(100) NOT NULL,
   `email` varchar(120) NOT NULL,
@@ -451,21 +413,203 @@ CREATE TABLE IF NOT EXISTS `users` (
   `barangay` varchar(100) DEFAULT NULL,
   `city` varchar(100) DEFAULT NULL,
   `province` varchar(100) DEFAULT NULL,
-  `zip_code` varchar(10) DEFAULT NULL,
-  PRIMARY KEY (`user_id`),
-  UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `zip_code` varchar(10) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `users`
 --
 
 INSERT INTO `users` (`user_id`, `first_name`, `last_name`, `email`, `phone`, `password_hash`, `role`, `created_at`, `birthdate`, `gender`, `emergency_contact_name`, `emergency_contact_number`, `house_no`, `street`, `barangay`, `city`, `province`, `zip_code`) VALUES
-(1, 'System', 'Admin', 'admin@aquasmile.com', '09685352424', '$2y$10$qnT4XmT6G85rtdowvE8eYuy0eBNaMX69YlUDnqYqNlQljmIpLqJNG', 'admin', '2026-05-26 07:27:15', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(1, 'Admin', 'System', 'admin@aquasmile.com', '09685352424', '$2y$10$qnT4XmT6G85rtdowvE8eYuy0eBNaMX69YlUDnqYqNlQljmIpLqJNG', 'admin', '2026-05-26 07:27:15', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (2, 'Mary Josephine', 'Magboo', 'maryjosephine076@gmail.com', '09672547242', '$2y$10$cqxtAEZuyPQtRSWolFgJye618tHSODbybdCeylU1iD2PFgoTcakE.', 'patient', '2026-06-14 06:33:02', '2006-08-07', 'Female', NULL, NULL, '1', 'Purok', 'Makiling', 'Calamba', 'LAGUNA', '4027'),
 (3, 'Jeonghan', 'Jeon', 'jeon@gmail.com', '09275643514', '$2y$10$y9L78.r11pQ/WOUq3psuKuw40hrIwyCiilbZqn0m.u9Q8kEKf676O', 'patient', '2026-05-24 03:40:13', NULL, 'Male', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (4, 'Chrizyl', 'Abella', 'abellachrizyl@gmail.com', '09274213879', '$2y$10$SpxIEd7d0L3RQtveozevSO5GZfKVB5OVjsB3hVGRFDiBZLrMF/d1S', 'patient', '2026-05-23 02:53:53', NULL, 'Female', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (5, 'Hannah', 'Cruz', 'hannie@gmail.com', '09274213879', '$2y$10$J50O5WjgvdrIJkITMGCDKefEnNOW2EFeP0YmlGOD6eO2MDLVRwj1e', 'patient', '2026-05-24 03:33:37', '2000-06-07', 'Female', NULL, NULL, '25', 'Mabini Street', 'San Pedro', 'Santo Tomas', 'Batangas', '4234');
+
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indexes for table `appointments`
+--
+ALTER TABLE `appointments`
+  ADD PRIMARY KEY (`appointment_id`),
+  ADD KEY `user_id` (`user_id`),
+  ADD KEY `dentist_id` (`dentist_id`),
+  ADD KEY `service_id` (`service_id`),
+  ADD KEY `appointments_promo_fk` (`promo_id`);
+
+--
+-- Indexes for table `cart_items`
+--
+ALTER TABLE `cart_items`
+  ADD PRIMARY KEY (`cart_item_id`),
+  ADD KEY `user_id` (`user_id`),
+  ADD KEY `product_id` (`product_id`);
+
+--
+-- Indexes for table `claimed_coupons`
+--
+ALTER TABLE `claimed_coupons`
+  ADD PRIMARY KEY (`claimed_coupon_id`),
+  ADD UNIQUE KEY `claimed_promo_user_unique` (`promo_id`,`user_id`),
+  ADD KEY `claimed_coupons_user_fk` (`user_id`);
+
+--
+-- Indexes for table `dentists`
+--
+ALTER TABLE `dentists`
+  ADD PRIMARY KEY (`dentist_id`);
+
+--
+-- Indexes for table `feedback`
+--
+ALTER TABLE `feedback`
+  ADD PRIMARY KEY (`feedback_id`),
+  ADD KEY `user_id` (`user_id`),
+  ADD KEY `appointment_id` (`appointment_id`),
+  ADD KEY `order_id` (`order_id`);
+
+--
+-- Indexes for table `notifications`
+--
+ALTER TABLE `notifications`
+  ADD PRIMARY KEY (`notification_id`),
+  ADD KEY `notifications_order_fk` (`order_id`);
+
+--
+-- Indexes for table `orders`
+--
+ALTER TABLE `orders`
+  ADD PRIMARY KEY (`order_id`),
+  ADD KEY `user_id` (`user_id`),
+  ADD KEY `orders_promo_fk` (`promo_id`);
+
+--
+-- Indexes for table `order_items`
+--
+ALTER TABLE `order_items`
+  ADD PRIMARY KEY (`order_item_id`),
+  ADD KEY `order_id` (`order_id`),
+  ADD KEY `product_id` (`product_id`);
+
+--
+-- Indexes for table `otp_verifications`
+--
+ALTER TABLE `otp_verifications`
+  ADD PRIMARY KEY (`otp_id`),
+  ADD UNIQUE KEY `email` (`email`),
+  ADD KEY `idx_expires_at` (`expires_at`);
+
+--
+-- Indexes for table `products`
+--
+ALTER TABLE `products`
+  ADD PRIMARY KEY (`product_id`);
+
+--
+-- Indexes for table `promos`
+--
+ALTER TABLE `promos`
+  ADD PRIMARY KEY (`promo_id`),
+  ADD UNIQUE KEY `promo_code` (`promo_code`);
+
+--
+-- Indexes for table `services`
+--
+ALTER TABLE `services`
+  ADD PRIMARY KEY (`service_id`);
+
+--
+-- Indexes for table `users`
+--
+ALTER TABLE `users`
+  ADD PRIMARY KEY (`user_id`),
+  ADD UNIQUE KEY `email` (`email`);
+
+--
+-- AUTO_INCREMENT for dumped tables
+--
+
+--
+-- AUTO_INCREMENT for table `appointments`
+--
+ALTER TABLE `appointments`
+  MODIFY `appointment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT for table `cart_items`
+--
+ALTER TABLE `cart_items`
+  MODIFY `cart_item_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+
+--
+-- AUTO_INCREMENT for table `claimed_coupons`
+--
+ALTER TABLE `claimed_coupons`
+  MODIFY `claimed_coupon_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT for table `dentists`
+--
+ALTER TABLE `dentists`
+  MODIFY `dentist_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
+-- AUTO_INCREMENT for table `feedback`
+--
+ALTER TABLE `feedback`
+  MODIFY `feedback_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT for table `notifications`
+--
+ALTER TABLE `notifications`
+  MODIFY `notification_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+
+--
+-- AUTO_INCREMENT for table `orders`
+--
+ALTER TABLE `orders`
+  MODIFY `order_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT for table `order_items`
+--
+ALTER TABLE `order_items`
+  MODIFY `order_item_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
+-- AUTO_INCREMENT for table `otp_verifications`
+--
+ALTER TABLE `otp_verifications`
+  MODIFY `otp_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+
+--
+-- AUTO_INCREMENT for table `products`
+--
+ALTER TABLE `products`
+  MODIFY `product_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+
+--
+-- AUTO_INCREMENT for table `promos`
+--
+ALTER TABLE `promos`
+  MODIFY `promo_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT for table `services`
+--
+ALTER TABLE `services`
+  MODIFY `service_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+
+--
+-- AUTO_INCREMENT for table `users`
+--
+ALTER TABLE `users`
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- Constraints for dumped tables
