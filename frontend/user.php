@@ -22,7 +22,7 @@ $initialFirstName = preg_split('/\s+/', $sessionName)[0] ?? 'Patient';
   <link rel="stylesheet" href="css/style.css?v=20260614">
   <link rel="stylesheet" href="css/notifications.css?v=20260616a">
   <link rel="stylesheet" href="css/auth-nav.css?v=20260614">
-  <link rel="stylesheet" href="css/user.css?v=20260618a">
+  <link rel="stylesheet" href="css/user.css?v=20260619">
 </head>
 <body class="account-body">
   <div class="toast" id="toast"></div>
@@ -190,7 +190,7 @@ $initialFirstName = preg_split('/\s+/', $sessionName)[0] ?? 'Patient';
   <div id="site-footer-root"></div>
   <script src="js/main.js?v=20260616a"></script>
   <script src="js/notifications.js?v=20260616a"></script>
-  <script src="js/user.js?v=20260618a"></script>
+  <script src="js/user.js?v=20260619"></script>
   <script src="js/footer.js?v=20260618d"></script>
 </body>
 </html>

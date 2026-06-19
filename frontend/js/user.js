@@ -2,6 +2,11 @@ let accountData = { user: null, appointments: [], orders: [], notifications: [] 
 let profileSnapshot = null;
 let selectedAppointmentId = null;
 let selectedOrderId = null;
+const historyMobileQuery = window.matchMedia('(max-width: 768px)');
+
+function usesHistoryAccordion() {
+  return historyMobileQuery.matches;
+}
 
 const LETTERS_ONLY_PATTERN = /^[A-Za-z' -]+$/;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -188,26 +193,33 @@ function renderProfile(user) {
 
 function renderAppointments() {
   document.getElementById('appointment-count').textContent = accountData.appointments.length;
-  if (!selectedAppointmentId || !accountData.appointments.some(item => String(item.id) === String(selectedAppointmentId))) {
+  if (selectedAppointmentId === null || (selectedAppointmentId !== false && !accountData.appointments.some(item => String(item.id) === String(selectedAppointmentId)))) {
     selectedAppointmentId = accountData.appointments[0]?.id || null;
   }
 
   const selected = accountData.appointments.find(item => String(item.id) === String(selectedAppointmentId));
+  const mobileAccordion = usesHistoryAccordion();
   document.getElementById('appointment-list').innerHTML = accountData.appointments.length
     ? `
-      <div class="history-master-detail">
+      <div class="history-master-detail ${mobileAccordion ? 'history-accordion' : ''}">
         <div class="history-master-list" aria-label="Appointment list">
-          ${accountData.appointments.map(item => `
-            <article class="history-list-card ${String(item.id) === String(selectedAppointmentId) ? 'selected' : ''}" role="button" tabindex="0" data-select-appointment="${escapeHtml(item.id)}">
+          ${accountData.appointments.map(item => {
+            const expanded = String(item.id) === String(selectedAppointmentId);
+            return `
+            <article class="history-list-card ${expanded ? 'selected' : ''} ${mobileAccordion && expanded ? 'has-expanded-detail' : ''}"${mobileAccordion ? '' : ` role="button" tabindex="0" data-select-appointment="${escapeHtml(item.id)}"`}>
+              <div class="history-card-toggle" ${mobileAccordion ? `role="button" tabindex="0" data-select-appointment="${escapeHtml(item.id)}" aria-expanded="${expanded}"` : ''}>
               <div class="history-list-top">
                 <div class="history-title">${escapeHtml(item.serviceName || 'Dental Service')}</div>
                 ${statusBadge(item.status)}
               </div>
               <div class="history-meta">${escapeHtml(formatAccountDate(item.date))} at ${escapeHtml(formatAppointmentTime(item.time))}</div>
               <div class="history-meta">${escapeHtml(item.dentistName || 'Dentist to be assigned')}</div>
-            </article>`).join('')}
+              </div>
+              ${mobileAccordion && expanded ? `<div class="history-inline-detail">${renderAppointmentPreview(item)}</div>` : ''}
+            </article>`;
+          }).join('')}
         </div>
-        ${renderAppointmentPreview(selected)}
+        ${mobileAccordion ? '' : renderAppointmentPreview(selected)}
       </div>`
     : emptyState('No appointments found yet.');
 }
@@ -247,17 +259,21 @@ function renderAppointmentPreview(appointment) {
 
 function renderOrders() {
   document.getElementById('order-count').textContent = accountData.orders.length;
-  if (!selectedOrderId || !accountData.orders.some(item => String(item.id) === String(selectedOrderId))) {
+  if (selectedOrderId === null || (selectedOrderId !== false && !accountData.orders.some(item => String(item.id) === String(selectedOrderId)))) {
     selectedOrderId = accountData.orders[0]?.id || null;
   }
 
   const selected = accountData.orders.find(item => String(item.id) === String(selectedOrderId));
+  const mobileAccordion = usesHistoryAccordion();
   document.getElementById('order-list').innerHTML = accountData.orders.length
     ? `
-      <div class="history-master-detail">
+      <div class="history-master-detail ${mobileAccordion ? 'history-accordion' : ''}">
         <div class="history-master-list" aria-label="Order list">
-          ${accountData.orders.map(item => `
-            <article class="history-list-card ${String(item.id) === String(selectedOrderId) ? 'selected' : ''}" role="button" tabindex="0" data-select-order="${escapeHtml(item.id)}">
+          ${accountData.orders.map(item => {
+            const expanded = String(item.id) === String(selectedOrderId);
+            return `
+            <article class="history-list-card ${expanded ? 'selected' : ''} ${mobileAccordion && expanded ? 'has-expanded-detail' : ''}"${mobileAccordion ? '' : ` role="button" tabindex="0" data-select-order="${escapeHtml(item.id)}"`}>
+              <div class="history-card-toggle" ${mobileAccordion ? `role="button" tabindex="0" data-select-order="${escapeHtml(item.id)}" aria-expanded="${expanded}"` : ''}>
               <div class="history-list-top">
                 <div class="history-title">Order #${escapeHtml(item.id)}</div>
                 ${statusBadge(item.status)}
@@ -267,9 +283,12 @@ function renderOrders() {
                 <span>${escapeHtml(formatPaymentMethod(item.payment_method))}</span>
                 <strong>${escapeHtml(formatMoney(item.total))}</strong>
               </div>
-            </article>`).join('')}
+              </div>
+              ${mobileAccordion && expanded ? `<div class="history-inline-detail">${renderOrderPreview(item)}</div>` : ''}
+            </article>`;
+          }).join('')}
         </div>
-        ${renderOrderPreview(selected)}
+        ${mobileAccordion ? '' : renderOrderPreview(selected)}
       </div>`
     : emptyState('No orders found yet.');
 }
@@ -536,7 +555,9 @@ document.getElementById('appointment-list').addEventListener('click', event => {
   }
   const selected = event.target.closest('[data-select-appointment]');
   if (selected) {
-    selectedAppointmentId = selected.dataset.selectAppointment;
+    selectedAppointmentId = usesHistoryAccordion() && String(selectedAppointmentId) === String(selected.dataset.selectAppointment)
+      ? false
+      : selected.dataset.selectAppointment;
     renderAppointments();
   }
 });
@@ -546,14 +567,18 @@ document.getElementById('appointment-list').addEventListener('keydown', event =>
   const selected = event.target.closest('[data-select-appointment]');
   if (!selected) return;
   event.preventDefault();
-  selectedAppointmentId = selected.dataset.selectAppointment;
+  selectedAppointmentId = usesHistoryAccordion() && String(selectedAppointmentId) === String(selected.dataset.selectAppointment)
+    ? false
+    : selected.dataset.selectAppointment;
   renderAppointments();
 });
 
 document.getElementById('order-list').addEventListener('click', event => {
   const selected = event.target.closest('[data-select-order]');
   if (selected) {
-    selectedOrderId = selected.dataset.selectOrder;
+    selectedOrderId = usesHistoryAccordion() && String(selectedOrderId) === String(selected.dataset.selectOrder)
+      ? false
+      : selected.dataset.selectOrder;
     renderOrders();
   }
 });
@@ -563,7 +588,18 @@ document.getElementById('order-list').addEventListener('keydown', event => {
   const selected = event.target.closest('[data-select-order]');
   if (!selected) return;
   event.preventDefault();
-  selectedOrderId = selected.dataset.selectOrder;
+  selectedOrderId = usesHistoryAccordion() && String(selectedOrderId) === String(selected.dataset.selectOrder)
+    ? false
+    : selected.dataset.selectOrder;
+  renderOrders();
+});
+
+historyMobileQuery.addEventListener('change', () => {
+  if (!usesHistoryAccordion()) {
+    if (selectedAppointmentId === false) selectedAppointmentId = null;
+    if (selectedOrderId === false) selectedOrderId = null;
+  }
+  renderAppointments();
   renderOrders();
 });
 

@@ -16,7 +16,7 @@ if (isAdmin()) {
   <link rel="icon" type="image/svg+xml" href="images/AquaSmile_Logo.svg">
   <title>AquaSmile — Shop</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/products.css?v=20260617c">
+  <link rel="stylesheet" href="css/products.css?v=20260619">
   <link rel="stylesheet" href="css/notifications.css?v=20260616a">
   <link rel="stylesheet" href="css/auth-nav.css?v=20260614">
   <link rel="stylesheet" href="css/admin-restrictions.css">
@@ -90,7 +90,7 @@ if (isAdmin()) {
 <aside class="cart-drawer" id="cart-drawer">
   <div class="cart-drawer-header">
     <h3 class="cart-drawer-title">Your Cart</h3>
-    <button class="cart-close-btn" onclick="closeCart()">
+    <button class="cart-close-btn" type="button" onclick="closeCart()" aria-label="Close cart">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
   </div>

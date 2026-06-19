@@ -629,6 +629,32 @@
   }
 
   .service-filters {
-    gap: 6px;
+    flex-wrap: nowrap;
+    gap: 8px;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 2px 2px 8px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .service-filters::-webkit-scrollbar { display: none; }
+
+  .service-filters .filter-btn {
+    flex: 0 0 auto;
+    width: auto;
+    max-width: 100%;
+    padding: 8px 15px;
+    white-space: nowrap;
+    background: rgba(255,255,255,.86);
+    border-color: rgba(120,154,153,.28);
+  }
+
+  .service-filters .filter-btn.active {
+    background: var(--aqua);
+    border-color: var(--aqua);
+    color: #fff;
   }
 }
