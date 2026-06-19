@@ -303,7 +303,7 @@ nav {
 }
 
 @media (max-width: 768px) {
-  .cart-drawer { width: 100%; max-width: 420px; }
+  .cart-drawer { width: calc(100vw - 24px); max-width: 420px; }
   .cart-drawer-header { padding: 18px 18px 14px; }
   .cart-drawer-body { padding: 16px 18px; }
   .cart-drawer-footer { padding: 16px 18px max(18px, env(safe-area-inset-bottom)); }

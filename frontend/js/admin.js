@@ -7,6 +7,11 @@ let _showArchived = { appointments: false, orders: false, products: false, servi
 let _appointmentFilter = 'all';
 let _selectedAppointmentId = null;
 let _selectedOrderId = null;
+const adminMobileMasterDetail = window.matchMedia('(max-width: 768px)');
+
+function usesAdminAccordion() {
+  return adminMobileMasterDetail.matches;
+}
 let _adminRouteHandled = false;
 const SERVICE_CATEGORY_OPTIONS = ['Preventive', 'Diagnostic', 'Restorative', 'Cosmetic', 'Orthodontic'];
 const PRODUCT_CATEGORY_OPTIONS = ['Electric Tools', 'Toothpaste', 'Floss & Rinse', 'Whitening', 'Accessories'];
@@ -199,13 +204,16 @@ function renderAppointmentsManage(appointments) {
   const list = document.getElementById('appointment-master-list');
   if (!list) return;
 
-  if (!visibleAppointments.some(appointment => String(appointment.id) === String(_selectedAppointmentId))) {
+  if (_selectedAppointmentId === null || (_selectedAppointmentId !== false && !visibleAppointments.some(appointment => String(appointment.id) === String(_selectedAppointmentId)))) {
     _selectedAppointmentId = visibleAppointments[0]?.id || null;
   }
 
-  list.innerHTML = visibleAppointments.map(appointment => `
+  const mobileAccordion = usesAdminAccordion();
+  list.innerHTML = visibleAppointments.map(appointment => {
+    const expanded = String(appointment.id) === String(_selectedAppointmentId);
+    return `<article class="admin-master-item ${expanded ? 'expanded' : ''}">
     <button class="appointment-master-card ${String(appointment.id) === String(_selectedAppointmentId) ? 'selected' : ''} ${appointment.status === 'archived' ? 'item-archived' : ''}"
-      type="button" onclick="selectAppointment('${esc(appointment.id)}')" aria-pressed="${String(appointment.id) === String(_selectedAppointmentId)}">
+      type="button" onclick="selectAppointment('${esc(appointment.id)}')" aria-expanded="${mobileAccordion ? expanded : 'false'}" aria-pressed="${expanded}">
       <div class="appointment-card-top">
         <span class="appointment-card-id">#${esc(appointment.id)}</span>
         <span class="status-pill pill-${appointment.status}">${statusLabel(appointment.status)}</span>
@@ -214,7 +222,10 @@ function renderAppointmentsManage(appointments) {
       <span>${esc(appointment.serviceName || 'Dental service')}</span>
       <small>${esc(appointment.dentistName || 'Assigned dentist')}</small>
       <time>${esc(formatSchedule(appointment.date, appointment.time))}</time>
-    </button>`).join('') || '<div class="empty-state-card">No appointments match this filter.</div>';
+    </button>
+    ${mobileAccordion && expanded ? `<div class="admin-inline-detail appointment-inline-detail">${appointmentDetailsMarkup(appointment)}</div>` : ''}
+    </article>`;
+  }).join('') || '<div class="empty-state-card">No appointments match this filter.</div>';
 
   renderAppointmentDetails(appointments);
 }
@@ -229,7 +240,7 @@ function setAppointmentFilter(filter) {
 }
 
 function selectAppointment(id) {
-  _selectedAppointmentId = id;
+  _selectedAppointmentId = usesAdminAccordion() && String(_selectedAppointmentId) === String(id) ? false : id;
   renderAppointmentsManage(_adminData.appointments || []);
 }
 
@@ -248,8 +259,12 @@ function renderAppointmentDetails(appointments) {
     return;
   }
 
+  panel.innerHTML = appointmentDetailsMarkup(appointment);
+}
+
+function appointmentDetailsMarkup(appointment) {
   const contact = [appointment.userEmail, appointment.userContact].filter(Boolean).join(' / ') || 'Not provided';
-  panel.innerHTML = `
+  return `
     <div class="appointment-detail-head">
       <div>
         <span class="section-label">Appointment #${esc(appointment.id)}</span>
@@ -511,13 +526,16 @@ function renderOrders(orders, orderItems) {
   const list = document.getElementById('orders-list');
   if (!list) return;
 
-  if (!filtered.some(order => String(order.id) === String(_selectedOrderId))) {
+  if (_selectedOrderId === null || (_selectedOrderId !== false && !filtered.some(order => String(order.id) === String(_selectedOrderId)))) {
     _selectedOrderId = filtered[0]?.id || null;
   }
 
-  list.innerHTML = filtered.map(order => `
+  const mobileAccordion = usesAdminAccordion();
+  list.innerHTML = filtered.map(order => {
+    const expanded = String(order.id) === String(_selectedOrderId);
+    return `<article class="admin-master-item ${expanded ? 'expanded' : ''}">
     <button class="order-master-card ${String(order.id) === String(_selectedOrderId) ? 'selected' : ''} ${order.status === 'archived' ? 'item-archived' : ''}"
-      type="button" onclick="selectOrder('${esc(order.id)}')" aria-pressed="${String(order.id) === String(_selectedOrderId)}">
+      type="button" onclick="selectOrder('${esc(order.id)}')" aria-expanded="${mobileAccordion ? expanded : 'false'}" aria-pressed="${expanded}">
       <div class="order-master-top">
         <span>Order #${esc(order.id)}</span>
         <span class="status-pill pill-${order.status}">${statusLabel(order.status)}</span>
@@ -525,13 +543,16 @@ function renderOrders(orders, orderItems) {
       <strong>${esc(order.customer || 'Customer')}</strong>
       <small>${esc(formatOrderAddress(order))}</small>
       <div class="order-master-total">${formatMoney(order.total)}</div>
-    </button>`).join('') || '<div class="empty-state-card">No orders found.</div>';
+    </button>
+    ${mobileAccordion && expanded ? `<div class="admin-inline-detail order-inline-detail">${orderDetailsMarkup(order, orderItems)}</div>` : ''}
+    </article>`;
+  }).join('') || '<div class="empty-state-card">No orders found.</div>';
 
   renderOrderDetails(orders, orderItems);
 }
 
 function selectOrder(orderId) {
-  _selectedOrderId = orderId;
+  _selectedOrderId = usesAdminAccordion() && String(_selectedOrderId) === String(orderId) ? false : orderId;
   renderOrders(_adminData.orders || [], _adminData.orderItems || []);
 }
 
@@ -550,8 +571,13 @@ function renderOrderDetails(orders, orderItems) {
     return;
   }
 
+  panel.innerHTML = orderDetailsMarkup(order, orderItems);
+}
+
+function orderDetailsMarkup(order, orderItems) {
   const items = orderItems.filter(item => String(item.order_id) === String(order.id));
-  panel.innerHTML = `
+  const discount = Number(order.discountAmount ?? order.discount_amount ?? 0);
+  return `
     <div class="order-panel-head">
       <div>
         <span class="section-label">Order #${esc(order.id)}</span>
@@ -565,6 +591,7 @@ function renderOrderDetails(orders, orderItems) {
       ${orderPanelItem('Delivery Address', formatOrderAddress(order), true)}
       ${orderPaymentDetails(order)}
       ${orderPanelItem('Total Amount', formatMoney(order.total))}
+      ${discount > 0 ? orderPanelItem('Discount', formatMoney(discount)) : ''}
       ${orderPanelItem('Status', statusLabel(order.status))}
       ${orderPanelItem('Date Created', formatDate(order.created_at))}
     </div>
@@ -637,6 +664,15 @@ function orderActionButtons(order) {
   };
   return actions[order.status] || '';
 }
+
+adminMobileMasterDetail.addEventListener('change', () => {
+  if (!usesAdminAccordion()) {
+    if (_selectedAppointmentId === false) _selectedAppointmentId = null;
+    if (_selectedOrderId === false) _selectedOrderId = null;
+  }
+  renderAppointmentsManage(_adminData.appointments || []);
+  renderOrders(_adminData.orders || [], _adminData.orderItems || []);
+});
 
 function confirmOrderStatus(id, status) {
   const copy = {

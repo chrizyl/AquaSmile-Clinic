@@ -48,10 +48,25 @@ function sanitizeOtpInput(input) {
   return input.value;
 }
 
+function setCreateAccountLoading(loading) {
+  const button = document.getElementById('create-account-btn');
+  if (!button) return;
+
+  const spinner = button.querySelector('.auth-button-spinner');
+  const label = button.querySelector('.auth-button-label');
+  button.disabled = loading;
+  button.dataset.loading = loading ? 'true' : 'false';
+  button.setAttribute('aria-busy', String(loading));
+  if (spinner) spinner.hidden = !loading;
+  if (label) label.textContent = loading ? 'Creating account...' : 'Create Account';
+}
+
 async function register(event) {
   event.preventDefault();
 
   const form = document.getElementById('register-form');
+  const createAccountButton = document.getElementById('create-account-btn');
+  if (createAccountButton?.dataset.loading === 'true') return;
   const otpForm = document.getElementById('otp-form');
   const fname = document.getElementById('reg-fname').value.trim();
   const lname = document.getElementById('reg-lname').value.trim();
@@ -90,6 +105,8 @@ async function register(event) {
     return;
   }
 
+  setCreateAccountLoading(true);
+
   try {
     const result = await apiRequest('register', { fname, lname, email, contact, password });
     window.pendingRegistrationEmail = result.email || email;
@@ -103,6 +120,7 @@ async function register(event) {
     const debugNote = result.debugOtp ? ' Local test OTP: ' + result.debugOtp : '';
     showMessage(sucEl, (result.message || 'Verification code sent. Please check your email.') + debugNote);
   } catch (err) {
+    setCreateAccountLoading(false);
     clearRegistrationPasswords();
     passwordInput.focus();
     showMessage(errEl, err.errors || err.message || 'Registration failed. Please try again.');
@@ -209,6 +227,7 @@ function editRegistrationDetails() {
   hideMessage(sucEl);
   otpForm.hidden = true;
   registerForm.hidden = false;
+  setCreateAccountLoading(false);
   clearRegistrationPasswords();
   document.getElementById('reg-password').focus();
 }

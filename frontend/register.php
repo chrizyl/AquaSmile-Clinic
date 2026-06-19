@@ -7,7 +7,7 @@
   <title>AquaSmile — Create Account</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css?v=20260610">
-  <link rel="stylesheet" href="css/auth.css?v=20260610">
+  <link rel="stylesheet" href="css/auth.css?v=20260619">
 </head>
 <body>
 
@@ -84,7 +84,10 @@
           <div class="form-hint">Use at least 8 characters with a letter and a number.</div>
         </div>
 
-        <button class="btn-full" type="submit">Create Account</button>
+        <button class="btn-full" type="submit" id="create-account-btn">
+          <span class="auth-button-spinner" aria-hidden="true" hidden></span>
+          <span class="auth-button-label">Create Account</span>
+        </button>
       </form>
 
       <form id="otp-form" method="post" novalidate hidden>
@@ -121,6 +124,6 @@
   </div>
 
   <script src="js/main.js?v=20260616a"></script>
-  <script src="js/auth.js?v=20260614"></script>
+  <script src="js/auth.js?v=20260619"></script>
 </body>
 </html>

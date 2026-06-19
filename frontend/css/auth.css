@@ -97,11 +97,37 @@
   cursor: pointer;
   transition: background 0.25s, transform 0.2s;
   margin-top: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
 }
 
 .btn-full:hover {
   background: var(--aqua-dark);
   transform: translateY(-1px);
+}
+
+.btn-full:disabled {
+  cursor: wait;
+  transform: none;
+  opacity: .86;
+}
+
+.auth-button-spinner {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 15px;
+  border: 2px solid rgba(255,255,255,.38);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: auth-button-spin .7s linear infinite;
+}
+
+.auth-button-spinner[hidden] { display: none; }
+
+@keyframes auth-button-spin {
+  to { transform: rotate(360deg); }
 }
 
 /* ── TOGGLE LINK ── */

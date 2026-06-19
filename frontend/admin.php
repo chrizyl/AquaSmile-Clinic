@@ -19,7 +19,7 @@ requireAdminPage();
     href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&amp;family=DM+Sans:wght@300;400;500&amp;display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="css/style.css?v=20260524">
-  <link rel="stylesheet" href="css/admin.css?v=20260618r">
+  <link rel="stylesheet" href="css/admin.css?v=20260619b">
 </head>
 
 <body class="admin-body">
@@ -404,7 +404,7 @@ requireAdminPage();
   </main>
 
   <script src="js/main.js?v=20260616a"></script>
-  <script src="js/admin.js?v=20260618r"></script>
+  <script src="js/admin.js?v=20260619"></script>
 </body>
 
 </html>
